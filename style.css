@@ -131,3 +131,17 @@ body[data-appearance="dark"][data-weather="rain"] .hero,body[data-appearance="da
 .travel-details-content{display:grid;gap:18px}.td-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.td-card{background:var(--card,#fff);border:1px solid var(--border,#e4e4df);border-radius:15px;padding:17px;min-width:0}.td-card h4{margin:0 0 9px;font-size:16px}.td-card p{font-size:13px;line-height:1.65;margin:0 0 9px}.td-card small,.td-note{font-size:12px;color:var(--muted,#777)}.td-card a{display:inline-block;margin:4px 7px 4px 0;padding:7px 10px;border:1px solid var(--border,#ddd);border-radius:9px;text-decoration:none;font-size:12px}.td-group h3{font-size:19px;margin:0 0 9px}.td-note{background:var(--card,#fff);border-radius:12px;padding:13px 15px}.td-hidden{display:none!important}
 
 .td-upload{margin-top:18px}.td-upload label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:10px 0}.td-upload input,.td-upload select,.td-upload textarea{border:1px solid var(--border,#ddd);background:var(--card,#fff);color:inherit;border-radius:9px;padding:9px;width:100%;max-width:700px}.td-upload button{margin:6px 8px 10px 0;border:1px solid var(--border,#ddd);border-radius:9px;padding:10px 14px;background:var(--card,#fff);color:inherit;cursor:pointer}.td-upload button:disabled{opacity:.55}.td-upload #bookingStatus{font-size:13px}.td-upload #bookingSavedList{margin-top:18px}
+
+/* Sidebar controls: collapsible list and owner-only delete button */
+.sidebar-head-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.sidebar-trip-row{display:flex;align-items:stretch;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:12px;overflow:hidden}
+.sidebar-trip-row.active{border:2px solid var(--brand);background:var(--light)}
+.sidebar-trip-row .sidebar-trip{flex:1;min-width:0;border:0;border-radius:0;background:transparent}
+.sidebar-delete-trip{align-self:center;flex:none;margin-right:7px;padding:8px 6px;border:1px solid #dfbcbc;border-radius:9px;background:#fff7f5;color:#a33d38;cursor:pointer}
+.sidebar-delete-trip:hover{background:#fbe2de}
+.sidebar-collapsed .my-trip-sidebar{width:108px;bottom:auto;overflow:visible;padding:9px}
+.sidebar-collapsed .sidebar-hint,.sidebar-collapsed .sidebar-trip-list,.sidebar-collapsed .sidebar-sample,.sidebar-collapsed #sideNewTrip{display:none!important}
+.sidebar-collapsed .sidebar-head{flex-direction:column;align-items:stretch}
+.sidebar-collapsed .sidebar-head-actions{justify-content:center}
+@media(min-width:1300px){body.sidebar-collapsed>.container{width:calc(100% - 140px);max-width:1240px;margin-left:max(132px,calc((100% - 1400px)/2 + 132px));margin-right:0}}
+@media(max-width:1299px){.sidebar-trip-row{min-width:150px}.sidebar-collapsed .my-trip-sidebar{width:auto;margin:8px 15px}.sidebar-collapsed .sidebar-head{flex-direction:row}.sidebar-collapsed .sidebar-head-actions{margin-left:auto}}
