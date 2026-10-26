@@ -1,7 +1,7 @@
 // Real AI bridge. Gemini key lives ONLY in Supabase Edge Function Secrets.
-export async function suggestWithAi(repo, tripId, message){
+export async function suggestWithAi(repo, tripId, message, history=[]){
   if(!repo.user||!repo.client)throw Error('AI를 사용하려면 먼저 SNS 로그인해야 해.');
-  const {data,error}=await repo.client.functions.invoke('trip-ai',{body:{tripId,message}});
+  const {data,error}=await repo.client.functions.invoke('trip-ai',{body:{tripId,message,history}});
   if(error){
     let detail='';try{const content=await error.context?.json();detail=content?.error||'';}catch{}
     throw Error(detail||'AI 서버 연결에 실패했어. Edge Function 및 Gemini API 키를 설정했는지 확인해줘.');
