@@ -26,3 +26,39 @@ body[data-theme="citrus"]{--bg:#fffaf0;--paper:#fffefa;--ink:#55503a;--mute:#8d8
 .toss-tds-actions{max-width:1160px;margin:8px auto 4px;padding:0 16px}
 .toss-tds-actions .tds-note{font-size:11px;color:#576b66;margin:0 0 4px}
 .toss-tds-actions .tds-buttons{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+
+/* Tripkku official user-supplied globe logos + avatar personalization */
+.brand-logo{display:block;width:35px;height:35px;object-fit:cover;border-radius:9px;background:none;flex:0 0 auto}
+.hero-art>.sun,.hero-art>.hill,.hero-art>.ticket,.hero-art>.spark{display:none}
+.globe-hero-image{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.globe-hero-image img{width:min(84%,330px);aspect-ratio:1;object-fit:cover;border-radius:35px;box-shadow:0 20px 42px rgba(8,22,32,.23);transform:rotate(7deg)}
+.earth-bubble{position:absolute;right:13%;bottom:14%;font-size:40px;line-height:1;padding:10px;background:white;border-radius:50%;box-shadow:0 10px 20px #0003}
+.customizer{display:block;margin:8px 0 20px;border:1px solid var(--line);background:var(--paper);border-radius:21px;padding:22px;box-shadow:var(--shadow)}
+.customizer-head h3{font-size:21px;margin:4px 0;letter-spacing:-.05em}.customizer-head p{font-size:12px;margin:4px 0 15px;color:var(--mute)}
+.customizer-body{display:grid;grid-template-columns:190px minmax(0,1fr);gap:28px;align-items:center}
+.earth-portrait{position:relative;max-width:190px;width:100%;margin:auto;border-radius:18px}
+.earth-portrait img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:19px}
+.earth-portrait small{display:block;text-align:center;padding:6px 1px 1px;color:var(--mute);font-size:11px;font-weight:750}
+.portrait-mood,.portrait-accessory{position:absolute;line-height:1;display:grid;place-items:center;background:var(--paper);border:2px solid var(--paper);box-shadow:0 4px 12px #0002;border-radius:50%}
+.portrait-mood{bottom:39px;right:-9px;font-size:33px;width:47px;height:47px}.portrait-accessory{top:-12px;left:-8px;font-size:25px;width:37px;height:37px}
+.choice-row{padding:10px 0;border-bottom:1px dashed var(--line)}.choice-row:last-child{border-bottom:0}.choice-label{display:block;color:var(--ink);font-weight:880;font-size:12px;margin-bottom:8px}
+.choices{display:flex;flex-wrap:wrap;gap:7px}.choices button{border:1px solid var(--line);border-radius:10px;padding:8px 11px;background:var(--bg);color:var(--ink);font-weight:800;font-size:12px}
+.choices button.selected{background:var(--light);border-color:var(--brand);color:var(--ink);box-shadow:inset 0 0 0 1px var(--brand)}
+.choice-hint,.customizer-note{color:var(--mute);font-size:11px;line-height:1.65;margin:8px 0 0}.customizer-note{margin-top:12px}
+/* Night theme has separate contrast values; previously-selected forest/pink/sea/citrus accent remain. */
+body[data-appearance="dark"]{--bg:#0d1528;--paper:#16233c;--ink:#edf5ff;--mute:#b6c6df;--brand:#89bdf5;--accent:#ffc184;--light:#22354e;--line:#324460;--red:#ff7586;--shadow:0 12px 40px rgba(0,0,0,.28);color-scheme:dark}
+body[data-appearance="dark"] .hero{background:linear-gradient(115deg,#162747,#10203c)}
+body[data-appearance="dark"] .btn.dark{background:#6d9fe7;color:#09162c}
+body[data-appearance="dark"] .btn.white{color:#193c4b}
+body[data-appearance="dark"] .notice{border-color:#49617b;background:#20334c;color:#d0e3f7}
+body[data-appearance="dark"] .notice b{color:#f1f7ff}
+body[data-appearance="dark"] .privacy-tag{background:#243a4d;color:#d4edd9;border-color:#52735c}
+body[data-appearance="dark"] .privacy-tag.private{background:#4b354d;color:#fad8ed;border-color:#79516f}
+body[data-appearance="dark"] .budget-result:not(.over){background:#214837;color:#c6ffe4}
+body[data-appearance="dark"] .budget-result.over{background:#542635;color:#ffc8cf;border-color:#b35164}
+body[data-appearance="dark"] .invite-graphic{background:#253858;border-color:#5f78a0;color:#f5dcae}
+body[data-appearance="dark"] .status-pill.connected{background:#264b43;color:#cef8d8;border-color:#40866c}
+body[data-appearance="dark"] .bubble.me{background:#385ea4}
+@media(max-width:850px){.customizer-body{grid-template-columns:160px 1fr;gap:17px}}
+@media(max-width:600px){.customizer{padding:16px}.customizer-body{grid-template-columns:1fr}.earth-portrait{max-width:160px;margin:4px auto}.choices button{font-size:11px;padding:8px 10px}.globe-hero-image{display:none}}

@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+*.ait
+.DS_Store
+Thumbs.db
+*.pem
+*.key
+supabase-service-role.*
