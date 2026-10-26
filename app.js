@@ -1,5 +1,8 @@
+import {getUiLanguage,isEnglish,setUiLanguage,translateUi,translateString} from './i18n.js';
+import {earthAvatarHtml} from './earth-avatar.js';
+import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
-import {PRESETS,clonePreset,money,safeNum,googleDirections} from './presets.js';
+import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
 import {Collaboration} from './collab.js';
 import {suggestWithAi,describeAction} from './ai.js';
 
@@ -9,44 +12,92 @@ const STORE='tripkku-demo-v1:';
 const PREF='tripkku-preset';
 const THEME='tripkku-theme';
 const isToss=CONFIG.platform==='toss';
+const money=(n)=>new Intl.NumberFormat(isEnglish()?'en-US':'ko-KR').format(Math.round(Number(n)||0))+(isEnglish()?' KRW':'원');
+const uiPrompt=(str,value)=>window.prompt(translateString(str),value);
+const uiConfirm=str=>window.confirm(translateString(str));
 
 // User-owned local appearance preferences. These are never uploaded to shared travel rooms.
 const APPEARANCE_KEY='tripkku-appearance-v1';
 const EARTH_PREF_KEY='tripkku-earth-style-v1';
 const MOOD_OPTIONS={happy:['😄','신나는 지구'],angry:['😠','화난 지구'],sleepy:['😴','졸린 지구'],love:['🥰','설레는 지구']};
-const STYLE_OPTIONS={basic:['✨','기본 스타일'],feminine:['🎀','여성풍 스타일'],masculine:['🧢','남성풍 스타일'],free:['🌈','자유 스타일']};
-let earthPrefs={mood:'happy',style:'basic'};
+const EARTH_MAP_MODE='tripkku-globe-mode-v1';
+let earthPrefs={mood:'happy'};
+let earthMode=localStorage.getItem(EARTH_MAP_MODE)==='face'?'face':'map';
+let activeGeo=SAMPLE_COORDS.oita;
+let destinationLookupKey='';let weatherLookupKey='';let weatherUpdateSerial=0;
 try{const value=JSON.parse(localStorage.getItem(EARTH_PREF_KEY)||'null');
-  if(value&&MOOD_OPTIONS[value.mood]&&STYLE_OPTIONS[value.style])earthPrefs=value;
+  if(value&&MOOD_OPTIONS[value.mood])earthPrefs.mood=value.mood;
 }catch{}
 function applyEarthAppearance(){
   const appearance=document.body.dataset.appearance==='dark'?'dark':'light';
-  const logo=appearance==='dark'?'dark':'light';
-  const hero=$('#heroGlobe'),custom=$('#customEarth'),brand=$('#brandLogo');
-  if(hero)hero.src='./assets/'+logo+'-512.png';
-  if(custom)custom.src='./assets/'+logo+'-512.png';
-  if(brand)brand.src='./assets/'+logo+'-64.png';
+  const brand=$('#brandLogo');if(brand)brand.src='./assets/'+appearance+'-64.png';
   const mood=MOOD_OPTIONS[earthPrefs.mood]||MOOD_OPTIONS.happy;
-  const style=STYLE_OPTIONS[earthPrefs.style]||STYLE_OPTIONS.basic;
-  if($('#customMood'))$('#customMood').textContent=mood[0];
-  if($('#heroMoodBadge'))$('#heroMoodBadge').textContent=mood[0];
-  if($('#customAccessory'))$('#customAccessory').textContent=style[0];
-  if($('#earthTagline'))$('#earthTagline').textContent=mood[1]+' · '+style[1];
-  if(custom)custom.alt=(appearance==='dark'?'밤':'낮')+' 지구 로고, '+mood[1]+', '+style[1];
-  document.querySelectorAll('button[data-appearance]').forEach(button=>{
-    const isActive=button.dataset.appearance===appearance;
-    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
-  });
-  document.querySelectorAll('button[data-mood]').forEach(button=>{
-    const isActive=button.dataset.mood===earthPrefs.mood;
-    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
-  });
-  document.querySelectorAll('button[data-character-style]').forEach(button=>{
-    const isActive=button.dataset.characterStyle===earthPrefs.style;
-    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
-  });
+  for(const id of ['customEarthArt','heroEarthArt']){
+    const target=document.getElementById(id);
+    if(!target)continue;
+    const visual=earthMode==='map'?destinationGlobeHtml(activeGeo,appearance,isEnglish()?'en':'ko'):earthAvatarHtml(appearance,earthPrefs.mood,'basic');
+    target.innerHTML=visual;
+    target.setAttribute('aria-label',earthMode==='map'?(isEnglish()?'Destination map':'여행지 지도'):(appearance==='dark'?'밤 ':'낮 ')+mood[1]);
+  }
+  if($('#earthTagline'))$('#earthTagline').textContent=earthMode==='map'?(isEnglish()?activeGeo.nameEn||activeGeo.name||'Destination':activeGeo.nameKo||activeGeo.name||'여행 목적지'):(isEnglish()?'Earth mood: ':'지구 기분: ')+mood[1];
+  for(const selector of ['data-appearance','data-mood','data-earth-mode']){
+    document.querySelectorAll(`button[${selector}]`).forEach(button=>{
+      const value=selector==='data-appearance'?appearance:selector==='data-mood'?earthPrefs.mood:earthMode;
+      const active=button.getAttribute(selector)===value;
+      button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));
+    });
+  }
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta)meta.content=appearance==='dark'?'#111c38':'#365a54';
+  translateUi();
+}
+function updateWeatherPanel(state){
+  window._tripkkuWeatherResult=state;
+  const english=isEnglish(),h=$('#weatherHeadline'),days=$('#weatherDays');if(!h||!days)return;
+  document.body.dataset.weather=state?.status==='ok'?weatherMood(state.days[0].code):'neutral';
+  const intro={
+    'dates-missing':english?'📅 Choose your travel dates to see the forecast.':'📅 여행 날짜를 설정하면 날씨를 보여줄게.',
+    'not-yet':english?'📅 Forecast not released yet (available within 16 days).':'📅 예보 발표 전이야. 출발 16일 전부터 확인 가능해.',
+    'past':english?'📅 Trip date has passed; a live forecast is unavailable.':'📅 지난 여행 날짜라 실시간 예보는 제공되지 않아.',
+    'offline':english?'☁️ Weather unavailable. Try again when online.':'☁️ 날씨를 불러오지 못했어. 인터넷 연결 후 다시 확인해 줘.',
+    'loading':english?'🌤️ Checking local weather...':'🌤️ 현지 날씨 확인 중…'
+  };
+  if(state?.status==='ok'){
+    const first=state.days[0];
+    h.textContent=`${weatherLabel(first.code,english?'en':'ko')} · ${first.date} · ${Math.round(first.min)}°~${Math.round(first.max)}°C`;
+    days.innerHTML=state.days.map(x=>`<div class="weather-day"><span>${esc(x.date.slice(5))}</span><b>${esc(weatherLabel(x.code,english?'en':'ko'))}</b><span>${Math.round(x.min)}° / ${Math.round(x.max)}°</span></div>`).join('');
+    if($('#heroWeatherText'))$('#heroWeatherText').textContent=h.textContent;
+  }else{
+    h.textContent=intro[state?.status]||intro['offline'];days.innerHTML='';
+    if($('#heroWeatherText'))$('#heroWeatherText').textContent=h.textContent;
+  }
+}
+async function refreshDestination(){
+  if(!data)return;
+  const trip=data.trip,key=`${trip.preset}:${trip.city}`;
+  if(destinationLookupKey!==key){
+    destinationLookupKey=key;
+    activeGeo=knownDestination(trip)||SAMPLE_COORDS[trip.preset]||SAMPLE_COORDS.oita;
+    applyEarthAppearance();
+    const known=knownDestination(trip);
+    if(!known){
+      try{const found=await geocodeCity(trip.city);
+        if(destinationLookupKey!==key)return;activeGeo=found;applyEarthAppearance();
+      }catch(e){if(destinationLookupKey===key){activeGeo={...activeGeo,nameKo:'위치 검색 실패 · 샘플 지도',nameEn:'City not found · Sample map'};applyEarthAppearance();toast(isEnglish()?'City not found. Sample map shown; weather may not match.':'도시를 찾지 못했어. 샘플 지도이며 날씨가 다를 수 있어.');}}
+    }
+  }
+  if($('#travelCity')&&document.activeElement!==$('#travelCity'))$('#travelCity').value=trip.city||'';
+  const dates=dateRange(trip);
+  if($('#travelStart')&&document.activeElement!==$('#travelStart'))$('#travelStart').value=dates?.start||'';
+  if($('#travelEnd')&&document.activeElement!==$('#travelEnd'))$('#travelEnd').value=dates?.end||'';
+  const wk=`${key}:${dates?.start||''}:${dates?.end||''}:${activeGeo.lat},${activeGeo.lon}`;
+  if(wk===weatherLookupKey)return;
+  weatherLookupKey=wk;
+  const serial=++weatherUpdateSerial;
+  updateWeatherPanel(dates?{status:'loading'}:{status:'dates-missing'});
+  if(!dates)return;
+  const output=activeGeo.nameKo?.startsWith('위치 검색 실패')?{status:'offline'}:await fetchTravelWeather(activeGeo,dates);
+  if(serial===weatherUpdateSerial)updateWeatherPanel(output);
 }
 
 let activePreset=localStorage.getItem(PREF)||'oita';
@@ -87,14 +138,14 @@ function loadDemo(key){activePreset=key;localStorage.setItem(PREF,key);mode='dem
   render();}
 function priceStatus(spent,target){
   const over=Math.max(0,spent-target);
-  return {over,html:over>0?`🚨 목표 초과 <strong>+${money(over)}</strong>`:`✓ 목표 금액 이내 · ${money(target-spent)} 남았어`};
+  return {over,html:over>0?(isEnglish()?`🚨 Over budget <strong>+${money(over)}</strong>`:`🚨 목표 초과 <strong>+${money(over)}</strong>`):(isEnglish()?`✓ Within budget · ${money(target-spent)} left`:`✓ 목표 금액 이내 · ${money(target-spent)} 남았어`)};
 }
 function totalShared(){const {trip,expenses}=data;const ns=trip.active_plan==='A'?trip.nights_a:trip.nights_b;
   return safeNum(ns[0])+safeNum(ns[1])+expenses.reduce((sum,x)=>sum+safeNum(x.amount),0);
 }
 function currentPlanNights(){return data.trip.active_plan==='A'?data.trip.nights_a:data.trip.nights_b;}
 function peopleCount(){return Math.max(1,data.members.length);}
-function toast(message){const t=$('#toast');t.textContent=message;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),3000);}
+function toast(message){const t=$('#toast');t.textContent=translateString(message);t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),3000);}
 function fail(error){toast(error?.message||String(error));console.error(error);}
 async function persistTrip(patch){
   if(mode==='remote'){await repo.updateTrip(data.trip.id,patch);data=await repo.readTrip(data.trip.id);}else{Object.assign(data.trip,patch);saveDemo();}render();
@@ -187,14 +238,15 @@ function renderAccount(){
   $('#connectionBadge').classList.toggle('connected',Boolean(connected));
   $('#demoNotice').hidden=Boolean(connected&&mode==='remote');
   $('#accountInfo').textContent=connected?`${repo.user.email||'로그인된 계정'} · ${mode==='remote'?'공동 여행 동기화 중':'샘플 여행 미리보기 중'}`:
-    repo.configured?'로그인하면 친구 초대와 공동 편집을 사용할 수 있어요.':'Supabase 미연결: SNS 로그인·초대·공동 편집은 사용 전 설정이 필요합니다.';
+    repo.configured?'로그인하면 친구 초대와 공동 편집을 사용할 수 있어요.':'현재는 기기별 여행 저장을 사용할 수 있어요. 회원 초대는 준비 중입니다.';
   document.querySelectorAll('[data-login]').forEach(b=>{b.hidden=Boolean(repo.user)||isToss;b.disabled=!repo.configured;});
   $('#logout').hidden=!repo.user;
   $('#authHelp').textContent=isToss?'토스 미니앱은 토스 로그인만 허용됩니다. 서버 검증 연동 전이라 로그인이 비활성화되었습니다.':
-    repo.configured?'로그인이 안 되면 Supabase Authentication > URL Configuration / Providers를 확인하세요.':'실제 로그인 사용: README대로 Supabase 프로젝트 생성 → schema.sql 실행 → OAuth 설정 → config.js 입력';
+    repo.configured?'로그인이 안 된다면 로그인 설정을 확인해 줘.':'계정 로그인 기능 준비 중이야. 지금은 이 기기에 여행을 저장할 수 있어.';
   $('#inviteButton').disabled=!(connected&&mode==='remote');
   $('#inviteButton').textContent=connected&&mode==='remote'?'🔗 7일 유효 초대 링크 만들기':'🔒 연결 후 초대 링크 사용 가능';
-  const aiHelp=$('#aiStatus');if(aiHelp)aiHelp.textContent=mode==='remote'&&repo.user?'🤖 로그인된 공동 여행: 실제 Gemini AI 제안 가능(서버 키/함수 배포가 완료되어야 작동). 변경 적용 전 확인창이 나타나.':'🧩 현재 로컬 데모: 정해진 명령 편집만 가능해. 실제 Gemini AI는 Supabase 로그인·공동 여행 생성·Edge Function 배포 후 활성화돼.';
+  const checker=$('#checkSupabase');if(checker)checker.textContent=repo.configured?'🔄 연결 상태 확인':'🔌 계정 연결 상태';
+  const aiHelp=$('#aiStatus');if(aiHelp)aiHelp.textContent=mode==='remote'&&repo.user?'🤖 함께 만드는 여행에서 AI가 수정 제안을 보여줘. 변경 적용 전 확인할 수 있어.':'💬 여행을 말로 수정해 봐! 계정 연결 전에는 기본 명령으로 일정과 비용을 변경할 수 있어.';
   $('#memberList').innerHTML=data.members.map((m,i)=>`<span class="member">${m.role==='owner'?'👑':'👤'} ${esc(m.nickname||'친구')} ${i===0?'':' '}</span>`).join('');
   const myMember=mode==='remote'?data.members.find(x=>x.user_id===repo.user?.id):data.members[0];
   if(document.activeElement!==$('#nickname'))$('#nickname').value=myMember?.nickname||'';
@@ -207,6 +259,7 @@ function renderPhrases(){
 function render(){
   if(!data)return;
   renderPresetPicker();renderPlans();renderBudget();renderPlaces();renderAccount();renderPhrases();
+  translateUi();void refreshDestination();
 }
 
 function previewBudgetWhileTyping(){
@@ -230,6 +283,7 @@ function previewBudgetWhileTyping(){
   $('#personalProgress').classList.toggle('over',p.over>0);
   $('#personalBudgetResult').innerHTML=p.html;$('#personalBudgetResult').classList.toggle('over',p.over>0);
   $('#personalFormula').textContent=`내 지출 예상 = 공동경비 1/${peopleCount()}인 ${money(shared/peopleCount())} + 내 항공 ${money($('#airfare').value)} + 개인경비 ${money($('#personalExtra').value)}`;
+  translateUi();
 }
 
 function pendingInvite(){const url=new URL(location.href),token=url.searchParams.get('invite');if(token){
@@ -252,7 +306,7 @@ async function selectRemote(id){
 async function createTrip(){
   let key=data.trip.preset;
   if(!repo.user){toast('로컬 샘플은 자유롭게 수정할 수 있어. 공동 여행 생성은 로그인 후 가능해.');return;}
-  const name=prompt('새 여행 이름',PRESETS[key]?.title||'우리 여행');if(name===null)return;
+  const name=uiPrompt('새 여행 이름',PRESETS[key]?.title||'우리 여행');if(name===null)return;
   const p=clonePreset(key);p.title=name.trim()||p.title;
   const id=await repo.createTrip(p);await selectRemote(id);toast('공동 여행방을 만들었어! 👭');
 }
@@ -263,9 +317,32 @@ async function createInvite(){
   $('#inviteURL').value=url.toString();$('#inviteLinkBox').hidden=false;
   toast('7일 유효한 초대장 준비 완료!');
 }
-function appendChat(who,text){const div=document.createElement('div');div.className='bubble '+who;div.textContent=text;$('#chatMessages').append(div);$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;}
+function appendChat(who,text){const div=document.createElement('div');div.className='bubble '+who;div.textContent=who==='ai'?translateString(text):text;$('#chatMessages').append(div);$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;}
 async function processCommand(input){
   const tx=input.trim();const p=tx.toUpperCase();
+  // Local demo also accepts concise English edit commands (no AI API required).
+  const lower=tx.toLowerCase();
+  if(/\b(?:plan\s*b|b\s*plan)\b/.test(lower)){
+    await persistTrip({active_plan:'B'});
+    return isEnglish()?'✨ Plan B selected: hotel + ryokan.':'✨ B안으로 바꿨어!';
+  }
+  if(/\b(?:plan\s*a|a\s*plan)\b/.test(lower)){
+    await persistTrip({active_plan:'A'});
+    return isEnglish()?'🛏️ Plan A selected: same hotel for two nights.':'🛏️ A안으로 바꿨어!';
+  }
+  const cost=lower.match(/\b(shared|personal|flight|airfare|ryokan|shopping)\b(?:\s+(?:target|budget|cost|price|to))?\s*([\d,]+)\b/);
+  if(cost){const number=safeNum(cost[2].replace(/,/g,''));const field=cost[1];
+    if(field==='shared'){await persistTrip({shared_target:number});return `💰 Shared budget: ${money(number)}`;}
+    if(field==='personal'){await persistFinance({personal_target:number});return `💌 Personal budget: ${money(number)}`;}
+    if(field==='flight'||field==='airfare'){await persistFinance({airfare:number});return `✈️ Flight cost: ${money(number)}`;}
+    if(field==='shopping'){await persistFinance({personal_extra:number});return `🛍️ Shopping budget: ${money(number)}`;}
+    if(field==='ryokan'){await persistTrip({active_plan:'B',nights_b:[data.trip.nights_b[0],number]});return `🏨 Ryokan price: ${money(number)}`;}
+  }
+  const englishEvent=lower.match(/^(?:add\s+)(.+?)\s+(?:to\s+)?day\s*([123])(?:\s+.*)?$/);
+  if(englishEvent){const day=Number(englishEvent[2]);const title=tx.slice(4,4+englishEvent[1].length);
+    await addEvent({plan_key:data.trip.active_plan,day_number:day,time_label:'TBD',title,note:'Added from chat'});
+    return `🗓️ Added "${title}" to Day ${day}.`;
+  }
   if(/(B안|B PLAN|료칸.*(바꾸|선택))/.test(p)){
     const amt=tx.match(/료칸\s*(\d[\d,]*(?:\.\d+)?)\s*(만\s*원|만원|원)?/);
     if(amt){let price=parseFloat(amt[1].replace(/,/g,''));if((amt[2]||'').includes('만'))price*=10000;
@@ -333,7 +410,7 @@ async function handleChat(text){
   const proposal=await suggestWithAi(repo,data.trip.id,text);
   if(!proposal.actions.length)return '🤖 '+proposal.reply;
   const preview=proposal.actions.map((a,i)=>(i+1)+'. '+describeAction(a)).join('\n');
-  const approved=confirm('🤖 AI 수정 제안\n\n'+proposal.reply+'\n\n'+preview+'\n\n이 변경사항을 공동 여행에 적용할까?');
+  const approved=uiConfirm('🤖 AI 수정 제안\n\n'+proposal.reply+'\n\n'+preview+'\n\n이 변경사항을 공동 여행에 적용할까?');
   if(!approved)return '수정은 취소했어. 제안만 확인했어 😊';
   await commitAiProposal(proposal.actions);
   return '✅ 변경 완료! 친구와 공유한 여행에 반영했어.\n'+preview;
@@ -346,49 +423,65 @@ async function clickHandler(ev){
   const b=ev.target.closest('button');if(!b)return;
   try{
     if(b.dataset.go){document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
+    if(b.dataset.uiLang){setUiLanguage(b.dataset.uiLang);render();applyEarthAppearance();updateWeatherPanel(window._tripkkuWeatherResult||{status:'dates-missing'});toast(isEnglish()?'Language: English':'언어: 한국어');return;}
     if(b.dataset.appearance){document.body.dataset.appearance=b.dataset.appearance;
       localStorage.setItem(APPEARANCE_KEY,b.dataset.appearance);applyEarthAppearance();toast('낮·밤 로고를 바꿨어 🌍');return;}
     if(b.dataset.mood&&MOOD_OPTIONS[b.dataset.mood]){earthPrefs.mood=b.dataset.mood;
       localStorage.setItem(EARTH_PREF_KEY,JSON.stringify(earthPrefs));applyEarthAppearance();toast('지구 기분을 바꿨어 💬');return;}
-    if(b.dataset.characterStyle&&STYLE_OPTIONS[b.dataset.characterStyle]){earthPrefs.style=b.dataset.characterStyle;
-      localStorage.setItem(EARTH_PREF_KEY,JSON.stringify(earthPrefs));applyEarthAppearance();toast('지구 스타일을 바꿨어 🎀');return;}
+    if(b.dataset.earthMode){earthMode=b.dataset.earthMode;localStorage.setItem(EARTH_MAP_MODE,earthMode);applyEarthAppearance();toast(earthMode==='map'?'📍 목적지 지도 보기':'😊 지구 표정 보기');return;}
 
     if(b.dataset.theme){document.body.dataset.theme=b.dataset.theme;localStorage.setItem(THEME,b.dataset.theme);renderPresetPicker();toast('테마를 바꿨어 🎨');return;}
     if(b.dataset.preset){
-      if(mode==='remote'&&repo.user){const ok=confirm('이 샘플로 별도 공동 여행을 새로 만들까요? (기존 여행 유지)');if(!ok)return;
+      if(mode==='remote'&&repo.user){const ok=uiConfirm('이 샘플로 별도 공동 여행을 새로 만들까요? (기존 여행 유지)');if(!ok)return;
         const id=await repo.createTrip(clonePreset(b.dataset.preset));await selectRemote(id);toast('새 공동 여행을 만들었어!');}
       else loadDemo(b.dataset.preset);return;
     }
     if(b.dataset.plan){await persistTrip({active_plan:b.dataset.plan});toast(b.dataset.plan+'안 적용 완료');return;}
     if(b.id==='makeTrip'){await createTrip();return;}
     if(b.id==='editTripInfo'){
-      const title=prompt('여행 이름',data.trip.title);if(title===null)return;
-      const dates=prompt('여행 날짜 (예: 2026.10.31 ~ 11.02)',data.trip.dates);if(dates===null)return;
-      await persistTrip({title:title.trim()||data.trip.title,dates:dates.trim()||data.trip.dates});toast('여행 정보 수정했어!');return;
+      const title=uiPrompt('여행 이름',data.trip.title);if(title===null)return;
+      const city=uiPrompt('목적지 도시 (예: Tokyo, London, 벳푸)',data.trip.city);if(city===null)return;
+      await persistTrip({title:title.trim()||data.trip.title,city:city.trim()||data.trip.city});toast('여행지와 이름을 바꿨어!');return;
+    }
+    if(b.id==='saveTravelCity'){
+      const city=$('#travelCity').value.trim();if(!city){toast('도시 이름을 입력해 줘.');return;}
+      await persistTrip({city});toast('📍 목적지 지도 변경 완료');return;
+    }
+    if(b.id==='saveTravelDates'){
+      const start=$('#travelStart').value,end=$('#travelEnd').value||start;
+      if(!start||end<start){toast('여행 시작일과 종료일을 확인해 줘.');return;}
+      await persistTrip({dates:start+' ~ '+end});toast('📅 여행 날짜 저장 완료');return;
+    }
+    if(b.id==='checkSupabase'){
+      if(!repo.configured){toast('연결 설정이 없어. 먼저 웹앱의 공개 Supabase URL과 anon 키를 설정해 줘.');return;}
+      if(!repo.client){await repo.init();await initAccount();}
+      const {error}=await repo.client.from('trips').select('id').limit(1);
+      if(error)throw error;
+      toast(repo.user?'✅ Supabase 연결됨 · 로그인 완료':'✅ Supabase 연결됨 · Google 또는 카카오 로그인이 필요해.');return;
     }
     if(b.dataset.login){await repo.signIn(b.dataset.login);return;}
     if(b.id==='logout'){await repo.signOut();await initAccount();toast('로그아웃했어.');return;}
     if(b.id==='inviteButton'){await createInvite();return;}
     if(b.id==='copyInvite'){await navigator.clipboard.writeText($('#inviteURL').value);toast('초대 링크 복사 완료!');return;}
     if(b.id==='addExpense'){
-      const title=prompt('함께 쓰는 경비 이름 (예: 이자카야)', '카페/간식');if(!title?.trim())return;
-      const amt=prompt('2명 합산 비용 (원)', '30000');if(amt===null)return;
+      const title=uiPrompt('함께 쓰는 경비 이름 (예: 이자카야)', '카페/간식');if(!title?.trim())return;
+      const amt=uiPrompt('2명 합산 비용 (원)', '30000');if(amt===null)return;
       await addExpense({category:'기타',title:title.trim(),amount:safeNum(amt)});toast('공동 경비 추가 완료');return;
     }
-    if(b.dataset.removeExpense){if(confirm('공동 경비를 삭제할까?'))await removeExpense(b.dataset.removeExpense);return;}
+    if(b.dataset.removeExpense){if(uiConfirm('공동 경비를 삭제할까?'))await removeExpense(b.dataset.removeExpense);return;}
     if(b.id==='addEvent'){
-      const day=Number(prompt('몇 일차? (1~3)', '2'));if(!Number.isInteger(day)||day<1||day>3)return;
-      const title=prompt('일정 제목','☕ 카페 방문');if(!title?.trim())return;
-      const time=prompt('시간','15:00');if(time===null)return;
+      const day=Number(uiPrompt('몇 일차? (1~3)', '2'));if(!Number.isInteger(day)||day<1||day>3)return;
+      const title=uiPrompt('일정 제목','☕ 카페 방문');if(!title?.trim())return;
+      const time=uiPrompt('시간','15:00');if(time===null)return;
       await addEvent({plan_key:data.trip.active_plan,day_number:day,time_label:time.trim(),title:title.trim(),note:'직접 추가한 일정'});toast('공동 일정 추가 완료');return;
     }
     if(b.dataset.editEvent){const event=data.items.find(i=>i.id===b.dataset.editEvent);if(!event)return;
-      const title=prompt('일정 제목',event.title);if(title===null)return;
-      const time=prompt('시간',event.time_label);if(time===null)return;
-      const note=prompt('메모',event.note);if(note===null)return;
+      const title=uiPrompt('일정 제목',event.title);if(title===null)return;
+      const time=uiPrompt('시간',event.time_label);if(time===null)return;
+      const note=uiPrompt('메모',event.note);if(note===null)return;
       await editEvent(event.id,{title,time_label:time,note});toast('일정 수정 완료');return;
     }
-    if(b.dataset.removeEvent){if(confirm('이 일정을 삭제할까?'))await removeEvent(b.dataset.removeEvent);return;}
+    if(b.dataset.removeEvent){if(uiConfirm('이 일정을 삭제할까?'))await removeEvent(b.dataset.removeEvent);return;}
     if(b.id==='saveNickname'){
       const nickname=$('#nickname').value.trim().slice(0,24);if(!nickname)return;
       if(mode==='remote'){await repo.setNickname(data.trip.id,nickname);data=await repo.readTrip(data.trip.id);}
@@ -410,6 +503,7 @@ async function inputChanged(e){const id=e.target.id;const value=safeNum(e.target
   }catch(err){fail(err);}
 }
 async function boot(){
+  setUiLanguage(getUiLanguage());
   pendingInvite();document.body.dataset.theme=localStorage.getItem(THEME)||'forest';
   document.body.dataset.appearance=localStorage.getItem(APPEARANCE_KEY)||'light';
   loadDemo(activePreset);applyEarthAppearance();
@@ -420,7 +514,7 @@ async function boot(){
   });
   $('#chatForm').addEventListener('submit',async e=>{
     e.preventDefault();const val=$('#chatInput').value.trim();if(!val)return;$('#chatInput').value='';appendChat('me',val);
-    try{appendChat('ai',await handleChat(val));}catch(err){appendChat('ai','⚠️ AI를 사용할 수 없어: '+(err.message||err)+'\n설정 전에는 “2일차 카페 추가” 같은 무료 명령을 사용하거나 README의 AI 서버 설정을 따라줘.');}
+    try{appendChat('ai',await handleChat(val));}catch(err){appendChat('ai','⚠️ AI 응답을 받을 수 없어: '+(err.message||err)+'\n간단한 일정 명령 편집은 그대로 이용할 수 있어.');}
   });
   if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
   if(isToss){toast('앱인토스 모드는 정식 토스 로그인 서버 연동 전이라 데모만 제공해.');return;}

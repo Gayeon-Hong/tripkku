@@ -6,7 +6,7 @@ const native=path.resolve(folder,'..');
 const root=path.resolve(native,'..');
 const www=path.join(native,'www');
 fs.rmSync(www,{recursive:true,force:true});fs.mkdirSync(www,{recursive:true});
-for(const name of ['index.html','app.js','ai.js','collab.js','config.js','presets.js','style.css','manifest.webmanifest','sw.js']){
+for(const name of ['index.html','app.js','ai.js','collab.js','config.js','presets.js','earth-avatar.js','i18n.js','destination-map.js','world-coasts.js','style.css','manifest.webmanifest','sw.js']){
  fs.copyFileSync(path.join(root,name),path.join(www,name));
 }
 fs.cpSync(path.join(root,'assets'),path.join(www,'assets'),{recursive:true});

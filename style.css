@@ -57,3 +57,57 @@ body[data-appearance="dark"] .status-pill.connected{background:#264b43;color:#ce
 body[data-appearance="dark"] .bubble.me{background:#385ea4}
 @media(max-width:850px){.customizer-body{grid-template-columns:160px 1fr;gap:17px}}
 @media(max-width:600px){.customizer{padding:16px}.customizer-body{grid-template-columns:1fr}.earth-portrait{max-width:160px;margin:4px auto}.choices button{font-size:11px;padding:8px 10px}.globe-hero-image{display:none}}
+
+/* Real face-changing SVG globe -- artwork and expressions share the same coordinate system */
+.earth-canvas{display:block;position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:19px}
+.character-globe{display:block;width:100%;height:100%}
+.globe-hero-image .hero-canvas{width:min(84%,330px);border-radius:35px;box-shadow:0 20px 42px rgba(8,22,32,.23);transform:rotate(7deg)}
+.earth-portrait .earth-canvas{width:100%;border-radius:19px}
+.ui-lang-switch{display:flex;flex:0 0 auto;align-items:center;gap:2px;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--paper)}
+.ui-lang-switch button{border:0;border-radius:999px;background:transparent;color:var(--mute);font-size:11px;font-weight:900;padding:5px 8px;cursor:pointer}
+.ui-lang-switch button.selected{background:var(--brand);color:white}
+body[data-appearance="dark"] .ui-lang-switch button.selected{background:#73a7d7;color:#101a2d}
+@media(max-width:600px){.topline{gap:5px}.header-actions{gap:5px}.status-pill{display:none}.header-actions .btn.tiny{font-size:10px;padding:7px 8px}.ui-lang-switch button{font-size:10px;padding:5px 6px}.brand{font-size:19px}}
+@media(max-width:360px){.header-actions .btn.tiny{font-size:9px;padding:5px}.brand-logo{width:28px;height:28px}.brand{font-size:16px}.topline{padding:9px}}
+
+/* Give the facial features enough screen space to be clearly visible */
+.customizer-body{grid-template-columns:250px minmax(0,1fr)}
+.earth-portrait{max-width:240px}
+@media(max-width:850px){.customizer-body{grid-template-columns:210px minmax(0,1fr)}.earth-portrait{max-width:210px}}
+@media(max-width:600px){.customizer-body{grid-template-columns:1fr}.earth-portrait{max-width:240px}}
+
+/* v3: destination map, real forecast, no gender/accessory styling */
+.destination-globe-svg{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 12px 22px rgba(12,38,62,.17))}
+.earth-portrait{display:flex;flex-direction:column;align-items:center}
+.earth-caption{font-size:15px;font-weight:900;line-height:1.3;margin-top:4px;text-align:center}
+.earth-portrait .map-credit{font-size:10px;color:var(--mute);font-weight:500;line-height:1.5}
+.destination-fields{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.destination-fields input{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;min-width:0;flex:1;padding:9px 10px;max-width:320px}
+.destination-fields .btn{flex:0 0 auto}
+.travel-date-fields input{min-width:124px;max-width:165px;font-size:12px}
+.weather-card{border:1px solid var(--line);background:var(--light);border-radius:14px;padding:13px 14px;margin-top:10px}
+.weather-card>b{display:block;font-size:13px;line-height:1.6}
+.weather-card>small{display:block;font-size:10px;color:var(--mute);margin-top:5px}
+.weather-days{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.weather-days:empty{display:none}
+.weather-day{display:flex;flex-direction:column;flex:1;min-width:92px;max-width:140px;background:var(--paper);border-radius:10px;padding:8px 10px;border:1px solid var(--line);line-height:1.5}
+.weather-day span{font-size:10px;color:var(--mute)}.weather-day b{font-size:11px;color:var(--ink)}
+.hero-weather-chip{display:inline-flex;gap:5px;align-items:center;border-radius:12px;color:#173c43;background:#fff9;padding:7px 10px;line-height:1.5;margin:10px 0 0;font-size:12px;font-weight:850;max-width:100%}
+.hero{transition:background .6s ease}
+body[data-weather="sunny"] .hero{background:linear-gradient(125deg,#366a80,#568eb0)}
+body[data-weather="partly"] .hero{background:linear-gradient(125deg,#3d6672,#7c9da1)}
+body[data-weather="cloudy"] .hero{background:linear-gradient(125deg,#394f64,#748a99)}
+body[data-weather="rain"] .hero{background:linear-gradient(125deg,#263e63,#486c91)}
+body[data-weather="snow"] .hero{background:linear-gradient(125deg,#385872,#82afbf)}
+body[data-weather="storm"] .hero{background:linear-gradient(125deg,#272c51,#4d5075)}
+body[data-appearance="dark"][data-weather="sunny"] .hero{background:linear-gradient(125deg,#18324e,#345d83)}
+body[data-appearance="dark"][data-weather="rain"] .hero,body[data-appearance="dark"][data-weather="cloudy"] .hero,body[data-appearance="dark"][data-weather="storm"] .hero{background:linear-gradient(125deg,#111c35,#263960)}
+@media(max-width:600px){
+ .customizer-body{display:grid;grid-template-columns:1fr;gap:12px}
+ .earth-portrait{max-width:230px;margin:0 auto}
+ .destination-fields{gap:5px}
+ .destination-fields input{width:100%;max-width:none;flex:1 1 100%}
+ .travel-date-fields input{width:auto;flex:1 1 110px;min-width:105px}
+ .weather-day{min-width:78px;padding:6px 8px}
+ .hero-weather-chip{font-size:11px}
+}
