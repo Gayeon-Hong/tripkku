@@ -12,6 +12,12 @@
     <a class="brand" href="#home" aria-label="트립꾸 홈"><img id="brandLogo" class="brand-logo" src="./assets/light-64.png" alt="트립꾸 지구 로고"/><span>트립꾸</span><small>TRIPKKU</small></a>
     <div class="header-actions"><div id="uiLanguageSwitch" class="ui-lang-switch" role="group" aria-label="Interface language"><button type="button" data-ui-lang="ko" aria-pressed="true">한국어</button><button type="button" data-ui-lang="en" aria-pressed="false">EN</button></div><span id="connectionBadge" class="status-pill">로컬 데모</span><button id="headerAccount" class="btn tiny outline" data-go="account">👥 멤버/로그인</button></div>
   </div></header>
+  <aside id="myTripSidebar" class="my-trip-sidebar" aria-label="내 여행 목록">
+    <div class="sidebar-head"><strong>🧳 내 여행</strong><button type="button" id="sideNewTrip" class="btn tiny outline">+ 새 여행</button></div>
+    <p id="sidebarHelper" class="sidebar-hint">로그인하면 저장한 여행이 여기에 보여요.</p>
+    <div id="sidebarTripList" class="sidebar-trip-list"></div>
+    <div class="sidebar-sample">🧪 샘플은 연습용입니다. 새 여행을 만들어 저장하세요.</div>
+  </aside>
   <main class="container" id="home">
     <section class="hero"><div class="hero-main"><div class="hero-kicker">MAKE MEMORIES, TOGETHER <span>✦ 2026</span></div>
       <h1>우리만의 여행을<br/><em>같이 꾸며봐!</em></h1>
@@ -38,7 +44,7 @@
       </div>
 <div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
     </section>
-    <section id="plans" class="section"><div class="sectiontitle"><div><span class="eyebrow">02 / TRAVEL PLANS</span><h2 id="tripTitle">오이타 2박 3일</h2><p id="tripSubtitle">온천보다 맛집·쇼핑·인생샷</p></div><div class="trip-meta"><span class="outlined-pill" id="tripDates">날짜 미정</span><button id="editTripInfo" class="btn tiny outline">✏️ 여행 정보</button></div></div>
+    <section id="plans" class="section"><div class="sectiontitle"><div><span class="eyebrow">02 / TRAVEL PLANS</span><h2 id="tripTitle">오이타 2박 3일</h2><p id="tripSubtitle">온천보다 맛집·쇼핑·인생샷</p></div><div class="trip-meta"><span class="outlined-pill" id="tripDates">날짜 미정</span><button id="editTripInfo" class="btn tiny outline">✏️ 여행 정보</button><button id="deleteTrip" type="button" class="btn tiny outline" hidden>🗑️ 여행방 삭제</button></div></div>
       <div class="plan-grid"><button id="planA" class="plan-card active" data-plan="A"><span class="plan-top">PLAN A <span class="plan-mark">EASY & BUDGET</span></span><span id="planALabel" class="plan-name">🛏️ 벳푸 일반 호텔 2박</span><small id="planADesc">한 호텔에서 연박 · 짐 이동 0회</small><span class="plan-bottom">가볍게 다니고 맛집에 더 쓰기 <b>→</b></span></button>
       <button id="planB" class="plan-card" data-plan="B"><span class="plan-top">PLAN B <span class="plan-mark">SPECIAL STAY</span></span><span id="planBLabel" class="plan-name">✨ 일반 호텔 1박 + 료칸 1박</span><small id="planBDesc">벳푸 안에서 1회 이동 · 료칸 객실 40만원 미만 목표</small><span class="plan-bottom">한 번쯤 특별한 숙소에서 <b>→</b></span></button></div>
       <div class="flight-note" id="flightNote"><div><span class="flightemoji">✈️</span><b>우리 항공편</b></div><div>인천 ICN <b>11:05 → 13:00</b> 오이타 OIT <span class="flight-sep">·</span> 귀국 <b>14:00 → 15:45</b> 인천 <small>※ 항공편 시간은 이전 대화 기준, 확정 예약 내역으로 재확인</small></div></div>
@@ -64,6 +70,13 @@
       </div>
     </section>
     <section class="section" id="places"><div class="sectiontitle"><div><span class="eyebrow">04 / GO EXPLORE</span><h2>길 찾고, 예약하고, 찜!</h2><p>여행에서 화면을 나가지 않아도 빠르게 목적지를 찾을 수 있게 모았어.</p></div></div><div id="placeGrid" class="place-grid"></div><div class="section-subhead"><h3>숙소·티켓 예약 링크</h3></div><div class="booking" id="bookingList"></div><p class="tinycopy" id="linkPolicy">지도·예약 링크는 외부 서비스로 이동해요. 여행 날짜와 요금을 직접 확인하세요.</p></section>
+    <section class="section" id="travelDetails"><div class="sectiontitle"><div><span class="eyebrow">05 / TRAVEL DETAILS</span><h2>✈️ 항공 · 숙소 · 인생샷 · 여행 꿀팁</h2><p>친구용 플래너의 상세 여행 정보를 배포용에서도 확인하세요.</p></div></div><div id="travelDetailsContent" class="travel-details-content"></div>
+      <div class="td-card td-upload"><h3>📷 항공권·숙소 예약 캡처 자동 입력</h3><p>사진에서 날짜·장소·예약 정보를 읽어 정리합니다. 확인 후 저장하세요. <b>예약번호·여권번호·결제정보는 가리고 업로드하는 것을 권장합니다.</b></p>
+      <input id="bookingImage" type="file" accept="image/jpeg,image/png,image/webp" aria-label="예약 내역 이미지"/>
+      <button id="bookingAnalyze" type="button">Gemini로 사진 분석</button><p id="bookingStatus" aria-live="polite"></p>
+      <div id="bookingReview" hidden><label>종류 <select id="bookingType"><option value="flight">항공권</option><option value="hotel">숙소</option></select></label><label>예약명 / 항공사·숙소명 <input id="bookingProvider" maxlength="150"/></label><label>출발·체크인 날짜 <input id="bookingStart" placeholder="YYYY-MM-DD"/></label><label>도착·체크아웃 날짜 <input id="bookingEnd" placeholder="YYYY-MM-DD"/></label><label>출발·도착/체크인·체크아웃 시간 <input id="bookingTime" maxlength="90"/></label><label>출발지·도착지 또는 주소 <input id="bookingRoute" maxlength="180"/></label><label>금액·통화 <input id="bookingPrice" maxlength="90"/></label><label>추가 메모 <textarea id="bookingMemo" rows="2" maxlength="500"></textarea></label><button id="bookingSave" type="button">내용 확인 후 예약 정보 저장</button><button id="bookingCancel" type="button">취소</button></div>
+      <div id="bookingSavedList" class="td-grid"></div><small>이미지는 AI 분석 요청에만 사용하며, 원본 파일을 DB에 저장하지 않습니다. 저장된 예약 정보는 여행 멤버가 열람할 수 있습니다.</small></div>
+    </section>
     <section class="section" id="account"><div class="sectiontitle"><div><span class="eyebrow">05 / FRIENDS CLUB</span><h2>친구랑 같이 편집하기</h2><p>링크로 초대하고, 일정과 공동경비는 함께 고쳐봐.</p></div></div>
       <div class="account-grid"><article class="panel"><h3>🔑 계정 & 로그인</h3><p id="accountInfo">연동 전 데모: 데이터는 이 기기에만 저장됩니다.</p>
         <button id="checkSupabase" class="btn tiny outline" type="button">🔌 계정 연결 상태</button>
@@ -85,4 +98,6 @@
   <nav class="mobile-nav" aria-label="모바일 빠른 이동"><button data-go="plans"><span>🗓️</span><b>일정</b></button><button data-go="budget"><span>💰</span><b>예산</b></button><button data-go="places"><span>🗺️</span><b>지도</b></button><button data-go="account"><span>👭</span><b>친구</b></button><button data-go="assistant"><span>💬</span><b>도우미</b></button></nav>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
+  <script src="./trip-extras.js" defer></script>
+  <script type="module" src="./trip-bookings.js"></script>
 </body></html>
