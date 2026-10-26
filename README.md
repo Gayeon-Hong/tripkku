@@ -1,3 +1,27 @@
+# 🌍 Tripkku · 우리만의 여행을 같이 꾸며봐!
+
+**버전:** 공개 배포용 웹/PWA + Toss SDK 프로젝트 + Android/iOS 시작 프로젝트
+
+### 👉 처음이라면
+
+- [GitHub 업로드 순서](00_처음_읽기_깃허브.md)
+- [구글 플레이 / 애플 앱스토어 출시에 대해](01_앱스토어_출시가이드.md)
+- [AI와 Google/Kakao 로그인 연결](docs/AI_로그인_연결.md)
+
+### 이번 업데이트
+
+- 지구 낮/밤 사용자 제공 이미지 공식 로고 적용
+- **낮/밤** 앱 테마, **지구 기분 4종**, **꾸미기 스타일 4종** 선택 및 로컬 저장
+- 여행 템플릿 (오이타·오사카·런던·뉴욕)
+- A/B 숙소 비교, 공동 예산과 개인 예산 분리, 초과액 빨간색 표시
+- 일정 추가/수정/삭제, 무료 대화형 명령 데모
+
+### 서비스 연결 여부
+
+**중요:** GitHub에 올리는 것만으로 Google/Kakao 로그인, 실시간 공동 편집, Gemini AI가 자동 활성화되지는 않습니다. Supabase DB/인증/Edge Function 설정이 별도로 필요합니다. 비밀키를 GitHub 코드에 절대 넣지 마세요.
+
+`native-app/`은 **앱스토어 제출용 완성 바이너리가 아니라 시작 프로젝트**입니다. `toss-miniapp`의 `.ait`와 별도로 빌드해야 합니다.
+
 # ✳ 트립꾸 (TripKku) — 여행을 같이 꾸미는 웹앱 시제품
 
 ![상태](https://img.shields.io/badge/status-MVP%20prototype-708f7f) ![PWA](https://img.shields.io/badge/PWA-static-efd1b7)

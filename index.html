@@ -2,13 +2,14 @@
 <html lang="ko"><head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta name="theme-color" content="#365a54"/>
+  <link rel="icon" type="image/png" href="./assets/favicon.png"/>
   <meta name="description" content="함께 꾸미는 여행, 트립꾸. 일정·지도·공동경비·개인예산을 한눈에."/>
   <link rel="manifest" href="./manifest.webmanifest"/><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png"/>
   <link rel="stylesheet" href="./style.css"/>
   <title>트립꾸 · 함께 꾸미는 여행</title>
-</head><body data-theme="forest">
+</head><body data-theme="forest" data-appearance="light">
   <header class="topbar"><div class="topline">
-    <a class="brand" href="#home" aria-label="트립꾸 홈"><span class="brand-logo">✳</span><span>트립꾸</span><small>TRIPKKU</small></a>
+    <a class="brand" href="#home" aria-label="트립꾸 홈"><img id="brandLogo" class="brand-logo" src="./assets/light-64.png" alt="트립꾸 지구 로고"/><span>트립꾸</span><small>TRIPKKU</small></a>
     <div class="header-actions"><span id="connectionBadge" class="status-pill">로컬 데모</span><button id="headerAccount" class="btn tiny outline" data-go="account">👥 멤버/로그인</button></div>
   </div></header>
   <main class="container" id="home">
@@ -16,10 +17,23 @@
       <h1>우리만의 여행을<br/><em>같이 꾸며봐!</em></h1>
       <p>이자카야부터 몽벨 쇼핑까지, 일정과 예산을 우리 취향대로.<br/>친구와 링크로 만나고, 계획은 함께 완성하자.</p>
       <div class="hero-buttons"><button class="btn white" data-go="plans">여행 일정 보기 ↗</button><button class="btn frosted" data-go="budget">예산 먼저 정하기</button></div>
-    </div><div class="hero-art" aria-hidden="true"><div class="sun"></div><div class="hill h1"></div><div class="hill h2"></div><div class="ticket"><span>GOOD VIBES</span><strong>TRIP<br/>WITH<br/>FRIENDS</strong><small>LET'S GO ✳</small></div><div class="spark">✴</div></div></section>
+    </div><div class="hero-art" aria-hidden="true"><div class="globe-hero-image"><img id="heroGlobe" src="./assets/light-512.png" alt="웃는 지구와 비행기, 트립꾸 낮 로고"/><span id="heroMoodBadge" class="earth-bubble" aria-hidden="true">😄</span></div><div class="sun"></div><div class="hill h1"></div><div class="hill h2"></div><div class="ticket"><span>GOOD VIBES</span><strong>TRIP<br/>WITH<br/>FRIENDS</strong><small>LET'S GO ✳</small></div><div class="spark">✴</div></div></section>
     <div class="notice" id="demoNotice"><span>🧩</span><div><b>현재는 웹앱 시제품이에요.</b> Supabase 연결 전에는 데이터가 내 브라우저에만 저장되고, 초대/공동 편집은 작동하지 않아요.</div></div>
     <section class="section" id="trips"><div class="sectiontitle"><div><span class="eyebrow">01 / YOUR TRIP</span><h2>어디로 떠날까?</h2></div><button id="makeTrip" class="btn dark">＋ 새 여행 만들기</button></div>
-      <div class="theme-control" id="themePicker"><span>🎨 테마 바꾸기</span><button data-theme="forest" class="theme-dot t-forest" aria-label="그린 테마" title="그린">🌿</button><button data-theme="pink" class="theme-dot t-pink" aria-label="핑크 테마" title="핑크">🌸</button><button data-theme="sea" class="theme-dot t-sea" aria-label="바다 테마" title="바다">🌊</button><button data-theme="citrus" class="theme-dot t-citrus" aria-label="노랑 테마" title="노랑">🍋</button></div><div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
+      <div class="theme-control" id="themePicker"><span>🎨 테마 바꾸기</span><button data-theme="forest" class="theme-dot t-forest" aria-label="그린 테마" title="그린">🌿</button><button data-theme="pink" class="theme-dot t-pink" aria-label="핑크 테마" title="핑크">🌸</button><button data-theme="sea" class="theme-dot t-sea" aria-label="바다 테마" title="바다">🌊</button><button data-theme="citrus" class="theme-dot t-citrus" aria-label="노랑 테마" title="노랑">🍋</button></div>
+      <div class="customizer" id="characterCustomizer">
+        <div class="customizer-head"><span class="eyebrow">MY LITTLE EARTH</span><h3>🌏 내 지구 꾸미기</h3><p>마음에 드는 낮·밤 로고를 고르고, 기분과 꾸미기 스타일을 선택해봐. 설정은 이 기기에 저장돼.</p></div>
+        <div class="customizer-body">
+          <div class="earth-portrait"><img id="customEarth" src="./assets/light-512.png" alt="트립꾸 지구 캐릭터"/><span id="customMood" class="portrait-mood" aria-hidden="true">😄</span><span id="customAccessory" class="portrait-accessory" aria-hidden="true">✨</span><small id="earthTagline">설레는 지구 · 기본 스타일</small></div>
+          <div class="customizer-choices">
+            <div class="choice-row"><span class="choice-label">☀️ 낮 / 🌙 밤</span><div class="choices" role="group" aria-label="로고 밝기"><button data-appearance="light" aria-pressed="true">☀️ 낮</button><button data-appearance="dark" aria-pressed="false">🌙 밤</button></div></div>
+            <div class="choice-row"><span class="choice-label">💬 오늘 지구 기분</span><div class="choices" role="group" aria-label="지구 기분"><button data-mood="happy">😄 신남</button><button data-mood="angry">😠 화남</button><button data-mood="sleepy">😴 졸림</button><button data-mood="love">🥰 설렘</button></div></div>
+            <div class="choice-row"><span class="choice-label">🎀 지구 꾸미기 스타일</span><div class="choices" role="group" aria-label="지구 꾸미기 스타일"><button data-character-style="basic">✨ 기본</button><button data-character-style="feminine">🎀 여성풍</button><button data-character-style="masculine">🧢 남성풍</button><button data-character-style="free">🌈 자유</button></div><p class="choice-hint">스타일은 꾸미기 옵션일 뿐, 사용자 성별을 수집하거나 추정하지 않아.</p></div>
+          </div>
+        </div>
+        <p class="customizer-note">지금은 제공된 원본 지구 그림은 그대로 사용하고, 선택한 기분·꾸미기 요소를 스티커로 표시하는 버전이야. 실제 얼굴 그림을 각각 바꾸는 새 일러스트는 별도 제작이 필요해.</p>
+      </div>
+<div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
     </section>
     <section id="plans" class="section"><div class="sectiontitle"><div><span class="eyebrow">02 / TRAVEL PLANS</span><h2 id="tripTitle">오이타 2박 3일</h2><p id="tripSubtitle">온천보다 맛집·쇼핑·인생샷</p></div><div class="trip-meta"><span class="outlined-pill" id="tripDates">날짜 미정</span><button id="editTripInfo" class="btn tiny outline">✏️ 이름·날짜</button></div></div>
       <div class="plan-grid"><button id="planA" class="plan-card active" data-plan="A"><span class="plan-top">PLAN A <span class="plan-mark">EASY & BUDGET</span></span><span id="planALabel" class="plan-name">🛏️ 벳푸 일반 호텔 2박</span><small id="planADesc">한 호텔에서 연박 · 짐 이동 0회</small><span class="plan-bottom">가볍게 다니고 맛집에 더 쓰기 <b>→</b></span></button>
@@ -62,7 +76,7 @@
       <p id="aiStatus" class="ai-help">🧩 로컬 데모에서는 무료 명령 편집 기능만 작동해. Supabase + Gemini API 설정 후 AI가 활성화돼.</p><div class="chat-shell"><div class="chat-messages" id="chatMessages"><div class="bubble ai">안녕! "B안으로 바꿔줘", "공동 목표 60만원", "항공권 25만원", "2일차 카페 추가"라고 말해봐 😊</div></div><form id="chatForm" class="chat-input"><input id="chatInput" placeholder="예: B안으로 바꾸고 료칸 35만원으로 해줘" autocomplete="off"/><button type="submit" class="btn dark">보내기 →</button></form></div>
       <div class="section-subhead"><h3>🌏 여행 필수 회화</h3><span class="tinycopy" id="languageText">한국어 → 일본어</span></div><div id="phraseList" class="phrase-grid"></div>
     </section>
-    <footer><strong>✳ TRIPKKU</strong><span>좋은 여행은 같이 만드는 거니까.</span><p>정적 데모 및 개발용 소스. 실제 공동편집은 로그인·DB 설정 후 가능. 앱인토스 제출 전 토스 로그인과 출시 정책 검토가 필요합니다.</p></footer>
+    <footer><strong>🌍 Tripkku</strong><span>좋은 여행은 같이 만드는 거니까.</span><p>정적 데모 및 개발용 소스. 실제 공동편집은 로그인·DB 설정 후 가능. 앱인토스 제출 전 토스 로그인과 출시 정책 검토가 필요합니다.</p></footer>
   </main>
   <nav class="mobile-nav" aria-label="모바일 빠른 이동"><button data-go="plans"><span>🗓️</span><b>일정</b></button><button data-go="budget"><span>💰</span><b>예산</b></button><button data-go="places"><span>🗺️</span><b>지도</b></button><button data-go="account"><span>👭</span><b>친구</b></button><button data-go="assistant"><span>💬</span><b>도우미</b></button></nav>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -9,6 +9,46 @@ const STORE='tripkku-demo-v1:';
 const PREF='tripkku-preset';
 const THEME='tripkku-theme';
 const isToss=CONFIG.platform==='toss';
+
+// User-owned local appearance preferences. These are never uploaded to shared travel rooms.
+const APPEARANCE_KEY='tripkku-appearance-v1';
+const EARTH_PREF_KEY='tripkku-earth-style-v1';
+const MOOD_OPTIONS={happy:['😄','신나는 지구'],angry:['😠','화난 지구'],sleepy:['😴','졸린 지구'],love:['🥰','설레는 지구']};
+const STYLE_OPTIONS={basic:['✨','기본 스타일'],feminine:['🎀','여성풍 스타일'],masculine:['🧢','남성풍 스타일'],free:['🌈','자유 스타일']};
+let earthPrefs={mood:'happy',style:'basic'};
+try{const value=JSON.parse(localStorage.getItem(EARTH_PREF_KEY)||'null');
+  if(value&&MOOD_OPTIONS[value.mood]&&STYLE_OPTIONS[value.style])earthPrefs=value;
+}catch{}
+function applyEarthAppearance(){
+  const appearance=document.body.dataset.appearance==='dark'?'dark':'light';
+  const logo=appearance==='dark'?'dark':'light';
+  const hero=$('#heroGlobe'),custom=$('#customEarth'),brand=$('#brandLogo');
+  if(hero)hero.src='./assets/'+logo+'-512.png';
+  if(custom)custom.src='./assets/'+logo+'-512.png';
+  if(brand)brand.src='./assets/'+logo+'-64.png';
+  const mood=MOOD_OPTIONS[earthPrefs.mood]||MOOD_OPTIONS.happy;
+  const style=STYLE_OPTIONS[earthPrefs.style]||STYLE_OPTIONS.basic;
+  if($('#customMood'))$('#customMood').textContent=mood[0];
+  if($('#heroMoodBadge'))$('#heroMoodBadge').textContent=mood[0];
+  if($('#customAccessory'))$('#customAccessory').textContent=style[0];
+  if($('#earthTagline'))$('#earthTagline').textContent=mood[1]+' · '+style[1];
+  if(custom)custom.alt=(appearance==='dark'?'밤':'낮')+' 지구 로고, '+mood[1]+', '+style[1];
+  document.querySelectorAll('button[data-appearance]').forEach(button=>{
+    const isActive=button.dataset.appearance===appearance;
+    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
+  });
+  document.querySelectorAll('button[data-mood]').forEach(button=>{
+    const isActive=button.dataset.mood===earthPrefs.mood;
+    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
+  });
+  document.querySelectorAll('button[data-character-style]').forEach(button=>{
+    const isActive=button.dataset.characterStyle===earthPrefs.style;
+    button.classList.toggle('selected',isActive);button.setAttribute('aria-pressed',String(isActive));
+  });
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=appearance==='dark'?'#111c38':'#365a54';
+}
+
 let activePreset=localStorage.getItem(PREF)||'oita';
 let mode='demo';let data;let tripList=[];let updateTimer;
 const repo=new Collaboration(CONFIG,async(reason)=>{
@@ -306,6 +346,13 @@ async function clickHandler(ev){
   const b=ev.target.closest('button');if(!b)return;
   try{
     if(b.dataset.go){document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
+    if(b.dataset.appearance){document.body.dataset.appearance=b.dataset.appearance;
+      localStorage.setItem(APPEARANCE_KEY,b.dataset.appearance);applyEarthAppearance();toast('낮·밤 로고를 바꿨어 🌍');return;}
+    if(b.dataset.mood&&MOOD_OPTIONS[b.dataset.mood]){earthPrefs.mood=b.dataset.mood;
+      localStorage.setItem(EARTH_PREF_KEY,JSON.stringify(earthPrefs));applyEarthAppearance();toast('지구 기분을 바꿨어 💬');return;}
+    if(b.dataset.characterStyle&&STYLE_OPTIONS[b.dataset.characterStyle]){earthPrefs.style=b.dataset.characterStyle;
+      localStorage.setItem(EARTH_PREF_KEY,JSON.stringify(earthPrefs));applyEarthAppearance();toast('지구 스타일을 바꿨어 🎀');return;}
+
     if(b.dataset.theme){document.body.dataset.theme=b.dataset.theme;localStorage.setItem(THEME,b.dataset.theme);renderPresetPicker();toast('테마를 바꿨어 🎨');return;}
     if(b.dataset.preset){
       if(mode==='remote'&&repo.user){const ok=confirm('이 샘플로 별도 공동 여행을 새로 만들까요? (기존 여행 유지)');if(!ok)return;
@@ -363,7 +410,9 @@ async function inputChanged(e){const id=e.target.id;const value=safeNum(e.target
   }catch(err){fail(err);}
 }
 async function boot(){
-  pendingInvite();document.body.dataset.theme=localStorage.getItem(THEME)||'forest';loadDemo(activePreset);
+  pendingInvite();document.body.dataset.theme=localStorage.getItem(THEME)||'forest';
+  document.body.dataset.appearance=localStorage.getItem(APPEARANCE_KEY)||'light';
+  loadDemo(activePreset);applyEarthAppearance();
   document.addEventListener('click',clickHandler);
   document.addEventListener('change',inputChanged);
   document.addEventListener('input',e=>{
