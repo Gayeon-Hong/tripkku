@@ -12,8 +12,13 @@ const faces={
 export function earthAvatarHtml(appearance='light',mood='happy'){
  const safeAp=appearance==='dark'?'dark':'light';
  const face=faces[mood]||faces.happy;
- return `<svg class="character-globe" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Earth character">
-  <image href="./assets/earth-base-${safeAp}.png" width="600" height="600"/>
-  <g class="earth-face">${face()}</g>
- </svg>`;
+ // Keep the official artwork and draw facial features directly on top of the globe.
+ // A native HTML image loads more reliably than <image href> inside injected SVG,
+ // especially on GitHub Pages and mobile browsers.
+ return `<div class="earth-avatar-stack" role="img" aria-label="Earth character ${mood}">
+  <img class="earth-avatar-base" src="./assets/earth-base-${safeAp}.png" alt="" draggable="false" />
+  <svg class="earth-avatar-face" viewBox="0 0 600 600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+   <g>${face()}</g>
+  </svg>
+ </div>`;
 }
