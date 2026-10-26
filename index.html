@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko"><head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#365a54"/>
+  <meta name="description" content="함께 꾸미는 여행, 트립꾸. 일정·지도·공동경비·개인예산을 한눈에."/>
+  <link rel="manifest" href="./manifest.webmanifest"/><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png"/>
+  <link rel="stylesheet" href="./style.css"/>
+  <title>트립꾸 · 함께 꾸미는 여행</title>
+</head><body data-theme="forest">
+  <header class="topbar"><div class="topline">
+    <a class="brand" href="#home" aria-label="트립꾸 홈"><span class="brand-logo">✳</span><span>트립꾸</span><small>TRIPKKU</small></a>
+    <div class="header-actions"><span id="connectionBadge" class="status-pill">로컬 데모</span><button id="headerAccount" class="btn tiny outline" data-go="account">👥 멤버/로그인</button></div>
+  </div></header>
+  <main class="container" id="home">
+    <section class="hero"><div class="hero-main"><div class="hero-kicker">MAKE MEMORIES, TOGETHER <span>✦ 2026</span></div>
+      <h1>우리만의 여행을<br/><em>같이 꾸며봐!</em></h1>
+      <p>이자카야부터 몽벨 쇼핑까지, 일정과 예산을 우리 취향대로.<br/>친구와 링크로 만나고, 계획은 함께 완성하자.</p>
+      <div class="hero-buttons"><button class="btn white" data-go="plans">여행 일정 보기 ↗</button><button class="btn frosted" data-go="budget">예산 먼저 정하기</button></div>
+    </div><div class="hero-art" aria-hidden="true"><div class="sun"></div><div class="hill h1"></div><div class="hill h2"></div><div class="ticket"><span>GOOD VIBES</span><strong>TRIP<br/>WITH<br/>FRIENDS</strong><small>LET'S GO ✳</small></div><div class="spark">✴</div></div></section>
+    <div class="notice" id="demoNotice"><span>🧩</span><div><b>현재는 웹앱 시제품이에요.</b> Supabase 연결 전에는 데이터가 내 브라우저에만 저장되고, 초대/공동 편집은 작동하지 않아요.</div></div>
+    <section class="section" id="trips"><div class="sectiontitle"><div><span class="eyebrow">01 / YOUR TRIP</span><h2>어디로 떠날까?</h2></div><button id="makeTrip" class="btn dark">＋ 새 여행 만들기</button></div>
+      <div class="theme-control" id="themePicker"><span>🎨 테마 바꾸기</span><button data-theme="forest" class="theme-dot t-forest" aria-label="그린 테마" title="그린">🌿</button><button data-theme="pink" class="theme-dot t-pink" aria-label="핑크 테마" title="핑크">🌸</button><button data-theme="sea" class="theme-dot t-sea" aria-label="바다 테마" title="바다">🌊</button><button data-theme="citrus" class="theme-dot t-citrus" aria-label="노랑 테마" title="노랑">🍋</button></div><div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
+    </section>
+    <section id="plans" class="section"><div class="sectiontitle"><div><span class="eyebrow">02 / TRAVEL PLANS</span><h2 id="tripTitle">오이타 2박 3일</h2><p id="tripSubtitle">온천보다 맛집·쇼핑·인생샷</p></div><div class="trip-meta"><span class="outlined-pill" id="tripDates">날짜 미정</span><button id="editTripInfo" class="btn tiny outline">✏️ 이름·날짜</button></div></div>
+      <div class="plan-grid"><button id="planA" class="plan-card active" data-plan="A"><span class="plan-top">PLAN A <span class="plan-mark">EASY & BUDGET</span></span><span id="planALabel" class="plan-name">🛏️ 벳푸 일반 호텔 2박</span><small id="planADesc">한 호텔에서 연박 · 짐 이동 0회</small><span class="plan-bottom">가볍게 다니고 맛집에 더 쓰기 <b>→</b></span></button>
+      <button id="planB" class="plan-card" data-plan="B"><span class="plan-top">PLAN B <span class="plan-mark">SPECIAL STAY</span></span><span id="planBLabel" class="plan-name">✨ 일반 호텔 1박 + 료칸 1박</span><small id="planBDesc">벳푸 안에서 1회 이동 · 료칸 객실 40만원 미만 목표</small><span class="plan-bottom">한 번쯤 특별한 숙소에서 <b>→</b></span></button></div>
+      <div class="flight-note" id="flightNote"><div><span class="flightemoji">✈️</span><b>우리 항공편</b></div><div>인천 ICN <b>11:05 → 13:00</b> 오이타 OIT <span class="flight-sep">·</span> 귀국 <b>14:00 → 15:45</b> 인천 <small>※ 항공편 시간은 이전 대화 기준, 확정 예약 내역으로 재확인</small></div></div>
+      <div class="section-subhead"><h3>Day by day</h3><button id="addEvent" class="btn tiny outline">＋ 일정 추가</button></div><div id="eventList" class="timeline"></div>
+    </section>
+    <section class="section" id="budget"><div class="sectiontitle"><div><span class="eyebrow">03 / MONEY TALK</span><h2>예산은 우리 마음대로</h2><p>공동 예산과 내 예산을 분리해 보여줘. 초과하면 자동으로 빨간색!</p></div><span class="outlined-pill">단위 KRW · 원</span></div>
+      <div class="budget-grid">
+        <article class="money-card"><div class="money-head"><div><span class="overline">SHARED WALLET</span><h3>👭 우리 공동 경비</h3></div><span class="privacy-tag">멤버 전체 공개</span></div>
+          <label class="inputlabel" for="sharedTarget">공동 목표 예산 · 모두 합계</label><div class="field-unit"><input type="number" id="sharedTarget" min="0" step="10000" inputmode="numeric"/><span>원</span></div>
+          <div class="money-meter"><div class="meter-track"><i id="sharedProgress"></i></div><div class="meter-numbers"><span>현재 예상 사용액</span><strong id="sharedSpent">0원</strong></div></div>
+          <div class="budget-result" id="sharedBudgetResult">목표 예산 이내</div>
+          <div class="night-costs"><h4>🏨 2인 1실 객실 전체 요금</h4><label>첫날 숙소 <div class="field-unit"><input id="night1" type="number" min="0" step="10000" inputmode="numeric"/><span>원</span></div></label><label>둘째 날 숙소 <div class="field-unit"><input id="night2" type="number" min="0" step="10000" inputmode="numeric"/><span>원</span></div></label><p id="ryokanLimit" class="tinycopy"></p></div>
+          <div class="divider"></div><div class="section-subhead compact"><h4>🍚 공동 지출 항목</h4><button id="addExpense" class="text-btn">＋ 추가</button></div><div id="expenseList" class="expense-list"></div>
+        </article>
+        <article class="money-card personal"><div class="money-head"><div><span class="overline">MY PRIVATE WALLET</span><h3>💌 나만의 예산</h3></div><span class="privacy-tag private">🔒 본인만</span></div>
+          <label class="inputlabel" for="personalTarget">내 목표 총예산</label><div class="field-unit"><input type="number" id="personalTarget" min="0" step="10000" inputmode="numeric"/><span>원</span></div>
+          <div class="personal-fields"><label>✈️ 내가 결제한 왕복 항공권 <div class="field-unit"><input type="number" id="airfare" min="0" step="10000" inputmode="numeric" placeholder="예약 금액 입력"/><span>원</span></div></label><label>🛍️ 나만의 쇼핑·개인 경비 <div class="field-unit"><input type="number" id="personalExtra" min="0" step="10000" inputmode="numeric" placeholder="예상 금액 입력"/><span>원</span></div></label></div>
+          <div class="money-meter"><div class="meter-track"><i id="personalProgress"></i></div><div class="meter-numbers"><span>내 예상 합계</span><strong id="personalSpent">0원</strong></div></div>
+          <div class="budget-result" id="personalBudgetResult">목표 예산 이내</div>
+          <div class="calculation-note" id="personalFormula"></div>
+          <div class="privacy-note">※ 공동경비는 멤버수로 균등 분할해 내 예상액에 더해. 개인 목표·항공권·쇼핑비는 다른 멤버에게 공개되지 않아. 실제 정산 기능은 아직 없어.</div>
+        </article>
+      </div>
+    </section>
+    <section class="section" id="places"><div class="sectiontitle"><div><span class="eyebrow">04 / GO EXPLORE</span><h2>길 찾고, 예약하고, 찜!</h2><p>여행에서 화면을 나가지 않아도 빠르게 목적지를 찾을 수 있게 모았어.</p></div></div><div id="placeGrid" class="place-grid"></div><div class="section-subhead"><h3>숙소·티켓 예약 링크</h3></div><div class="booking" id="bookingList"></div><p class="tinycopy" id="linkPolicy">지도·예약 링크는 외부 서비스로 이동해요. 여행 날짜와 요금을 직접 확인하세요.</p></section>
+    <section class="section" id="account"><div class="sectiontitle"><div><span class="eyebrow">05 / FRIENDS CLUB</span><h2>친구랑 같이 편집하기</h2><p>링크로 초대하고, 일정과 공동경비는 함께 고쳐봐.</p></div></div>
+      <div class="account-grid"><article class="panel"><h3>🔑 계정 & 로그인</h3><p id="accountInfo">연동 전 데모: 데이터는 이 기기에만 저장됩니다.</p>
+        <div id="authButtons" class="authbuttons"><button data-login="google" class="btn dark">Google 로그인</button><button data-login="kakao" class="btn kakao">카카오 로그인</button><button id="logout" class="btn outline" hidden>로그아웃</button></div>
+        <p class="tinycopy" id="authHelp">GitHub Pages에서 SNS 로그인을 사용하려면 Supabase와 OAuth 공급자 설정이 필요해요.</p>
+        <div class="divider"></div><h4>우리 여행 멤버</h4><div id="memberList" class="member-list"></div><label class="inputlabel" for="nickname">내 표시 이름</label><div class="inline-form"><input id="nickname" type="text" maxlength="24" placeholder="별명"/><button id="saveNickname" class="btn outline">저장</button></div>
+      </article><article class="panel invite-panel"><h3>💌 초대장 보내기</h3><p>초대받은 친구는 로그인한 뒤 같은 여행에 합류해. 여행 일정과 공동 경비는 실시간으로 동기화돼.</p>
+        <div class="invite-graphic" aria-hidden="true">✳ <span>Let's travel<br/>together!</span> ✳</div>
+        <button id="inviteButton" class="btn dark block">🔗 친구 초대 링크 만들기</button><div id="inviteLinkBox" class="copybox" hidden><input id="inviteURL" readonly aria-label="친구 초대 URL"/><button id="copyInvite" class="btn outline">복사</button></div>
+        <p class="tinycopy">초대 링크는 기본 7일 동안 유효하고, 최대 15명의 신규 멤버가 사용할 수 있어. 링크를 공유한 사람만 초대하도록 주의해줘.</p>
+      </article></div>
+    </section>
+    <section class="section" id="assistant"><div class="sectiontitle"><div><span class="eyebrow">06 / LITTLE HELPER</span><h2>말로도 일정 편집! 💬</h2><p>로그인한 공동 여행에서는 Gemini AI로 수정 제안을 받을 수 있어. 승인하면 친구들과 함께 반영돼.</p></div></div>
+      <p id="aiStatus" class="ai-help">🧩 로컬 데모에서는 무료 명령 편집 기능만 작동해. Supabase + Gemini API 설정 후 AI가 활성화돼.</p><div class="chat-shell"><div class="chat-messages" id="chatMessages"><div class="bubble ai">안녕! "B안으로 바꿔줘", "공동 목표 60만원", "항공권 25만원", "2일차 카페 추가"라고 말해봐 😊</div></div><form id="chatForm" class="chat-input"><input id="chatInput" placeholder="예: B안으로 바꾸고 료칸 35만원으로 해줘" autocomplete="off"/><button type="submit" class="btn dark">보내기 →</button></form></div>
+      <div class="section-subhead"><h3>🌏 여행 필수 회화</h3><span class="tinycopy" id="languageText">한국어 → 일본어</span></div><div id="phraseList" class="phrase-grid"></div>
+    </section>
+    <footer><strong>✳ TRIPKKU</strong><span>좋은 여행은 같이 만드는 거니까.</span><p>정적 데모 및 개발용 소스. 실제 공동편집은 로그인·DB 설정 후 가능. 앱인토스 제출 전 토스 로그인과 출시 정책 검토가 필요합니다.</p></footer>
+  </main>
+  <nav class="mobile-nav" aria-label="모바일 빠른 이동"><button data-go="plans"><span>🗓️</span><b>일정</b></button><button data-go="budget"><span>💰</span><b>예산</b></button><button data-go="places"><span>🗺️</span><b>지도</b></button><button data-go="account"><span>👭</span><b>친구</b></button><button data-go="assistant"><span>💬</span><b>도우미</b></button></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body></html>
