@@ -407,7 +407,8 @@ async function commitAiProposal(actions){
 async function handleChat(text){
   // AI requires an actual shared trip and authenticated membership; demo stays free/offline.
   if(mode!=='remote'||!repo.user)return processCommand(text);
-  const proposal=await suggestWithAi(repo,data.trip.id,text);
+  const history=[...document.querySelectorAll('#chatMessages .bubble')].slice(-12,-1).map(el=>({role:el.classList.contains('me')?'user':'assistant',text:el.textContent.slice(0,450)}));
+  const proposal=await suggestWithAi(repo,data.trip.id,text,history);
   if(!proposal.actions.length)return '🤖 '+proposal.reply;
   const preview=proposal.actions.map((a,i)=>(i+1)+'. '+describeAction(a)).join('\n');
   const approved=uiConfirm('🤖 AI 수정 제안\n\n'+proposal.reply+'\n\n'+preview+'\n\n이 변경사항을 공동 여행에 적용할까?');
