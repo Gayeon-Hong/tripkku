@@ -168,9 +168,55 @@ async function editEvent(id,x){
 async function removeEvent(id){
   if(mode==='remote'){await repo.deleteItem(id);data=await repo.readTrip(data.trip.id);}else{data.items=data.items.filter(x=>x.id!==id);saveDemo();}render();
 }
+// Stored chat history: per authenticated user and trip, never shared across trips.
+// Browser cache provides continuity on this device; DB table sync works across devices.
+let chatHistory=[];
+const CHAT_LIMIT=40;
+function chatKey(){return mode==='remote'&&repo.user?`tripkku-chat:${repo.user.id}:${data.trip.id}`:null;}
+function drawChat(){
+  const area=$('#chatMessages');area.replaceChildren();
+  if(!chatHistory.length){const intro=document.createElement('div');intro.className='bubble ai';intro.textContent='여행 일정 조회·추가·수정·삭제를 도와줄게! 변경은 승인 후 저장해 😊';area.append(intro);}
+  for(const msg of chatHistory){const el=document.createElement('div');el.className='bubble '+(msg.role==='user'?'me':'ai');el.textContent=msg.text;area.append(el);}
+  area.scrollTop=area.scrollHeight;
+}
+async function loadChat(){
+  const key=chatKey();chatHistory=[];
+  if(key){try{chatHistory=JSON.parse(localStorage.getItem(key)||'[]').slice(-CHAT_LIMIT);}catch{}
+    try{const rows=await repo.readAiChat(data.trip.id);if(rows.length)chatHistory=rows.map(x=>({role:x.role,text:x.message})).slice(-CHAT_LIMIT);}catch(e){console.warn('Chat history DB not configured',e.message);}}
+  drawChat();
+}
+function recordChat(role,text){
+  chatHistory.push({role,text:String(text).slice(0,1600)});chatHistory=chatHistory.slice(-CHAT_LIMIT);
+  const key=chatKey();if(key){try{localStorage.setItem(key,JSON.stringify(chatHistory));}catch{}
+    repo.addAiChat(data.trip.id,role,String(text).slice(0,1600)).catch(e=>console.warn('Chat history cloud save failed',e.message));}
+}
+function setSidebarCollapsed(collapsed){
+  document.body.classList.toggle('sidebar-collapsed',collapsed);
+  const toggle=$('#sidebarToggle');if(toggle){toggle.textContent=collapsed?'▶ 펼치기':'◀ 접기';toggle.setAttribute('aria-expanded',String(!collapsed));toggle.title=collapsed?'사이드바 펼치기':'사이드바 접기';}
+  try{localStorage.setItem('tripkku-sidebar-collapsed',collapsed?'1':'0');}catch{}
+}
+function renderSidebar(){
+  const list=$('#sidebarTripList'),helper=$('#sidebarHelper');if(!list)return;
+  helper.textContent=repo.user?(tripList.length?'여행을 선택하면 오른쪽에 크게 표시됩니다.':'아직 저장된 여행이 없습니다.'):'로그인 후 저장한 여행을 볼 수 있어요.';
+  list.replaceChildren();
+  for(const trip of tripList){
+    const row=document.createElement('div');row.className='sidebar-trip-row'+(mode==='remote'&&data?.trip?.id===trip.id?' active':'');
+    const btn=document.createElement('button');btn.type='button';btn.className='sidebar-trip';btn.dataset.sidebarTrip=trip.id;
+    const title=document.createElement('b');title.textContent=trip.title||'이름 없는 여행';
+    const sub=document.createElement('small');sub.textContent=[trip.city||'목적지 미정',trip.owner_id===repo.user?.id?'내가 만든 여행':'공유 여행'].join(' · ');
+    btn.append(title,sub);row.append(btn);
+    if(repo.user&&trip.owner_id===repo.user.id){
+      const del=document.createElement('button');del.type='button';del.className='sidebar-delete-trip';del.dataset.deleteSidebarTrip=trip.id;
+      del.title='여행 영구 삭제';del.setAttribute('aria-label',(trip.title||'여행')+' 삭제');del.textContent='🗑';row.append(del);
+    }
+    list.append(row);
+  }
+}
+try{setSidebarCollapsed(localStorage.getItem('tripkku-sidebar-collapsed')==='1');}catch{}
 function renderPresetPicker(){
+  renderSidebar();
   $('#presetGrid').innerHTML=Object.values(PRESETS).map(p=>`<button class="preset ${data.trip.preset===p.key?'selected':''}" data-preset="${esc(p.key)}">
-    <span class="emoji">${p.flag}</span><strong>${esc(p.title)}</strong><small>${esc(p.description)}</small></button>`).join('');
+    <span class="emoji">${p.flag}</span><strong>🧪 샘플 · ${esc(p.title)}</strong><small>${esc(p.description)}</small></button>`).join('');
   const sel=$('#tripSelectArea');sel.hidden=!repo.user||!tripList.length;
   if(!sel.hidden){$('#tripSelect').innerHTML=tripList.map(t=>`<option value="${esc(t.id)}" ${mode==='remote'&&data.trip.id===t.id?'selected':''}>${esc(t.title)}</option>`).join('');}
   [...document.querySelectorAll('button[data-theme]')].forEach(b=>b.classList.toggle('selected',b.dataset.theme===document.body.dataset.theme));
@@ -179,6 +225,8 @@ function renderPlans(){
   $('#tripTitle').textContent=data.trip.title;
   $('#tripSubtitle').textContent=data.trip.description||data.trip.city;
   $('#tripDates').textContent=data.trip.dates;
+  $('#tripTitle').textContent=(mode==='demo'?'🧪 샘플 · ':'')+data.trip.title;
+  const deleteButton=$('#deleteTrip');if(deleteButton)deleteButton.hidden=mode!=='remote'||data.trip.owner_id!==repo.user?.id;
   const isOita=data.trip.preset==='oita';
   $('#flightNote').hidden=!isOita;
   $('#planALabel').textContent=isOita?'🛏️ 벳푸 일반 호텔 2박':'🛏️ 가성비 일반 호텔 연박';
@@ -186,7 +234,7 @@ function renderPlans(){
   $('#planBLabel').textContent=isOita?'✨ 일반 호텔 1박 + 료칸 1박':'✨ 일반 호텔 + 특별 숙박';
   $('#planBDesc').textContent=isOita?'벳푸 안에서 1회 이동 · 료칸 객실 40만원 미만 목표':'둘째 날 다른 숙소에서 특별한 하루';
   for(const p of ['A','B'])$('#plan'+p).classList.toggle('active',data.trip.active_plan===p);
-  const days=[1,2,3];const entries=data.items.filter(x=>x.plan_key===data.trip.active_plan);
+  const entries=data.items.filter(x=>x.plan_key===data.trip.active_plan);const days=Array.from({length:Math.min(30,Math.max(3,...entries.map(x=>Number(x.day_number)||1)))},(_,i)=>i+1);
   $('#eventList').innerHTML=days.map(d=>{
     const dayEvents=entries.filter(x=>x.day_number===d);
     return `<article class="day-col"><div class="day-top"><strong>DAY ${String(d).padStart(2,'0')}</strong><span>${d===1?'도착 & 밤':d===2?'본격 여행':'귀국'}</span></div>
@@ -292,23 +340,47 @@ function pendingInvite(){const url=new URL(location.href),token=url.searchParams
 async function initAccount(){
   if(!repo.client)return;
   tripList=repo.user?await repo.trips():[];
-  if(!repo.user){loadDemo(activePreset);return;}
+  if(!repo.user){loadDemo(activePreset);chatHistory=[];drawChat();return;}
   const token=sessionStorage.getItem('tripkku-invite');
   if(token){try{const id=await repo.join(token);sessionStorage.removeItem('tripkku-invite');
       await selectRemote(id);toast('친구 여행에 합류했어! 🎉');return;}catch(e){fail(Error('초대 링크 사용 실패: '+e.message));}}
-  if(tripList.length){await selectRemote(tripList[0].id);}else{loadDemo(activePreset);toast('로그인 성공! 샘플을 보고 "새 여행 만들기"를 눌러줘.');}
+  if(tripList.length){const last=localStorage.getItem('tripkku-last-trip:'+repo.user.id);await selectRemote(tripList.some(t=>t.id===last)?last:tripList[0].id);}else{loadDemo(activePreset);toast('로그인 성공! 샘플을 보고 "새 여행 만들기"를 눌러줘.');}
 }
 async function selectRemote(id){
   const remote=await repo.readTrip(id);mode='remote';data=remote;
   activePreset=data.trip.preset||'oita';repo.subscribe(id);
-  tripList=await repo.trips();render();
+  tripList=await repo.trips();localStorage.setItem('tripkku-last-trip:'+repo.user.id,id);render();await loadChat();
 }
 async function createTrip(){
   let key=data.trip.preset;
   if(!repo.user){toast('로컬 샘플은 자유롭게 수정할 수 있어. 공동 여행 생성은 로그인 후 가능해.');return;}
-  const name=uiPrompt('새 여행 이름',PRESETS[key]?.title||'우리 여행');if(name===null)return;
-  const p=clonePreset(key);p.title=name.trim()||p.title;
-  const id=await repo.createTrip(p);await selectRemote(id);toast('공동 여행방을 만들었어! 👭');
+  const sample=uiConfirm('샘플 일정에서 시작할까요?\n확인: 샘플 일정 복사\n취소: 일정이 없는 새 여행 만들기');
+  const name=uiPrompt('새 여행 이름',sample?(PRESETS[key]?.title||'우리 여행'):'새 여행');if(name===null)return;
+  const p=clonePreset(key);p.title=name.trim()||'새 여행';
+  if(!sample){p.key='custom';p.schedule={};p.expenses=[];p.city='미정';p.dates='날짜 미정';p.description='내가 직접 만드는 여행';p.budgetNote='';p.shared_target=0;p.nights_a=[0,0];p.nights_b=[0,0];}
+  const id=await repo.createTrip(p);await selectRemote(id);toast(sample?'샘플로 새 여행을 만들었어!':'빈 새 여행을 만들었어!');
+}
+async function deleteCurrentTrip(targetId=data?.trip?.id){
+  if(!repo.user)throw Error('로그인이 필요해.');
+  const trip=tripList.find(t=>t.id===targetId);
+  if(!trip||trip.owner_id!==repo.user.id)throw Error('여행방 소유자만 삭제할 수 있어.');
+  const title=trip.title||'이름 없는 여행';
+  if(!uiConfirm('⚠️ '+title+' 여행방을 완전히 삭제할까요?\n연결된 일정·경비·초대 정보에도 영향이 있을 수 있어. 삭제는 되돌릴 수 없어.'))return;
+  const typed=uiPrompt('삭제하려면 여행 이름을 정확히 다시 입력해 줘.', '');
+  if(typed!==title){toast('여행 이름이 일치하지 않아 삭제하지 않았어.');return;}
+  const key='tripkku-ai-chat:'+repo.user.id+':'+targetId;
+  await repo.deleteTrip(targetId);
+  try{localStorage.removeItem(key);}catch{}
+  if(mode==='remote'&&data?.trip?.id===targetId&&repo.channel){await repo.client.removeChannel(repo.channel);repo.channel=null;}
+  if(mode==='remote'&&data?.trip?.id===targetId){await initAccount();}
+  else {tripList=await repo.trips();renderSidebar();renderPresetPicker();}
+  toast('여행방 삭제 완료');
+}
+function listAllEvents(){
+  if(!data)return '여행 정보가 없어.';
+  const entries=[...data.items].sort((a,b)=>String(a.plan_key).localeCompare(String(b.plan_key))||Number(a.day_number)-Number(b.day_number)||String(a.time_label).localeCompare(String(b.time_label)));
+  if(!entries.length)return '현재 저장된 일정이 없어. 추가하고 싶은 내용을 말해줘.';
+  return '🗓️ '+(mode==='demo'?'[샘플] ':'')+data.trip.title+' 전체 일정 ('+entries.length+'개)\n'+entries.map(x=>`${x.plan_key}안 ${x.day_number}일차 · ${x.time_label||'시간 미정'} · ${x.title}${x.note?' ('+x.note+')':''}`).join('\n');
 }
 async function createInvite(){
   if(!(repo.user&&mode==='remote')){toast('먼저 SNS 로그인과 Supabase 연결이 필요해!');return;}
@@ -317,7 +389,7 @@ async function createInvite(){
   $('#inviteURL').value=url.toString();$('#inviteLinkBox').hidden=false;
   toast('7일 유효한 초대장 준비 완료!');
 }
-function appendChat(who,text){const div=document.createElement('div');div.className='bubble '+who;div.textContent=who==='ai'?translateString(text):text;$('#chatMessages').append(div);$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;}
+function appendChat(who,text){recordChat(who==='me'?'user':'assistant',text);const div=document.createElement('div');div.className='bubble '+who;div.textContent=who==='ai'?translateString(text):text;$('#chatMessages').append(div);$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;}
 async function processCommand(input){
   const tx=input.trim();const p=tx.toUpperCase();
   // Local demo also accepts concise English edit commands (no AI API required).
@@ -405,9 +477,10 @@ async function commitAiProposal(actions){
   data=await repo.readTrip(data.trip.id);render();
 }
 async function handleChat(text){
+  if(/(전체|모든|전부|쭉|한번에).*(일정|스케줄)|(?:일정|스케줄).*(전체|모두|전부|쭉)/i.test(text))return listAllEvents();
   // AI requires an actual shared trip and authenticated membership; demo stays free/offline.
   if(mode!=='remote'||!repo.user)return processCommand(text);
-  const history=[...document.querySelectorAll('#chatMessages .bubble')].slice(-12,-1).map(el=>({role:el.classList.contains('me')?'user':'assistant',text:el.textContent.slice(0,450)}));
+  const history=chatHistory.slice(-13,-1).map(m=>({role:m.role==='user'?'user':'assistant',text:m.text.slice(0,450)}));
   const proposal=await suggestWithAi(repo,data.trip.id,text,history);
   if(!proposal.actions.length)return '🤖 '+proposal.reply;
   const preview=proposal.actions.map((a,i)=>(i+1)+'. '+describeAction(a)).join('\n');
@@ -423,6 +496,10 @@ function speak(index){const lang=data.trip.language||'ja-JP';const p=(lang.start
 async function clickHandler(ev){
   const b=ev.target.closest('button');if(!b)return;
   try{
+    if(b.id==='sidebarToggle'){setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));return;}
+    if(b.dataset.deleteSidebarTrip){await deleteCurrentTrip(b.dataset.deleteSidebarTrip);return;}
+    if(b.dataset.sidebarTrip){await selectRemote(b.dataset.sidebarTrip);document.getElementById('plans')?.scrollIntoView({behavior:'smooth'});return;}
+    if(b.id==='sideNewTrip'){await createTrip();return;}
     if(b.dataset.go){document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
     if(b.dataset.uiLang){setUiLanguage(b.dataset.uiLang);render();applyEarthAppearance();updateWeatherPanel(window._tripkkuWeatherResult||{status:'dates-missing'});toast(isEnglish()?'Language: English':'언어: 한국어');return;}
     if(b.dataset.appearance){document.body.dataset.appearance=b.dataset.appearance;
@@ -439,6 +516,7 @@ async function clickHandler(ev){
     }
     if(b.dataset.plan){await persistTrip({active_plan:b.dataset.plan});toast(b.dataset.plan+'안 적용 완료');return;}
     if(b.id==='makeTrip'){await createTrip();return;}
+    if(b.id==='deleteTrip'){await deleteCurrentTrip();return;}
     if(b.id==='editTripInfo'){
       const title=uiPrompt('여행 이름',data.trip.title);if(title===null)return;
       const city=uiPrompt('목적지 도시 (예: Tokyo, London, 벳푸)',data.trip.city);if(city===null)return;
