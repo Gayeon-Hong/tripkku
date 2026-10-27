@@ -141,3 +141,31 @@ body[data-view="home"] .mobile-nav{display:none}
 .reel-check{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer}.reel-check input{width:18px;height:18px}
 .reel-done strong{text-decoration:line-through;opacity:.6}
 @media(max-width:900px){.reel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.reel-add,.reel-grid{grid-template-columns:1fr}}
+
+/* Readability and destination-driven recommendation UI */
+body{font-size:15px;line-height:1.65}
+.sectiontitle h2{font-size:clamp(25px,2.4vw,34px);line-height:1.3}
+.sectiontitle p,.tinycopy,.sidebar-hint{font-size:13px;line-height:1.7}
+.btn,button{min-height:38px}
+body[data-view="home"] #reelBoard{display:none!important}
+body[data-view="detail"] #reelBoard{display:block}
+.rec-config{border:1px solid var(--line);background:var(--paper);padding:22px;border-radius:18px;margin-bottom:18px}
+.rec-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px}
+.rec-fields label{display:flex;flex-direction:column;gap:7px;color:var(--ink);font-size:13px;font-weight:750}
+.rec-fields input,.rec-fields select{width:100%;border:1px solid var(--line);border-radius:10px;min-height:46px;padding:10px 12px;font-size:15px;background:var(--paper);color:var(--ink)}
+.rec-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px}
+#recStatus{font-size:13px;color:var(--mute)}
+.rec-disclaimer{font-size:12px;line-height:1.6;color:var(--mute);margin:14px 0 0}
+.rec-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-bottom:24px}
+.rec-section{grid-column:1/-1;font-size:18px;margin:18px 0 1px}
+.rec-card{border:1px solid var(--line);border-radius:15px;padding:19px;background:var(--paper);min-width:0;box-shadow:0 5px 18px rgba(0,0,0,.025)}
+.rec-card h4{font-size:17px;line-height:1.4;margin:0 0 8px}
+.rec-card p{font-size:14px;line-height:1.7;color:var(--mute);margin:5px 0}
+.rec-card .rec-price{font-weight:700;color:var(--ink)}
+.rec-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+.rec-actions a,.rec-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13px;background:var(--bg);cursor:pointer}
+.rec-summary{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;padding:20px;background:var(--light);font-size:14px;line-height:1.7}
+@media(max-width:800px){.rec-fields{grid-template-columns:1fr}.rec-results{grid-template-columns:1fr}.rec-config{padding:16px}.rec-section,.rec-summary{grid-column:1}}
+
+/* Trip Studio: readable form and detail personalization */
+.ai-start,.detail-personalize{background:var(--card,#fff);border:1px solid #d9ded9;border-radius:20px;padding:22px;margin:24px 0;box-shadow:0 4px 14px #2035330a}.ai-start h2,.detail-personalize h3{line-height:1.35}.ai-start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.ai-start-grid label,.couple-photos label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:750}.ai-start-grid input,.ai-start-grid select{width:100%;padding:12px;border:1px solid #b6c4bd;border-radius:10px;font-size:16px;background:white;color:#193b33}.ai-start-grid .wide{grid-column:span 2}.ai-start #startGenerationStatus{font-size:14px;line-height:1.6;margin:12px 0}.detail-personalize>p{font-size:14px;line-height:1.65}.detail-theme-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.detail-theme-row button{border:1px solid #b5c4bd;background:#f5f8f6;padding:10px 16px;border-radius:12px;font-size:14px;cursor:pointer}.upload-theme{display:flex;flex-direction:column;gap:8px;max-width:450px;font-weight:750;font-size:14px}.trip-cover-preview{border:1px dashed #9caea6;background-position:center;background-size:cover;min-height:140px;border-radius:16px;display:grid;place-items:center;margin:12px 0;color:#5b6961}.couple-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}.couple-preview{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;min-height:90px;background:#f5f8f6;border-radius:14px;margin:12px 0;gap:12px;padding:10px}.couple-preview img{width:100px;height:100px;object-fit:cover;border-radius:14px}.photo-disclaimer{color:#617168!important}.rec-card{font-size:15px;line-height:1.65}.rec-card a{margin-left:8px}@media(max-width:680px){.ai-start-grid{grid-template-columns:1fr}.ai-start-grid .wide{grid-column:auto}.couple-photos{grid-template-columns:1fr}.ai-start,.detail-personalize{padding:15px}}

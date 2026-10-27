@@ -3,7 +3,7 @@ import {earthAvatarHtml} from './earth-avatar.js';
 import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
-import {Collaboration} from './collab.js?v=home-reels-20261027-2';
+import {Collaboration} from './collab.js?v=travel-ai-20261027-3';
 import {suggestWithAi,describeAction} from './ai.js';
 
 const $=selector=>document.querySelector(selector);
@@ -361,14 +361,15 @@ async function selectRemote(id){
   activePreset=data.trip.preset||'oita';repo.subscribe(id);
   tripList=await repo.trips();localStorage.setItem('tripkku-last-trip:'+repo.user.id,id);render();await loadChat();
 }
-async function createTrip(){
+async function createTrip(options={}){
   let key=data.trip.preset;
   if(!repo.user){toast('로컬 샘플은 자유롭게 수정할 수 있어. 공동 여행 생성은 로그인 후 가능해.');return;}
-  const sample=uiConfirm('샘플 일정에서 시작할까요?\n확인: 샘플 일정 복사\n취소: 일정이 없는 새 여행 만들기');
-  const name=uiPrompt('새 여행 이름',sample?(PRESETS[key]?.title||'우리 여행'):'새 여행');if(name===null)return;
+  const sample=options.blank?false:uiConfirm('샘플 일정에서 시작할까요?\n확인: 샘플 일정 복사\n취소: 일정이 없는 새 여행 만들기');
+  const name=options.name||uiPrompt('새 여행 이름',sample?(PRESETS[key]?.title||'우리 여행'):'새 여행');if(name===null)return;
   const p=clonePreset(key);p.title=name.trim()||'새 여행';
   if(!sample){p.key='custom';p.schedule={};p.expenses=[];p.city='미정';p.dates='날짜 미정';p.description='내가 직접 만드는 여행';p.budgetNote='';p.shared_target=0;p.nights_a=[0,0];p.nights_b=[0,0];}
-  const id=await repo.createTrip(p);await selectRemote(id);openSelectedTrip();toast(sample?'샘플로 새 여행을 만들었어!':'빈 새 여행을 만들었어!');
+  if(options.city)p.city=options.city; if(options.dates)p.dates=options.dates; if(Number.isFinite(options.budget))p.shared_target=options.budget;
+  const id=await repo.createTrip(p);await selectRemote(id);openSelectedTrip();toast(sample?'샘플로 새 여행을 만들었어!':'빈 새 여행을 만들었어!');return id;
 }
 async function deleteCurrentTrip(targetId=data?.trip?.id){
   if(!repo.user)throw Error('로그인이 필요해.');
@@ -506,6 +507,7 @@ async function clickHandler(ev){
   try{
     if(b.id==='goHome'||b.id==='backHome'){setPageView('home');return;}
     if(b.id==='goTripDetail'||b.id==='heroOpenTrip'){openSelectedTrip();return;}
+    if(b.id==='startGenerateTrip'){window.dispatchEvent(new CustomEvent('tripkku-start-create',{detail:{createTrip}}));return;}
     if(b.id==='heroNewTrip'){await createTrip();return;}
     if(b.id==='sidebarToggle'){setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));return;}
     if(b.dataset.deleteSidebarTrip){await deleteCurrentTrip(b.dataset.deleteSidebarTrip);return;}
