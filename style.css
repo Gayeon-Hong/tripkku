@@ -450,3 +450,6 @@ body[data-view="home"] #budget { display: none !important; }
     min-width: 72px; padding: 6px 7px; font-size: 11px;
   }
 }
+
+/* v5: AI timetable proposals can carry a map destination in the note. */
+.event-buttons .event-map-link{display:inline-flex;align-items:center;gap:4px;font-weight:750;color:#24675a;text-decoration:none;font-size:11px;padding:3px 5px;border-radius:6px}.event-buttons .event-map-link:hover,.event-buttons .event-map-link:focus-visible{background:#e2eee6;text-decoration:underline}

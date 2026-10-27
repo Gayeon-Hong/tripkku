@@ -4,7 +4,7 @@ import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRang
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
 import {Collaboration} from './collab.js?v=schedule-sort-20261027-v4';
-import {suggestWithAi,describeAction} from './ai.js';
+import {suggestWithAi,describeAction} from './ai.js?v=route-timing-20261027-v5';
 
 const $=selector=>document.querySelector(selector);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -258,6 +258,20 @@ function compareScheduleTime(a,b){
   if(right===null)return -1;
   return left-right;
 }
+function eventMapOrigin(item){
+  const match=String(item.note||'').match(/(?:^|\n)🚏 출발:\s*([^\n]+)/);
+  return match?match[1].trim():'';
+}
+function eventMapDirections(item){
+  const destination=eventMapDestination(item);
+  if(!destination)return '';
+  const origin=eventMapOrigin(item);
+  return origin?'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(origin)+'&destination='+encodeURIComponent(destination)+'&travelmode=transit':googleDirections(destination);
+}
+function eventMapDestination(item){
+  const match=String(item.note||'').match(/(?:^|\n)📍\s*([^\n]+)/);
+  return match?match[1].trim():'';
+}
 function renderPlans(){
   $('#tripTitle').textContent=data.trip.title;
   $('#tripSubtitle').textContent=data.trip.description||data.trip.city;
@@ -276,7 +290,7 @@ function renderPlans(){
     const dayEvents=entries.filter(x=>Number(x.day_number)===d).sort(compareScheduleTime);
     return `<article class="day-col"><div class="day-top"><strong>DAY ${String(d).padStart(2,'0')}</strong><span>${d===1?'도착 & 밤':d===2?'본격 여행':'귀국'}</span></div>
       <div class="timeline-events">${dayEvents.length?dayEvents.map(e=>`<div class="timeline-event"><time>${esc(e.time_label)}</time><div><b>${esc(e.title)}</b><p>${esc(e.note)}</p>
-        <div class="event-buttons"><button type="button" data-edit-event="${esc(e.id)}">수정</button><button type="button" class="danger" data-remove-event="${esc(e.id)}">삭제</button></div></div></div>`).join(''):'<p class="tinycopy">아직 등록된 일정이 없어.</p>'}</div></article>`;
+        <div class="event-buttons"><button type="button" data-edit-event="${esc(e.id)}">수정</button><button type="button" class="danger" data-remove-event="${esc(e.id)}">삭제</button>${eventMapDestination(e)?`<a class="event-map-link" target="_blank" rel="noopener noreferrer" href="${esc(eventMapDirections(e))}">🧭 길찾기</a>`:''}</div></div></div>`).join(''):'<p class="tinycopy">아직 등록된 일정이 없어.</p>'}</div></article>`;
   }).join('');
 }
 function renderBudget(){
@@ -484,6 +498,13 @@ async function processCommand(input){
 }
 
 // After explicit confirmation, apply validated proposals through normal member-scoped RLS APIs.
+// Detect collaborative edits between Gemini's proposal and the user's approval.
+async function currentScheduleSnapshot(items){
+  const payload=JSON.stringify(items.map(x=>[x.id,x.plan_key,Number(x.day_number),x.time_label,x.title,x.note])
+    .sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload));
+  return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');
+}
 async function commitAiProposal(actions){
   if(mode!=='remote'||!repo.user)throw Error('로그인이 필요해.');
   if(!Array.isArray(actions)||actions.length>5)throw Error('제안 수가 너무 많아.');
@@ -506,6 +527,7 @@ async function commitAiProposal(actions){
       case 'add_event':await repo.addItem(data.trip.id,{plan_key:a.plan_key,day_number:a.day_number,time_label:a.time_label,title:a.title,note:a.note});break;
       case 'update_event':{
         const patch={};if(a.title)patch.title=a.title;if(a.time_label)patch.time_label=a.time_label;if(a.note)patch.note=a.note;
+        if(a.day_number)patch.day_number=a.day_number;if(a.plan_key)patch.plan_key=a.plan_key;
         await repo.updateItem(a.id,patch);break;}
       case 'delete_event':await repo.deleteItem(a.id);break;
       case 'add_expense':await repo.addExpense(data.trip.id,{title:a.title,category:a.category,amount:a.amount});break;
@@ -524,6 +546,14 @@ async function handleChat(text){
   const preview=proposal.actions.map((a,i)=>(i+1)+'. '+describeAction(a)).join('\n');
   const approved=uiConfirm('🤖 AI 수정 제안\n\n'+proposal.reply+'\n\n'+preview+'\n\n이 변경사항을 공동 여행에 적용할까?');
   if(!approved)return '수정은 취소했어. 제안만 확인했어 😊';
+  if(proposal.schedule_snapshot){
+    const latest=await repo.readTrip(data.trip.id);
+    if(await currentScheduleSnapshot(latest.items)!==proposal.schedule_snapshot){
+      data=latest;render();
+      return '⚠️ AI가 제안한 뒤 다른 사람이 일정을 수정했어. 중복·충돌을 막기 위해 저장하지 않았어. 다시 요청해 줘.';
+    }
+    data=latest;
+  }
   await commitAiProposal(proposal.actions);
   return '✅ 변경 완료! 친구와 공유한 여행에 반영했어.\n'+preview;
 }
@@ -636,7 +666,7 @@ async function boot(){
     e.preventDefault();const val=$('#chatInput').value.trim();if(!val)return;$('#chatInput').value='';appendChat('me',val);
     try{appendChat('ai',await handleChat(val));}catch(err){appendChat('ai','⚠️ AI 응답을 받을 수 없어: '+(err.message||err)+'\n간단한 일정 명령 편집은 그대로 이용할 수 있어.');}
   });
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=schedule-sort-20261027-v4').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=route-timing-20261027-v5').catch(()=>{});
   if(isToss){toast('앱인토스 모드는 정식 토스 로그인 서버 연동 전이라 데모만 제공해.');return;}
   if(repo.configured){
     try{await repo.init();await initAccount();}catch(e){fail(Error('온라인 연결 실패: '+e.message));}
