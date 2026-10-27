@@ -1,18 +1,8 @@
-Tripkku 삭제 문제 수정 v2
-
-현재 화면에서 이름 입력 prompt가 뜨고 repo.deleteTrip is not a function 이 보인다면
-현재 웹사이트가 구버전 app.js 또는 collab.js 를 실행하고 있다는 뜻입니다.
-
-1. GitHub 저장소 최상위 루트에 app.js, collab.js, index.html, sw.js 네 파일을 업로드(덮어쓰기)하세요.
-   toss-miniapp 폴더가 아니라 실제 GitHub Pages에 배포되는 루트입니다.
-2. Supabase SQL Editor에서 trips_delete_policy.sql 을 실행하세요.
-3. GitHub Actions/Pages 배포 완료를 확인하세요.
-4. 사이트에서 Ctrl+Shift+R을 누르세요. 계속 예전 코드면 Chrome F12 > Application > Service workers > Unregister
-   그리고 Application > Storage > Clear site data (주의: 사이트 로컬 데이터가 지워질 수 있음) 대신
-   Application > Cache storage 에서 tripkku-static 관련 캐시만 삭제한 후 새로고침하세요.
-5. Network 탭에서 app.js?v=delete-fix-20261027-2 요청이 있는지 확인하세요.
-6. 소유한 테스트 여행의 휴지통 클릭 > 브라우저 confirm 한 번으로 삭제합니다.
-
-참고: DB에서 다른 테이블이 trips를 참조하며 ON DELETE CASCADE가 없으면 삭제는 여전히 제한될 수 있습니다.
-삭제에 실패하면 표시되는 새로운 에러 메시지를 확인하세요.
-이 패치는 기존 로그인/Gemini/예약 관련 기능 구현을 대체하지 않도록 삭제 관련 앱 파일만 포함합니다.
+Tripkku AI 여행 스튜디오 적용 (2026-10-27)
+기준: Tripkku_Dynamic_Travel_Recommendations 패치. 다른 버전과 부분 혼합 시 기능 누락 가능.
+1. GitHub 최상위에 index.html,app.js,style.css,sw.js,trip-recommend.js 교체, trip-studio.js 새로 추가. trip-reels.js도 패키지 기준 버전 유지.
+2. Supabase에 trip_ai_guides.sql 이미 실행했다면 재실행 불필요.
+3. Edge Functions trip-guide-ai 의 index.ts를 패키지 supabase/functions/trip-guide-ai/index.ts 코드로 교체하고 재배포. 기존 GEMINI_API_KEY 사용; ALLOWED_ORIGINS 실제 사이트 도메인 확인.
+4. 여행 로그인 후 홈에서 국가·도시·날짜·인원·예산 입력 → 여행 만들고 Gemini 초안 생성. 실패 시 Edge Functions Logs 확인. AI 가이드는 생성 시 DB에 저장, 일정(plan_items) 반영은 상세화면에서 이용자가 승인 버튼 클릭.
+5. 여행 상세에서 날짜·지구 표정·테마를 수정할 수 있습니다. 사용자 사진·커버는 로컬 미리보기이며 서버에 보관하거나 AI 캐릭터로 생성하지 않습니다. AI 캐릭터 생성은 별도의 이미지 생성 API 및 이용자 동의·비용·저장정책 설계가 필요합니다.
+주의: 서버 배포와 Supabase DB 실사용 테스트는 이 환경에서 할 수 없었습니다. AI 생성 장소·예산·경로는 최신 지도/실시간 항공편 검색 결과가 아닌 초안입니다.
