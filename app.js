@@ -3,7 +3,7 @@ import {earthAvatarHtml} from './earth-avatar.js';
 import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
-import {Collaboration} from './collab.js?v=travel-ai-20261027-3';
+import {Collaboration} from './collab.js?v=home-budget-sidebar-20261027-1';
 import {suggestWithAi,describeAction} from './ai.js';
 
 const $=selector=>document.querySelector(selector);
@@ -197,11 +197,31 @@ function setPageView(view){
   if(detailButton)detailButton.setAttribute('aria-current',next==='detail'?'page':'false');
   window.scrollTo({top:0,behavior:'instant'});
 }
+function focusHomeCreator(){
+  setPageView('home');
+  requestAnimationFrame(()=>{
+    const section=$('#aiTripStart');
+    if(section)section.scrollIntoView({behavior:'smooth',block:'start'});
+    $('#startCountry')?.focus({preventScroll:true});
+  });
+}
 function openSelectedTrip(){setPageView('detail');}
-function setSidebarCollapsed(collapsed){
-  document.body.classList.toggle('sidebar-collapsed',collapsed);
-  const toggle=$('#sidebarToggle');if(toggle){toggle.textContent=collapsed?'▶ 펼치기':'◀ 접기';toggle.setAttribute('aria-expanded',String(!collapsed));toggle.title=collapsed?'사이드바 펼치기':'사이드바 접기';}
-  try{localStorage.setItem('tripkku-sidebar-collapsed',collapsed?'1':'0');}catch{}
+const SIDEBAR_KEY='tripkku-sidebar-collapsed';
+const sidebarBreakpoint=window.matchMedia('(max-width: 1060px)');
+let sidebarAutoMode=true;
+function setSidebarCollapsed(collapsed,persist=true){
+  document.body.classList.toggle('sidebar-collapsed',!!collapsed);
+  const toggle=$('#sidebarToggle');
+  if(toggle){
+    toggle.innerHTML=collapsed?'▶ <span class="sidebar-toggle-label">펼치기</span>':'◀ <span class="sidebar-toggle-label">접기</span>';
+    toggle.setAttribute('aria-expanded',String(!collapsed));
+    toggle.setAttribute('aria-label',collapsed?'내 여행 목록 펼치기':'내 여행 목록 접기');
+    toggle.title=collapsed?'사이드바 펼치기':'사이드바 접기';
+  }
+  if(persist){
+    sidebarAutoMode=false;
+    try{localStorage.setItem(SIDEBAR_KEY,collapsed?'1':'0');}catch{}
+  }
 }
 function renderSidebar(){
   const list=$('#sidebarTripList'),helper=$('#sidebarHelper');if(!list)return;
@@ -209,7 +229,7 @@ function renderSidebar(){
   list.replaceChildren();
   for(const trip of tripList){
     const row=document.createElement('div');row.className='sidebar-trip-row'+(mode==='remote'&&data?.trip?.id===trip.id?' active':'');
-    const btn=document.createElement('button');btn.type='button';btn.className='sidebar-trip';btn.dataset.sidebarTrip=trip.id;
+    const btn=document.createElement('button');btn.type='button';btn.className='sidebar-trip';btn.dataset.sidebarTrip=trip.id;btn.title=(trip.title||'이름 없는 여행')+' 열기';
     const title=document.createElement('b');title.textContent=trip.title||'이름 없는 여행';
     const sub=document.createElement('small');sub.textContent=[trip.city||'목적지 미정',trip.owner_id===repo.user?.id?'내가 만든 여행':'공유 여행'].join(' · ');
     btn.append(title,sub);row.append(btn);
@@ -220,7 +240,12 @@ function renderSidebar(){
     list.append(row);
   }
 }
-try{setSidebarCollapsed(localStorage.getItem('tripkku-sidebar-collapsed')==='1');}catch{}
+try{
+  const saved=localStorage.getItem(SIDEBAR_KEY);
+  sidebarAutoMode=saved===null;
+  setSidebarCollapsed(saved===null?sidebarBreakpoint.matches:saved==='1',false);
+}catch{setSidebarCollapsed(sidebarBreakpoint.matches,false);}
+sidebarBreakpoint.addEventListener('change',e=>{if(sidebarAutoMode)setSidebarCollapsed(e.matches,false);});
 function renderPresetPicker(){
   renderSidebar();
   $('#presetGrid').innerHTML=Object.values(PRESETS).map(p=>`<button class="preset ${data.trip.preset===p.key?'selected':''}" data-preset="${esc(p.key)}">
@@ -508,11 +533,11 @@ async function clickHandler(ev){
     if(b.id==='goHome'||b.id==='backHome'){setPageView('home');return;}
     if(b.id==='goTripDetail'||b.id==='heroOpenTrip'){openSelectedTrip();return;}
     if(b.id==='startGenerateTrip'){window.dispatchEvent(new CustomEvent('tripkku-start-create',{detail:{createTrip}}));return;}
-    if(b.id==='heroNewTrip'){await createTrip();return;}
+    if(b.id==='heroNewTrip'){focusHomeCreator();return;}
     if(b.id==='sidebarToggle'){setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));return;}
     if(b.dataset.deleteSidebarTrip){await deleteCurrentTrip(b.dataset.deleteSidebarTrip);return;}
     if(b.dataset.sidebarTrip){await selectRemote(b.dataset.sidebarTrip);openSelectedTrip();return;}
-    if(b.id==='sideNewTrip'){await createTrip();return;}
+    if(b.id==='sideNewTrip'){focusHomeCreator();return;}
     if(b.dataset.go){if(b.dataset.go!=='trips')setPageView('detail');document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
     if(b.dataset.uiLang){setUiLanguage(b.dataset.uiLang);render();applyEarthAppearance();updateWeatherPanel(window._tripkkuWeatherResult||{status:'dates-missing'});toast(isEnglish()?'Language: English':'언어: 한국어');return;}
     if(b.dataset.appearance){document.body.dataset.appearance=b.dataset.appearance;
@@ -528,7 +553,7 @@ async function clickHandler(ev){
       else {loadDemo(b.dataset.preset);openSelectedTrip();}return;
     }
     if(b.dataset.plan){await persistTrip({active_plan:b.dataset.plan});toast(b.dataset.plan+'안 적용 완료');return;}
-    if(b.id==='makeTrip'){await createTrip();return;}
+    if(b.id==='makeTrip'){focusHomeCreator();return;}
     if(b.id==='deleteTrip'){await deleteCurrentTrip();return;}
     if(b.id==='editTripInfo'){
       const title=uiPrompt('여행 이름',data.trip.title);if(title===null)return;

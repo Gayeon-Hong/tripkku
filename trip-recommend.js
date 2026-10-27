@@ -22,8 +22,19 @@ async function applyDraft(rec){if(!tripId||!Array.isArray(rec.days))return;if(!c
 async function addPlan(item,city){if(!tripId){message('먼저 여행을 선택하세요.');return;}if(!confirm('"'+item.name+'"을 현재 선택한 여행의 1일 차 일정에 추가할까요?'))return;
 try{const client=await supabase();const {data:{user},error:authError}=await client.auth.getUser();if(authError||!user)throw Error('로그인이 필요합니다.');const {error}=await client.from('plan_items').insert({trip_id:tripId,plan_key:'A',day_number:1,time_label:'시간 미정',title:txt(item.name).slice(0,150),note:txt(item.why||'')+' · '+city,created_by:user.id});if(error)throw error;message('일정에 추가했습니다. 여행 일정을 새로 불러오면 표시됩니다.');}catch(e){message('일정 추가 실패: '+e.message);}}
 async function load(){if(!tripId){render(null);return;}const current=tripId;try{const client=await supabase();const {data,error}=await client.from('trip_ai_guides').select('guide,updated_at').eq('trip_id',current).maybeSingle();if(error)throw error;if(tripId===current&&data?.guide){render(data.guide);message('이 여행에 저장된 추천 결과를 불러왔습니다.');}}catch(e){message('추천 저장소 미설정: SQL을 먼저 적용하세요. '+e.message);}}
-async function generate(){if(working)return;if(!tripId){message('로그인 후 내 여행을 선택하세요.');return;}const city=el('recCity').value.trim(),budget=Number(el('recBudget').value);if(city.length<2||city.length>100||!Number.isFinite(budget)||budget<10000||budget>100000000){message('여행지와 총예산을 정확하게 입력하세요.');return;}working=true;el('recGenerate').disabled=true;message('Gemini가 여행지·취향·예산에 맞춰 추천을 만드는 중입니다…');
-try{const client=await supabase();const {data:{user}}=await client.auth.getUser();if(!user)throw Error('로그인 후 이용할 수 있습니다.');const {data:response,error}=await client.functions.invoke('trip-guide-ai',{body:{trip_id:tripId,city,budget,taste:el('recTaste').value}});if(error)throw error;if(response?.error)throw Error(response.error);if(!response?.guide||response.guide.city!==city)throw Error('AI 결과가 올바르지 않습니다.');render(response.guide);message('추천 완료 · 여행별로 저장했습니다. 각 장소를 지도에서 확인한 뒤 일정에 추가하세요.');}catch(e){message('추천 실패: '+e.message+' · Edge Function/SQL/로그인 상태를 확인하세요.');}finally{working=false;el('recGenerate').disabled=false;}}
+async function generate(){if(working)return false;if(!tripId){message('로그인 후 내 여행을 선택하세요.');return false;}const city=el('recCity').value.trim(),budget=Number(el('recBudget').value);if(city.length<2||city.length>100||!Number.isFinite(budget)||budget<10000||budget>100000000){message('여행지와 총예산을 정확하게 입력하세요.');return false;}working=true;el('recGenerate').disabled=true;message('Gemini가 여행지·취향·예산에 맞춰 추천을 만드는 중입니다…');
+try{const client=await supabase();const {data:{user}}=await client.auth.getUser();if(!user)throw Error('로그인 후 이용할 수 있습니다.');const {data:response,error}=await client.functions.invoke('trip-guide-ai',{body:{trip_id:tripId,city,budget,taste:el('recTaste').value}});if(error)throw error;if(response?.error)throw Error(response.error);if(!response?.guide||response.guide.city!==city)throw Error('AI 결과가 올바르지 않습니다.');render(response.guide);message('추천 완료 · 여행별로 저장했습니다. 각 장소를 지도에서 확인한 뒤 일정에 추가하세요.');return true;}catch(e){message('추천 실패: '+e.message+' · Edge Function/SQL/로그인 상태를 확인하세요.');return false;}finally{working=false;el('recGenerate').disabled=false;}}
 el('recGenerate')?.addEventListener('click',generate);
+document.addEventListener('tripkku-initial-guide-request',async e=>{
+  const d=e.detail||{};
+  if(!d.tripId)return;
+  tripId=d.tripId;
+  el('recCity').value=String(d.city||'');
+  el('recBudget').value=String(d.budget||'');
+  el('recTaste').value=d.taste||'balanced';
+  const ok=await generate();
+  document.dispatchEvent(new CustomEvent('tripkku-initial-guide-result',{detail:{tripId:d.tripId,ok}}));
+});
+
 document.addEventListener('tripkku-trip-changed',async e=>{const id=e.detail?.tripId||null;if(id===tripId)return;tripId=id;render(null);if(!id){message('홈의 샘플은 저장되지 않습니다. 내 여행을 선택하세요.');return;}try{const client=await supabase();const {data}=await client.from('trips').select('city,shared_target').eq('id',id).single();if(id!==tripId)return;el('recCity').value=data?.city==='미정'?'':data?.city||'';el('recBudget').value=Number(data?.shared_target||0)||'';message('도시와 예산을 확인한 후 Gemini 추천을 만들어 보세요.');await load();}catch(e){message('여행 정보를 불러오지 못했습니다: '+e.message);}});
 if(document.body.dataset.tripId)document.dispatchEvent(new CustomEvent('tripkku-trip-changed',{detail:{tripId:document.body.dataset.tripId}}));
