@@ -28,6 +28,14 @@ export class Collaboration {
     const {data,error}=await this.client.from('trips').select('*').order('created_at',{ascending:false});
     if(error)throw error;return data||[];
   }
+  async readAiChat(tripId){
+    const {data,error}=await this.client.from('ai_chat_messages').select('role,message,created_at').eq('trip_id',tripId).eq('user_id',this.user.id).order('created_at',{ascending:false}).limit(40);
+    if(error)throw error;return (data||[]).reverse();
+  }
+  async addAiChat(tripId,role,message){
+    const {error}=await this.client.from('ai_chat_messages').insert({trip_id:tripId,user_id:this.user.id,role,message});
+    if(error)throw error;
+  }
   async readTrip(id){
     const sup=this.client;
     const [tr,mem,fin,exp,it]=await Promise.all([
@@ -53,6 +61,12 @@ export class Collaboration {
     const events=Object.entries(preset.schedule||{}).flatMap(([key,items])=>items.map(x=>({trip_id:id,plan_key:key,day_number:x.day,time_label:x.time,title:x.title,note:x.note,created_by:this.user.id})));
     if(events.length){const {error:e}=await this.client.from('plan_items').insert(events);if(e)throw Error('여행 생성됨. 초기 일정 저장 실패: '+e.message);}
     return id;
+  }
+  async deleteTrip(id){
+    if(!this.user)throw Error('로그인이 필요해.');
+    const {data,error}=await this.client.from('trips').delete().eq('id',id).eq('owner_id',this.user.id).select('id');
+    if(error)throw error;
+    if(!data?.length)throw Error('삭제 권한이 없거나 여행이 이미 삭제되었어.');
   }
   async updateTrip(id,patch){const {error}=await this.client.from('trips').update(patch).eq('id',id);if(error)throw error;}
   async updateFinance(id,patch){const {error}=await this.client.from('member_finances').update(patch).eq('trip_id',id).eq('user_id',this.user.id);if(error)throw error;}
