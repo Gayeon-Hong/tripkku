@@ -3,7 +3,7 @@ import {earthAvatarHtml} from './earth-avatar.js';
 import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
-import {Collaboration} from './collab.js?v=sidebar-click-fix-20261027-v3';
+import {Collaboration} from './collab.js?v=schedule-sort-20261027-v4';
 import {suggestWithAi,describeAction} from './ai.js';
 
 const $=selector=>document.querySelector(selector);
@@ -233,6 +233,31 @@ function renderPresetPicker(){
   if(!sel.hidden){$('#tripSelect').innerHTML=tripList.map(t=>`<option value="${esc(t.id)}" ${mode==='remote'&&data.trip.id===t.id?'selected':''}>${esc(t.title)}</option>`).join('');}
   [...document.querySelectorAll('button[data-theme]')].forEach(b=>b.classList.toggle('selected',b.dataset.theme===document.body.dataset.theme));
 }
+// Sort itinerary cards by the START time, not by insertion/creation order.
+// Supports 08:30-11:30, 10:00 전후, 오전 9시, 오후 3시 30분 and similar labels.
+// Unscheduled/unknown labels intentionally stay below timed entries.
+function scheduleStartMinute(label){
+  const text=String(label??'').normalize('NFKC');
+  const match=text.match(/(오전|오후|AM|PM)?\s*(\d{1,2})\s*(?::|시)\s*(\d{1,2})?\s*(?:분)?\s*(AM|PM)?/i);
+  if(!match)return null;
+  let hour=Number(match[2]);const minute=match[3]===undefined?0:Number(match[3]);
+  if(hour>23||minute>59)return null;
+  const period=(match[1]||match[4]||'').toLowerCase();
+  if(period==='오전'||period==='am'){
+    if(hour>12)return null;
+    if(hour===12)hour=0;
+  }else if(period==='오후'||period==='pm'){
+    if(hour>12)return null;
+    if(hour<12)hour+=12;
+  }
+  return hour*60+minute;
+}
+function compareScheduleTime(a,b){
+  const left=scheduleStartMinute(a.time_label),right=scheduleStartMinute(b.time_label);
+  if(left===null)return right===null?0:1;
+  if(right===null)return -1;
+  return left-right;
+}
 function renderPlans(){
   $('#tripTitle').textContent=data.trip.title;
   $('#tripSubtitle').textContent=data.trip.description||data.trip.city;
@@ -248,7 +273,7 @@ function renderPlans(){
   for(const p of ['A','B'])$('#plan'+p).classList.toggle('active',data.trip.active_plan===p);
   const entries=data.items.filter(x=>x.plan_key===data.trip.active_plan);const days=Array.from({length:Math.min(30,Math.max(3,...entries.map(x=>Number(x.day_number)||1)))},(_,i)=>i+1);
   $('#eventList').innerHTML=days.map(d=>{
-    const dayEvents=entries.filter(x=>x.day_number===d);
+    const dayEvents=entries.filter(x=>Number(x.day_number)===d).sort(compareScheduleTime);
     return `<article class="day-col"><div class="day-top"><strong>DAY ${String(d).padStart(2,'0')}</strong><span>${d===1?'도착 & 밤':d===2?'본격 여행':'귀국'}</span></div>
       <div class="timeline-events">${dayEvents.length?dayEvents.map(e=>`<div class="timeline-event"><time>${esc(e.time_label)}</time><div><b>${esc(e.title)}</b><p>${esc(e.note)}</p>
         <div class="event-buttons"><button type="button" data-edit-event="${esc(e.id)}">수정</button><button type="button" class="danger" data-remove-event="${esc(e.id)}">삭제</button></div></div></div>`).join(''):'<p class="tinycopy">아직 등록된 일정이 없어.</p>'}</div></article>`;
@@ -391,7 +416,7 @@ async function deleteCurrentTrip(targetId=data?.trip?.id){
 }
 function listAllEvents(){
   if(!data)return '여행 정보가 없어.';
-  const entries=[...data.items].sort((a,b)=>String(a.plan_key).localeCompare(String(b.plan_key))||Number(a.day_number)-Number(b.day_number)||String(a.time_label).localeCompare(String(b.time_label)));
+  const entries=[...data.items].sort((a,b)=>String(a.plan_key).localeCompare(String(b.plan_key))||Number(a.day_number)-Number(b.day_number)||compareScheduleTime(a,b));
   if(!entries.length)return '현재 저장된 일정이 없어. 추가하고 싶은 내용을 말해줘.';
   return '🗓️ '+(mode==='demo'?'[샘플] ':'')+data.trip.title+' 전체 일정 ('+entries.length+'개)\n'+entries.map(x=>`${x.plan_key}안 ${x.day_number}일차 · ${x.time_label||'시간 미정'} · ${x.title}${x.note?' ('+x.note+')':''}`).join('\n');
 }
@@ -611,7 +636,7 @@ async function boot(){
     e.preventDefault();const val=$('#chatInput').value.trim();if(!val)return;$('#chatInput').value='';appendChat('me',val);
     try{appendChat('ai',await handleChat(val));}catch(err){appendChat('ai','⚠️ AI 응답을 받을 수 없어: '+(err.message||err)+'\n간단한 일정 명령 편집은 그대로 이용할 수 있어.');}
   });
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=sidebar-click-fix-20261027-v3').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=schedule-sort-20261027-v4').catch(()=>{});
   if(isToss){toast('앱인토스 모드는 정식 토스 로그인 서버 연동 전이라 데모만 제공해.');return;}
   if(repo.configured){
     try{await repo.init();await initAccount();}catch(e){fail(Error('온라인 연결 실패: '+e.message));}

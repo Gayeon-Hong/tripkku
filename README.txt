@@ -1,45 +1,34 @@
-Tripkku sidebar click fix v3 (2026-10-27)
-========================================
+Tripkku Day by Day time sort fix v4 (2026-10-27)
+=================================================
 
-Files to replace in the GitHub repository root:
-  index.html
-  app.js
-  style.css
-  sw.js
+Issue:
+- plan_items are fetched by day_number, created_at.
+- renderPlans() showed those items in insertion order, not start-time order.
+- Example Day 02 rendered 16:30, 14:00, 08:30, 12:30.
 
-Keep your other files unchanged:
-  collab.js, config.js, ai.js, trip-bookings.js, trip-reels.js,
-  trip-studio.js, trip-recommend.js, Supabase SQL and Edge Functions.
+Fix:
+- Sort the items within each day by the START time before building HTML.
+- Support common ranges (08:30-11:30, 10:00), approximate time labels
+  (10:00 around), Korean AM/PM (오전 9시, 오후 3시 30분).
+- Untimed entries like TBD/시간 미정 appear at the end, retaining their
+  prior relative order.
+- The "all itinerary" chatbot response uses the same chronological order.
+- Existing app.js sidebar toggle and layout are otherwise unchanged.
+- No SQL or Supabase schema change is required; no database rows are rewritten.
 
-Steps:
-  1. Make a backup of the four existing files.
-  2. Open GitHub / tripkku / Code / Add file / Upload files.
-  3. Upload all four files into the repository root (not a nested folder).
-  4. Commit changes; wait until Pages deployment is complete.
-  5. Open the website and press Ctrl+Shift+R.
-  6. Click the sidebar button two times; it should alternate
-     between "Collapse" and "Expand".
+Install at GitHub project root (same directory as your current index.html):
+  1. Replace app.js, index.html, and sw.js from this ZIP.
+  2. Leave style.css, collab.js, AI functions and other files unchanged.
+  3. Commit changes to GitHub and confirm GitHub Pages deployment.
+  4. In Chrome press Ctrl+Shift+R. If still old, unregister the existing
+     service worker under F12 > Application > Service Workers and reload.
 
-If the old version remains:
-  Chrome F12 > Application > Service Workers > Unregister;
-  reload the page once. You do not need to clear site data.
+Tests performed locally:
+  - Node syntax check for app.js and sw.js.
+  - Sort-helper tests with time ranges, Korean 12h notation, unknown time.
+  - Browser DOM test at desktop and mobile widths, plus post-edit reordering.
 
-Implementation:
-  - Sidebar click is standalone inline script in index.html.
-  - Removed duplicate sidebar click and state code in app.js.
-  - CSS: desktop collapses to a 68px grid column; under 900px
-    the sidebar becomes a top accordion without horizontal overflow.
-  - Sidebar state saved to localStorage (same key as the prior version).
-  - Updated service-worker cache version; resilient install if
-    optional assets are missing.
-
-Testing:
-  - Static JS syntax checks for app.js and sw.js completed.
-  - Chromium DOM/CSS interactive checks at widths 320,390,600,760,
-    768,850,900,901,1024,1152,1366,1600px.
-  - Repeated click and keyboard Enter/Space toggle tests passed.
-  - No horizontal overflow in tested widths.
-  - Real GitHub Pages, OAuth, Supabase DB and Gemini API not tested.
-
-If GitHub has newer custom edits than the previous patch, merge
-rather than overwriting unrelated changes.
+Limitations:
+  - This patch sorts display only; travel feasibility and estimated travel
+    durations still require separate route optimization features.
+  - Live Supabase, OAuth, and AI APIs have not been tested.
