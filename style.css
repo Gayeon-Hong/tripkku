@@ -169,3 +169,215 @@ body[data-view="detail"] #reelBoard{display:block}
 
 /* Trip Studio: readable form and detail personalization */
 .ai-start,.detail-personalize{background:var(--card,#fff);border:1px solid #d9ded9;border-radius:20px;padding:22px;margin:24px 0;box-shadow:0 4px 14px #2035330a}.ai-start h2,.detail-personalize h3{line-height:1.35}.ai-start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.ai-start-grid label,.couple-photos label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:750}.ai-start-grid input,.ai-start-grid select{width:100%;padding:12px;border:1px solid #b6c4bd;border-radius:10px;font-size:16px;background:white;color:#193b33}.ai-start-grid .wide{grid-column:span 2}.ai-start #startGenerationStatus{font-size:14px;line-height:1.6;margin:12px 0}.detail-personalize>p{font-size:14px;line-height:1.65}.detail-theme-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.detail-theme-row button{border:1px solid #b5c4bd;background:#f5f8f6;padding:10px 16px;border-radius:12px;font-size:14px;cursor:pointer}.upload-theme{display:flex;flex-direction:column;gap:8px;max-width:450px;font-weight:750;font-size:14px}.trip-cover-preview{border:1px dashed #9caea6;background-position:center;background-size:cover;min-height:140px;border-radius:16px;display:grid;place-items:center;margin:12px 0;color:#5b6961}.couple-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}.couple-preview{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;min-height:90px;background:#f5f8f6;border-radius:14px;margin:12px 0;gap:12px;padding:10px}.couple-preview img{width:100px;height:100px;object-fit:cover;border-radius:14px}.photo-disclaimer{color:#617168!important}.rec-card{font-size:15px;line-height:1.65}.rec-card a{margin-left:8px}@media(max-width:680px){.ai-start-grid{grid-template-columns:1fr}.ai-start-grid .wide{grid-column:auto}.couple-photos{grid-template-columns:1fr}.ai-start,.detail-personalize{padding:15px}}
+
+
+/* ================================================================
+   Tripkku responsive sidebar v2 - desktop grid / mobile accordion
+   Keeps travel content fluid when the browser is not maximized.
+   ================================================================ */
+body {
+  --trip-sidebar-width: clamp(226px, 19vw, 270px);
+  display: grid;
+  grid-template-columns: var(--trip-sidebar-width) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+}
+body.sidebar-collapsed { --trip-sidebar-width: 72px; }
+body > .topbar { grid-column: 1 / -1; grid-row: 1; min-width: 0; }
+body > .my-trip-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  position: sticky;
+  top: 84px;
+  min-width: 0;
+  max-height: calc(100dvh - 104px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px 13px;
+  margin: 16px 0 24px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  scrollbar-width: thin;
+}
+body > main.container {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  width: 100%;
+  max-width: 1300px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 2.2vw, 34px);
+}
+.sidebar-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.sidebar-head > strong { font-size: 16px; line-height: 1.4; }
+.sidebar-head-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.sidebar-head-actions .btn { font-size: 11px; min-height: 39px; padding: 7px 10px; }
+#sidebarToggle { flex: 0 0 auto; min-width: 47px; }
+.sidebar-hint { margin: 13px 0 12px; color: var(--mute); font-size: 12px; line-height: 1.6; }
+.sidebar-trip-list { display: grid; gap: 8px; min-width: 0; }
+.sidebar-trip-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.sidebar-trip-row.active { background: var(--light); border-color: var(--brand); }
+.sidebar-trip {
+  appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 7px;
+  text-align: left;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.sidebar-trip b, .sidebar-trip small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-trip b { font-size: 12px; line-height: 1.5; }
+.sidebar-trip small { font-size: 10px; color: var(--mute); }
+.sidebar-delete-trip {
+  appearance: none;
+  flex: 0 0 auto;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 5px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--red) 25%, var(--line));
+  background: var(--paper);
+  color: var(--red);
+  font-size: 0;
+  cursor: pointer;
+}
+.sidebar-delete-trip::before { content: '🗑'; font-size: 16px; }
+.sidebar-trip:focus-visible, .sidebar-delete-trip:focus-visible, #sidebarToggle:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.sidebar-sample { margin-top: 15px; border-top: 1px solid var(--line); padding-top: 12px; color: var(--mute); font-size: 11px; line-height: 1.65; }
+
+/* Narrow rail on laptops: all trips remain reachable with icon buttons. */
+body.sidebar-collapsed > .my-trip-sidebar { margin-left: 10px; padding: 10px 6px; overflow-x: hidden; }
+.sidebar-collapsed .sidebar-head { gap: 5px; justify-items: center; }
+.sidebar-collapsed .sidebar-head > strong { font-size: 0; line-height: 1; }
+.sidebar-collapsed .sidebar-head > strong::after { content: '🧳'; font-size: 23px; }
+.sidebar-collapsed .sidebar-head-actions { justify-content: center; width: 100%; }
+.sidebar-collapsed #sideNewTrip, .sidebar-collapsed .sidebar-hint, .sidebar-collapsed .sidebar-sample { display: none; }
+.sidebar-collapsed #sidebarToggle { min-width: 42px; min-height: 42px; padding: 5px; }
+.sidebar-collapsed .sidebar-trip-list { margin-top: 14px; }
+.sidebar-collapsed .sidebar-trip-row { padding: 2px; }
+.sidebar-collapsed .sidebar-trip { display: flex; align-items: center; justify-content: center; padding: 7px 0; min-height: 42px; }
+.sidebar-collapsed .sidebar-trip::before { content: '🌏'; font-size: 22px; }
+.sidebar-collapsed .sidebar-trip b, .sidebar-collapsed .sidebar-trip small, .sidebar-collapsed .sidebar-delete-trip { display: none; }
+
+/* All content inside the narrowing main column must be able to shrink. */
+main.container .section, main.container .panel, main.container .customizer,
+main.container .ai-start, main.container .detail-personalize { min-width: 0; }
+main.container .timeline-event, main.container .flight-note, main.container .trip-meta { min-width: 0; }
+main.container input, main.container textarea, main.container select { max-width: 100%; }
+
+/* Container queries respond to the REAL content width, not just the monitor. */
+body > main.container { container-type: inline-size; }
+@container (max-width: 830px) {
+  .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .place-grid, .reel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ai-start-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ai-start-grid .wide { grid-column: 1 / -1; }
+  .rec-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 660px) {
+  .timeline, .budget-grid, .account-grid, .rec-results, .rec-fields, .reel-grid { grid-template-columns: minmax(0, 1fr); }
+  .customizer-body { grid-template-columns: minmax(0, 1fr); }
+  .customizer-body .earth-portrait { max-width: 220px; }
+  .sectiontitle { align-items: flex-start; flex-wrap: wrap; }
+  .sectiontitle > div, .trip-meta { max-width: 100%; }
+  .flight-note { flex-wrap: wrap; }
+}
+@container (max-width: 430px) {
+  .ai-start-grid, .place-grid, .reel-add { grid-template-columns: minmax(0, 1fr); }
+  .ai-start-grid .wide { grid-column: 1; }
+  .plan-grid, .preset-grid { grid-template-columns: minmax(0, 1fr); }
+  .sectiontitle h2 { font-size: 24px; }
+}
+
+/* A shorter window turns the left column into a full-width accordion.
+   This avoids the old 108px collapsed card on partial-size windows. */
+@media (max-width: 760px) {
+  body { display: block; min-width: 0; }
+  body > .topbar { width: 100%; }
+  body > .my-trip-sidebar, body.sidebar-collapsed > .my-trip-sidebar {
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    width: calc(100% - 30px);
+    max-width: 1100px;
+    max-height: none;
+    overflow: visible;
+    margin: 12px auto 0;
+    padding: 12px 14px;
+    border-radius: 15px;
+  }
+  body > main.container { width: 100%; max-width: 1100px; margin-inline: auto; padding-inline: 15px; }
+  .sidebar-head, .sidebar-collapsed .sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sidebar-head > strong, .sidebar-collapsed .sidebar-head > strong { font-size: 14px; line-height: 1.5; }
+  .sidebar-collapsed .sidebar-head > strong::after { content: none; }
+  .sidebar-head-actions, .sidebar-collapsed .sidebar-head-actions { margin-left: auto; width: auto; flex-wrap: nowrap; gap: 7px; }
+  .sidebar-collapsed #sidebarToggle, #sidebarToggle { min-width: 76px; min-height: 40px; padding: 7px 10px; }
+  .sidebar-collapsed #sideNewTrip { display: inline-flex; }
+  .sidebar-trip-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+  .sidebar-collapsed .sidebar-trip-list, .sidebar-collapsed .sidebar-hint, .sidebar-collapsed .sidebar-sample { display: none; }
+  .sidebar-collapsed .sidebar-head { justify-items: stretch; }
+  .sidebar-trip-row, .sidebar-collapsed .sidebar-trip-row { padding: 4px; }
+  .sidebar-trip, .sidebar-collapsed .sidebar-trip { min-height: 48px; padding: 8px; display: grid; justify-content: stretch; }
+  .sidebar-collapsed .sidebar-trip::before { content: none; }
+  .sidebar-collapsed .sidebar-trip b, .sidebar-collapsed .sidebar-trip small { display: block; }
+  .topline { flex-wrap: wrap; gap: 9px; }
+  .header-actions { flex: 1 1 340px; min-width: 0; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+}
+@media (max-width: 420px) {
+  .my-trip-sidebar .sidebar-head { gap: 6px; }
+  .my-trip-sidebar .sidebar-head-actions .btn { min-height: 38px; padding: 6px 8px; font-size: 11px; }
+  .my-trip-sidebar .sidebar-head > strong { font-size: 13px; }
+  .header-actions { justify-content: flex-start; }
+  .header-actions .btn, .ui-lang-switch { min-height: 35px; }
+  .trip-select select { min-width: 0; width: 100%; margin-top: 6px; }
+}
+
+/* Tripkku home creator + budget consolidation + responsive sidebar (2026-10-27) */
+body[data-view="detail"] #aiTripStart { display: none !important; }
+body[data-view="home"] #aiTripStart { display: block; scroll-margin-top: 100px; }
+body[data-view="home"] #budget { display: none !important; }
+.ai-start .budget-start-field { position: relative; }
+.ai-start .budget-field-subtitle { font-size: 12px; font-weight: 550; color: var(--mute); }
+.ai-start .budget-start-preview { display: block; margin: 2px 0 0; color: var(--brand); font-weight: 750; font-size: 12px; line-height: 1.55; }
+.ai-start .budget-start-field input { border-color: var(--brand); background: var(--paper); }
+.ai-start .budget-start-field input:focus-visible { outline: 3px solid var(--accent); }
+#startGenerationStatus { overflow-wrap: anywhere; }
+#sidebarToggle { display: inline-flex; gap: 4px; align-items: center; justify-content: center; white-space: nowrap; }
+@media (min-width: 761px) {
+  .sidebar-collapsed .sidebar-toggle-label { display: none; }
+  body.sidebar-collapsed > .my-trip-sidebar { width: auto; }
+}
+@media (max-width: 760px) {
+  .sidebar-collapsed .sidebar-toggle-label { display: inline; }
+  #sidebarToggle, .sidebar-collapsed #sidebarToggle { min-width: 85px; }
+  body.sidebar-collapsed > .my-trip-sidebar .sidebar-head { min-height: 43px; }
+}
+@media (max-width: 420px) {
+  .sidebar-head-actions { gap: 5px; }
+  .my-trip-sidebar .sidebar-head-actions .btn { padding-inline: 6px; }
+  .ai-start .sectiontitle h2 { font-size: clamp(23px, 6vw, 28px); }
+}

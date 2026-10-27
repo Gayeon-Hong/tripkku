@@ -5,7 +5,7 @@
   <link rel="icon" type="image/png" href="./assets/favicon.png"/>
   <meta name="description" content="함께 꾸미는 여행, 트립꾸. 일정·지도·공동경비·개인예산을 한눈에."/>
   <link rel="manifest" href="./manifest.webmanifest"/><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png"/>
-  <link rel="stylesheet" href="./style.css"/>
+  <link rel="stylesheet" href="./style.css?v=home-budget-sidebar-20261027-1"/>
   <title>트립꾸 · 함께 꾸미는 여행</title>
 </head><body data-theme="forest" data-appearance="light" data-view="home">
   <header class="topbar"><div class="topline">
@@ -22,11 +22,11 @@
     <section class="hero"><div class="hero-main"><div class="hero-kicker">MAKE MEMORIES, TOGETHER <span>✦ 2026</span></div>
       <h1>우리만의 여행을<br/><em>같이 꾸며봐!</em></h1>
       <p>여행지 지도와 현지 날씨부터 일정·예산까지.<br/>친구와 함께 여행을 만들어봐!</p><div id="heroWeatherText" class="hero-weather-chip">📍 목적지와 여행 날짜를 설정해 봐!</div>
-      <div class="hero-buttons"><button class="btn white" id="heroNewTrip" type="button">＋ 새 여행 시작하기</button><button class="btn frosted" id="heroOpenTrip" type="button">선택한 여행 열기 ↗</button></div>
+      <div class="hero-buttons"><button class="btn white" id="heroNewTrip" type="button">＋ AI 여행 계획 만들기</button><button class="btn frosted" id="heroOpenTrip" type="button">선택한 여행 열기 ↗</button></div>
     </div><div class="hero-art" aria-hidden="true"><div class="globe-hero-image"><div id="heroEarthArt" class="earth-canvas hero-canvas" role="img" aria-label="트립꾸 지구"></div></div><div class="sun"></div><div class="hill h1"></div><div class="hill h2"></div><div class="ticket"><span>GOOD VIBES</span><strong>TRIP<br/>WITH<br/>FRIENDS</strong><small>LET'S GO ✳</small></div><div class="spark">✴</div></div></section>
     <div class="notice" id="demoNotice"><span>💌</span><div><b>내 여행을 꾸며봐!</b> 현재 이 기기에 저장되는 여행 플래너야. 계정 기능이 연결되면 친구들과 함께 수정할 수 있어.</div></div>
-    <section class="section ai-start" id="aiTripStart"><div class="sectiontitle"><div><span class="eyebrow">START YOUR OWN JOURNEY</span><h2>✨ AI로 여행 계획 처음부터 만들기</h2><p>나라·도시·날짜·인원·예산을 입력하면 첫 여행 초안을 만듭니다. 모든 일정은 나중에 수정할 수 있습니다.</p></div></div><div class="ai-start-grid"><label>여행 나라<input id="startCountry" placeholder="예: 일본" maxlength="80"></label><label>여행 도시<input id="startCity" placeholder="예: 도쿄" maxlength="100"></label><label>출발일<input id="startDate" type="date"></label><label>귀국일<input id="endDate" type="date"></label><label>인원<input id="startPeople" type="number" min="1" max="30" value="2"></label><label>전체 여행 예산 (원)<input id="startBudget" type="number" min="10000" step="10000" placeholder="예: 1200000"></label><label class="wide">여행 취향<select id="startTaste"><option value="balanced">명소·맛집 골고루</option><option value="food">맛집 중심</option><option value="photo">인생샷 중심</option><option value="budget">가성비 중심</option><option value="relax">휴식 중심</option></select></label></div><button type="button" id="startGenerateTrip" class="btn dark">🌏 여행 만들고 Gemini 초안 생성</button><p id="startGenerationStatus" role="status" aria-live="polite">추천은 AI의 초안입니다. 항공편·운영시간·가격은 예약 전 확인하세요.</p></section>
-<section class="section" id="trips"><div class="sectiontitle"><div><span class="eyebrow">01 / YOUR TRIP</span><h2>어디로 떠날까?</h2></div><button id="makeTrip" class="btn dark">＋ 새 여행 만들기</button></div>
+    <section class="section ai-start" id="aiTripStart"><div class="sectiontitle"><div><span class="eyebrow">START YOUR OWN JOURNEY</span><h2>✨ AI로 여행 계획 처음부터 만들기</h2><p>여행지·기간·인원·전체 예산을 여기서 한 번에 입력하세요. Gemini가 여행 초안을 제안하고, 상세 화면에서 언제든 수정할 수 있습니다.</p></div></div><div class="ai-start-grid"><label>여행 나라<input id="startCountry" placeholder="예: 일본" maxlength="80"></label><label>여행 도시<input id="startCity" placeholder="예: 도쿄" maxlength="100"></label><label>출발일<input id="startDate" type="date"></label><label>귀국일<input id="endDate" type="date"></label><label>인원<input id="startPeople" type="number" min="1" max="30" value="2"></label><label class="budget-start-field">💰 전체 여행 예산 <span class="budget-field-subtitle">일행 전체 합계 · 원</span><input id="startBudget" type="number" min="10000" max="100000000" step="10000" inputmode="numeric" placeholder="예: 2000000" aria-describedby="startBudgetPerPerson"><small id="startBudgetPerPerson" class="budget-start-preview" aria-live="polite">전체 여행 예산을 입력하면 1인당 예상 예산도 보여드려요.</small></label><label class="wide">여행 취향<select id="startTaste"><option value="balanced">명소·맛집 골고루</option><option value="food">맛집 중심</option><option value="photo">인생샷 중심</option><option value="budget">가성비 중심</option><option value="relax">휴식 중심</option></select></label></div><button type="button" id="startGenerateTrip" class="btn dark">🌏 여행 만들고 Gemini 초안 생성</button><p id="startGenerationStatus" role="status" aria-live="polite">추천은 AI의 초안입니다. 항공편·운영시간·가격은 예약 전 확인하세요.</p></section>
+<section class="section" id="trips"><div class="sectiontitle"><div><span class="eyebrow">01 / YOUR TRIP</span><h2>어디로 떠날까?</h2></div><button id="makeTrip" class="btn dark">＋ AI로 여행 만들기</button></div>
       <div class="theme-control" id="themePicker"><span>🎨 테마 바꾸기</span><button data-theme="forest" class="theme-dot t-forest" aria-label="그린 테마" title="그린">🌿</button><button data-theme="pink" class="theme-dot t-pink" aria-label="핑크 테마" title="핑크">🌸</button><button data-theme="sea" class="theme-dot t-sea" aria-label="바다 테마" title="바다">🌊</button><button data-theme="citrus" class="theme-dot t-citrus" aria-label="노랑 테마" title="노랑">🍋</button></div>
 <div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
     </section>
@@ -51,7 +51,7 @@
       <div class="flight-note" id="flightNote"><div><span class="flightemoji">✈️</span><b>우리 항공편</b></div><div>인천 ICN <b>11:05 → 13:00</b> 오이타 OIT <span class="flight-sep">·</span> 귀국 <b>14:00 → 15:45</b> 인천 <small>※ 항공편 시간은 이전 대화 기준, 확정 예약 내역으로 재확인</small></div></div>
       <div class="section-subhead"><h3>Day by day</h3><button id="addEvent" class="btn tiny outline">＋ 일정 추가</button></div><div id="eventList" class="timeline"></div>
     </section>
-    <section class="section" id="budget"><div class="sectiontitle"><div><span class="eyebrow">03 / MONEY TALK</span><h2>예산은 우리 마음대로</h2><p>공동 예산과 내 예산을 분리해 보여줘. 초과하면 자동으로 빨간색!</p></div><span class="outlined-pill">단위 KRW · 원</span></div>
+    <section class="section" id="budget"><div class="sectiontitle"><div><span class="eyebrow">03 / MONEY TALK</span><h2>예산은 우리 마음대로</h2><p>홈에서 입력한 총예산을 기준으로 공동 지출·개인 지출을 관리합니다. 여행을 만든 뒤에도 수정할 수 있어요.</p></div><span class="outlined-pill">단위 KRW · 원</span></div>
       <div class="budget-grid">
         <article class="money-card"><div class="money-head"><div><span class="overline">SHARED WALLET</span><h3>👭 우리 공동 경비</h3></div><span class="privacy-tag">멤버 전체 공개</span></div>
           <label class="inputlabel" for="sharedTarget">공동 목표 예산 · 모두 합계</label><div class="field-unit"><input type="number" id="sharedTarget" min="0" step="10000" inputmode="numeric"/><span>원</span></div>
@@ -114,10 +114,10 @@
   </main>
   <nav class="mobile-nav" aria-label="모바일 빠른 이동"><button data-go="plans"><span>🗓️</span><b>일정</b></button><button data-go="budget"><span>💰</span><b>예산</b></button><button data-go="places"><span>🗺️</span><b>지도</b></button><button data-go="account"><span>👭</span><b>친구</b></button><button data-go="assistant"><span>💬</span><b>도우미</b></button></nav>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./app.js?v=trip-studio-20261027-1"></script>
+  <script type="module" src="./app.js?v=home-budget-sidebar-20261027-1"></script>
   <script type="module" src="./trip-reels.js?v=trip-studio-20261027-1"></script>
-  <script type="module" src="./trip-studio.js?v=trip-studio-20261027-1"></script>
-  <script type="module" src="./trip-recommend.js?v=trip-studio-20261027-1"></script>
+  <script type="module" src="./trip-studio.js?v=home-budget-sidebar-20261027-1"></script>
+  <script type="module" src="./trip-recommend.js?v=home-budget-sidebar-20261027-1"></script>
   <script src="./trip-extras.js" defer></script>
   <script type="module" src="./trip-bookings.js"></script>
 </body></html>
