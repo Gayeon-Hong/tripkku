@@ -1,8 +1,45 @@
-Tripkku 삭제 버튼 표시 및 이름 자동 입력 수정
+Tripkku sidebar click fix v3 (2026-10-27)
+========================================
 
-1. GitHub 프로젝트의 app.js, style.css를 이 ZIP의 파일로 교체하세요.
-2. 기존 index.html은 유지할 수 있습니다. 다만 이전 사이드바 패치를 적용하지 않았다면 ZIP의 index.html도 교체하세요.
-3. 배포 후 Ctrl+Shift+R 새로고침하세요. 로그인 후 실제 생성된 여행의 소유자에게만 사이드바에 [🗑 삭제] 버튼이 보입니다.
-4. 삭제 시 여행 이름이 입력창에 미리 입력됩니다. 확인을 누르면 영구 삭제됩니다.
-5. 샘플 여행이나 다른 사람이 소유한 여행에는 삭제 버튼이 표시되지 않습니다.
-6. DB 삭제는 기존 repo.deleteTrip()를 그대로 호출합니다. 실제 배포/RLS 삭제 동작은 확인되지 않았습니다.
+Files to replace in the GitHub repository root:
+  index.html
+  app.js
+  style.css
+  sw.js
+
+Keep your other files unchanged:
+  collab.js, config.js, ai.js, trip-bookings.js, trip-reels.js,
+  trip-studio.js, trip-recommend.js, Supabase SQL and Edge Functions.
+
+Steps:
+  1. Make a backup of the four existing files.
+  2. Open GitHub / tripkku / Code / Add file / Upload files.
+  3. Upload all four files into the repository root (not a nested folder).
+  4. Commit changes; wait until Pages deployment is complete.
+  5. Open the website and press Ctrl+Shift+R.
+  6. Click the sidebar button two times; it should alternate
+     between "Collapse" and "Expand".
+
+If the old version remains:
+  Chrome F12 > Application > Service Workers > Unregister;
+  reload the page once. You do not need to clear site data.
+
+Implementation:
+  - Sidebar click is standalone inline script in index.html.
+  - Removed duplicate sidebar click and state code in app.js.
+  - CSS: desktop collapses to a 68px grid column; under 900px
+    the sidebar becomes a top accordion without horizontal overflow.
+  - Sidebar state saved to localStorage (same key as the prior version).
+  - Updated service-worker cache version; resilient install if
+    optional assets are missing.
+
+Testing:
+  - Static JS syntax checks for app.js and sw.js completed.
+  - Chromium DOM/CSS interactive checks at widths 320,390,600,760,
+    768,850,900,901,1024,1152,1366,1600px.
+  - Repeated click and keyboard Enter/Space toggle tests passed.
+  - No horizontal overflow in tested widths.
+  - Real GitHub Pages, OAuth, Supabase DB and Gemini API not tested.
+
+If GitHub has newer custom edits than the previous patch, merge
+rather than overwriting unrelated changes.

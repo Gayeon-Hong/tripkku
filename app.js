@@ -3,7 +3,7 @@ import {earthAvatarHtml} from './earth-avatar.js';
 import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
-import {Collaboration} from './collab.js?v=home-budget-sidebar-20261027-1';
+import {Collaboration} from './collab.js?v=sidebar-click-fix-20261027-v3';
 import {suggestWithAi,describeAction} from './ai.js';
 
 const $=selector=>document.querySelector(selector);
@@ -206,23 +206,8 @@ function focusHomeCreator(){
   });
 }
 function openSelectedTrip(){setPageView('detail');}
-const SIDEBAR_KEY='tripkku-sidebar-collapsed';
-const sidebarBreakpoint=window.matchMedia('(max-width: 1060px)');
-let sidebarAutoMode=true;
-function setSidebarCollapsed(collapsed,persist=true){
-  document.body.classList.toggle('sidebar-collapsed',!!collapsed);
-  const toggle=$('#sidebarToggle');
-  if(toggle){
-    toggle.innerHTML=collapsed?'▶ <span class="sidebar-toggle-label">펼치기</span>':'◀ <span class="sidebar-toggle-label">접기</span>';
-    toggle.setAttribute('aria-expanded',String(!collapsed));
-    toggle.setAttribute('aria-label',collapsed?'내 여행 목록 펼치기':'내 여행 목록 접기');
-    toggle.title=collapsed?'사이드바 펼치기':'사이드바 접기';
-  }
-  if(persist){
-    sidebarAutoMode=false;
-    try{localStorage.setItem(SIDEBAR_KEY,collapsed?'1':'0');}catch{}
-  }
-}
+// Sidebar open/close is handled independently in index.html so it also works
+// if the main app module has not initialized (offline or authentication errors).
 function renderSidebar(){
   const list=$('#sidebarTripList'),helper=$('#sidebarHelper');if(!list)return;
   helper.textContent=repo.user?(tripList.length?'여행을 선택하면 오른쪽에 크게 표시됩니다.':'아직 저장된 여행이 없습니다.'):'로그인 후 저장한 여행을 볼 수 있어요.';
@@ -240,12 +225,6 @@ function renderSidebar(){
     list.append(row);
   }
 }
-try{
-  const saved=localStorage.getItem(SIDEBAR_KEY);
-  sidebarAutoMode=saved===null;
-  setSidebarCollapsed(saved===null?sidebarBreakpoint.matches:saved==='1',false);
-}catch{setSidebarCollapsed(sidebarBreakpoint.matches,false);}
-sidebarBreakpoint.addEventListener('change',e=>{if(sidebarAutoMode)setSidebarCollapsed(e.matches,false);});
 function renderPresetPicker(){
   renderSidebar();
   $('#presetGrid').innerHTML=Object.values(PRESETS).map(p=>`<button class="preset ${data.trip.preset===p.key?'selected':''}" data-preset="${esc(p.key)}">
@@ -534,7 +513,6 @@ async function clickHandler(ev){
     if(b.id==='goTripDetail'||b.id==='heroOpenTrip'){openSelectedTrip();return;}
     if(b.id==='startGenerateTrip'){window.dispatchEvent(new CustomEvent('tripkku-start-create',{detail:{createTrip}}));return;}
     if(b.id==='heroNewTrip'){focusHomeCreator();return;}
-    if(b.id==='sidebarToggle'){setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));return;}
     if(b.dataset.deleteSidebarTrip){await deleteCurrentTrip(b.dataset.deleteSidebarTrip);return;}
     if(b.dataset.sidebarTrip){await selectRemote(b.dataset.sidebarTrip);openSelectedTrip();return;}
     if(b.id==='sideNewTrip'){focusHomeCreator();return;}
@@ -633,7 +611,7 @@ async function boot(){
     e.preventDefault();const val=$('#chatInput').value.trim();if(!val)return;$('#chatInput').value='';appendChat('me',val);
     try{appendChat('ai',await handleChat(val));}catch(err){appendChat('ai','⚠️ AI 응답을 받을 수 없어: '+(err.message||err)+'\n간단한 일정 명령 편집은 그대로 이용할 수 있어.');}
   });
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=sidebar-click-fix-20261027-v3').catch(()=>{});
   if(isToss){toast('앱인토스 모드는 정식 토스 로그인 서버 연동 전이라 데모만 제공해.');return;}
   if(repo.configured){
     try{await repo.init();await initAccount();}catch(e){fail(Error('온라인 연결 실패: '+e.message));}
