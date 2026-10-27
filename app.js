@@ -207,7 +207,7 @@ function renderSidebar(){
     btn.append(title,sub);row.append(btn);
     if(repo.user&&trip.owner_id===repo.user.id){
       const del=document.createElement('button');del.type='button';del.className='sidebar-delete-trip';del.dataset.deleteSidebarTrip=trip.id;
-      del.title='여행 영구 삭제';del.setAttribute('aria-label',(trip.title||'여행')+' 삭제');del.textContent='🗑';row.append(del);
+      del.title='여행 영구 삭제';del.setAttribute('aria-label',(trip.title||'여행')+' 삭제');del.textContent='🗑 삭제';row.append(del);
     }
     list.append(row);
   }
@@ -366,7 +366,7 @@ async function deleteCurrentTrip(targetId=data?.trip?.id){
   if(!trip||trip.owner_id!==repo.user.id)throw Error('여행방 소유자만 삭제할 수 있어.');
   const title=trip.title||'이름 없는 여행';
   if(!uiConfirm('⚠️ '+title+' 여행방을 완전히 삭제할까요?\n연결된 일정·경비·초대 정보에도 영향이 있을 수 있어. 삭제는 되돌릴 수 없어.'))return;
-  const typed=uiPrompt('삭제하려면 여행 이름을 정확히 다시 입력해 줘.', '');
+  const typed=uiPrompt('삭제할 여행 이름을 확인한 뒤 확인을 눌러줘.', title);
   if(typed!==title){toast('여행 이름이 일치하지 않아 삭제하지 않았어.');return;}
   const key='tripkku-ai-chat:'+repo.user.id+':'+targetId;
   await repo.deleteTrip(targetId);
