@@ -1,6 +1,6 @@
 // Network-first assets with a versioned fallback cache. Partial missing assets
 // cannot block service-worker upgrades (older versions used cache.addAll).
-const CACHE='tripkku-static-schedule-sort-20261027-v4';
+const CACHE='tripkku-static-route-timing-20261027-v5';
 const CORE=['./','./index.html','./style.css','./app.js'];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
