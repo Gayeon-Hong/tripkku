@@ -3,7 +3,7 @@ import {earthAvatarHtml} from './earth-avatar.js';
 import {SAMPLE_COORDS,knownDestination,geocodeCity,destinationGlobeHtml,dateRange,fetchTravelWeather,weatherLabel,weatherMood} from './destination-map.js';
 import {CONFIG} from './config.js';
 import {PRESETS,clonePreset,safeNum,googleDirections} from './presets.js';
-import {Collaboration} from './collab.js?v=delete-fix-20261027-2';
+import {Collaboration} from './collab.js?v=home-reels-20261027-2';
 import {suggestWithAi,describeAction} from './ai.js';
 
 const $=selector=>document.querySelector(selector);
@@ -190,6 +190,14 @@ function recordChat(role,text){
   const key=chatKey();if(key){try{localStorage.setItem(key,JSON.stringify(chatHistory));}catch{}
     repo.addAiChat(data.trip.id,role,String(text).slice(0,1600)).catch(e=>console.warn('Chat history cloud save failed',e.message));}
 }
+function setPageView(view){
+  const next=view==='detail'?'detail':'home';
+  document.body.dataset.view=next;
+  const detailButton=document.getElementById('goTripDetail');
+  if(detailButton)detailButton.setAttribute('aria-current',next==='detail'?'page':'false');
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function openSelectedTrip(){setPageView('detail');}
 function setSidebarCollapsed(collapsed){
   document.body.classList.toggle('sidebar-collapsed',collapsed);
   const toggle=$('#sidebarToggle');if(toggle){toggle.textContent=collapsed?'▶ 펼치기':'◀ 접기';toggle.setAttribute('aria-expanded',String(!collapsed));toggle.title=collapsed?'사이드바 펼치기':'사이드바 접기';}
@@ -306,6 +314,8 @@ function renderPhrases(){
 }
 function render(){
   if(!data)return;
+  document.body.dataset.tripId=mode==='remote'?data.trip.id:'';
+  document.dispatchEvent(new CustomEvent('tripkku-trip-changed',{detail:{tripId:mode==='remote'?data.trip.id:null}}));
   renderPresetPicker();renderPlans();renderBudget();renderPlaces();renderAccount();renderPhrases();
   translateUi();void refreshDestination();
 }
@@ -358,7 +368,7 @@ async function createTrip(){
   const name=uiPrompt('새 여행 이름',sample?(PRESETS[key]?.title||'우리 여행'):'새 여행');if(name===null)return;
   const p=clonePreset(key);p.title=name.trim()||'새 여행';
   if(!sample){p.key='custom';p.schedule={};p.expenses=[];p.city='미정';p.dates='날짜 미정';p.description='내가 직접 만드는 여행';p.budgetNote='';p.shared_target=0;p.nights_a=[0,0];p.nights_b=[0,0];}
-  const id=await repo.createTrip(p);await selectRemote(id);toast(sample?'샘플로 새 여행을 만들었어!':'빈 새 여행을 만들었어!');
+  const id=await repo.createTrip(p);await selectRemote(id);openSelectedTrip();toast(sample?'샘플로 새 여행을 만들었어!':'빈 새 여행을 만들었어!');
 }
 async function deleteCurrentTrip(targetId=data?.trip?.id){
   if(!repo.user)throw Error('로그인이 필요해.');
@@ -494,11 +504,14 @@ function speak(index){const lang=data.trip.language||'ja-JP';const p=(lang.start
 async function clickHandler(ev){
   const b=ev.target.closest('button');if(!b)return;
   try{
+    if(b.id==='goHome'||b.id==='backHome'){setPageView('home');return;}
+    if(b.id==='goTripDetail'||b.id==='heroOpenTrip'){openSelectedTrip();return;}
+    if(b.id==='heroNewTrip'){await createTrip();return;}
     if(b.id==='sidebarToggle'){setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));return;}
     if(b.dataset.deleteSidebarTrip){await deleteCurrentTrip(b.dataset.deleteSidebarTrip);return;}
-    if(b.dataset.sidebarTrip){await selectRemote(b.dataset.sidebarTrip);document.getElementById('plans')?.scrollIntoView({behavior:'smooth'});return;}
+    if(b.dataset.sidebarTrip){await selectRemote(b.dataset.sidebarTrip);openSelectedTrip();return;}
     if(b.id==='sideNewTrip'){await createTrip();return;}
-    if(b.dataset.go){document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
+    if(b.dataset.go){if(b.dataset.go!=='trips')setPageView('detail');document.getElementById(b.dataset.go)?.scrollIntoView({behavior:'smooth'});return;}
     if(b.dataset.uiLang){setUiLanguage(b.dataset.uiLang);render();applyEarthAppearance();updateWeatherPanel(window._tripkkuWeatherResult||{status:'dates-missing'});toast(isEnglish()?'Language: English':'언어: 한국어');return;}
     if(b.dataset.appearance){document.body.dataset.appearance=b.dataset.appearance;
       localStorage.setItem(APPEARANCE_KEY,b.dataset.appearance);applyEarthAppearance();toast('낮·밤 로고를 바꿨어 🌍');return;}
@@ -509,8 +522,8 @@ async function clickHandler(ev){
     if(b.dataset.theme){document.body.dataset.theme=b.dataset.theme;localStorage.setItem(THEME,b.dataset.theme);renderPresetPicker();toast('테마를 바꿨어 🎨');return;}
     if(b.dataset.preset){
       if(mode==='remote'&&repo.user){const ok=uiConfirm('이 샘플로 별도 공동 여행을 새로 만들까요? (기존 여행 유지)');if(!ok)return;
-        const id=await repo.createTrip(clonePreset(b.dataset.preset));await selectRemote(id);toast('새 공동 여행을 만들었어!');}
-      else loadDemo(b.dataset.preset);return;
+        const id=await repo.createTrip(clonePreset(b.dataset.preset));await selectRemote(id);openSelectedTrip();toast('새 공동 여행을 만들었어!');}
+      else {loadDemo(b.dataset.preset);openSelectedTrip();}return;
     }
     if(b.dataset.plan){await persistTrip({active_plan:b.dataset.plan});toast(b.dataset.plan+'안 적용 완료');return;}
     if(b.id==='makeTrip'){await createTrip();return;}
@@ -583,7 +596,7 @@ async function boot(){
   setUiLanguage(getUiLanguage());
   pendingInvite();document.body.dataset.theme=localStorage.getItem(THEME)||'forest';
   document.body.dataset.appearance=localStorage.getItem(APPEARANCE_KEY)||'light';
-  loadDemo(activePreset);applyEarthAppearance();
+  loadDemo(activePreset);setPageView('home');applyEarthAppearance();
   document.addEventListener('click',clickHandler);
   document.addEventListener('change',inputChanged);
   document.addEventListener('input',e=>{
