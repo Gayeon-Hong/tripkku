@@ -1,4 +1,26 @@
-const C='tripkku-static-home-budget-sidebar-20261027-1'; const S=['./','./index.html','./style.css','./app.js','./earth-avatar.js','./destination-map.js','./world-coasts.js','./i18n.js','./assets/earth-base-light.png','./assets/earth-base-dark.png','./assets/geo-oita.svg','./assets/geo-osaka.svg','./assets/geo-london.svg','./assets/geo-newyork.svg','./trip-reels.js','./trip-recommend.js','./trip-studio.js','./ai.js','./presets.js','./collab.js','./config.js','./manifest.webmanifest','./assets/icon-192.png','./assets/light-512.png','./assets/dark-512.png'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(S)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return; e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(C).then(c=>c.put(e.request,copy));}return r}).catch(()=>caches.match(e.request)));});
+// Network-first assets with a versioned fallback cache. Partial missing assets
+// cannot block service-worker upgrades (older versions used cache.addAll).
+const CACHE='tripkku-static-sidebar-click-fix-20261027-v3';
+const CORE=['./','./index.html','./style.css','./app.js'];
+self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE);
+    await Promise.allSettled(CORE.map(url=>cache.add(url)));
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const names=await caches.keys();
+    await Promise.all(names.filter(k=>k.startsWith('tripkku-static-')&&k!==CACHE).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+self.addEventListener('fetch',event=>{
+  const request=event.request;
+  if(request.method!=='GET'||new URL(request.url).origin!==self.location.origin)return;
+  event.respondWith(fetch(request).then(response=>{
+    if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{}));}
+    return response;
+  }).catch(async()=> (await caches.match(request)) || Response.error()));
+});

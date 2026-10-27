@@ -381,3 +381,72 @@ body[data-view="home"] #budget { display: none !important; }
   .my-trip-sidebar .sidebar-head-actions .btn { padding-inline: 6px; }
   .ai-start .sectiontitle h2 { font-size: clamp(23px, 6vw, 28px); }
 }
+
+
+/* Sidebar toggle v3: explicit expanded/collapsed layouts at all viewport widths. */
+@media (min-width: 901px) {
+  body.sidebar-collapsed { --trip-sidebar-width: 68px; }
+  body.sidebar-collapsed > .my-trip-sidebar {
+    width: auto; min-width: 0; margin: 14px 0 18px 8px;
+    padding: 10px 5px; overflow: hidden;
+  }
+  body.sidebar-collapsed > .my-trip-sidebar .sidebar-head {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  body.sidebar-collapsed > .my-trip-sidebar .sidebar-head > strong,
+  body.sidebar-collapsed > .my-trip-sidebar #sideNewTrip,
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarHelper,
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarTripList,
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarSample { display: none !important; }
+  body.sidebar-collapsed > .my-trip-sidebar .sidebar-head-actions {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; margin: 0; gap: 0;
+  }
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarToggle {
+    display: flex; min-width: 44px; width: 44px; height: 44px;
+    padding: 0; justify-content: center; border-radius: 12px;
+  }
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarToggle .sidebar-toggle-label {
+    display: none !important;
+  }
+}
+@media (max-width: 900px) {
+  body, body.sidebar-collapsed { display: block; min-width: 0; }
+  body > .my-trip-sidebar, body.sidebar-collapsed > .my-trip-sidebar {
+    position: relative; inset: auto; width: calc(100% - 24px);
+    max-width: 1100px; max-height: none; min-width: 0;
+    overflow: visible; margin: 12px auto 0; padding: 12px 14px;
+  }
+  body > main.container, body.sidebar-collapsed > main.container {
+    width: 100%; max-width: 1150px; margin-inline: auto;
+    min-width: 0; padding-inline: clamp(12px, 3vw, 24px);
+  }
+  .my-trip-sidebar .sidebar-head, .sidebar-collapsed .my-trip-sidebar .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; min-height: 42px;
+  }
+  .my-trip-sidebar .sidebar-head > strong, .sidebar-collapsed .my-trip-sidebar .sidebar-head > strong {
+    display: block; font-size: 14px; line-height: 1.45;
+  }
+  body.sidebar-collapsed > .my-trip-sidebar .sidebar-head > strong::after { content: none; }
+  .my-trip-sidebar .sidebar-head-actions, .sidebar-collapsed .my-trip-sidebar .sidebar-head-actions {
+    display: flex; gap: 6px; flex-wrap: nowrap; width: auto; margin-left: auto;
+  }
+  .my-trip-sidebar #sidebarToggle, .sidebar-collapsed .my-trip-sidebar #sidebarToggle {
+    min-width: 86px; width: auto; min-height: 40px; padding: 6px 10px;
+  }
+  .my-trip-sidebar #sidebarToggle .sidebar-toggle-label,
+  .sidebar-collapsed .my-trip-sidebar #sidebarToggle .sidebar-toggle-label { display: inline !important; }
+  .sidebar-collapsed #sideNewTrip { display: inline-flex !important; }
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarHelper,
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarTripList,
+  body.sidebar-collapsed > .my-trip-sidebar #sidebarSample { display: none !important; }
+  body:not(.sidebar-collapsed) > .my-trip-sidebar #sidebarTripList { display: grid; }
+}
+@media (max-width: 390px) {
+  .my-trip-sidebar .sidebar-head > strong { font-size: 13px; }
+  .my-trip-sidebar #sideNewTrip { font-size: 10px; padding: 5px 7px; }
+  .my-trip-sidebar #sidebarToggle, .sidebar-collapsed .my-trip-sidebar #sidebarToggle {
+    min-width: 72px; padding: 6px 7px; font-size: 11px;
+  }
+}
