@@ -214,6 +214,14 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
  .intro-copy{grid-template-columns:58px minmax(0,1fr)!important;}
  .intro-copy>.globe-mark{width:58px;height:58px;}
 }
+
+/* v20: clear, truthful Gemini connection indicator */
+.ai-status{display:inline-flex;align-items:center;margin-top:10px;padding:6px 10px;border-radius:999px;border:1px solid #dbe2d7;background:#f7f8f3;color:#687970;font-size:12px;font-weight:750;max-width:100%;overflow-wrap:anywhere}
+.ai-status[data-state="loading"]{color:#72633a;background:#fff5df;border-color:#ebd8ac}
+.ai-status[data-state="ok"]{color:#1d684e;background:#e9f6ee;border-color:#bbdec9}
+.ai-status[data-state="error"]{color:#ac453f;background:#fff0eb;border-color:#f0c9c4;border-radius:10px;white-space:normal}
+#aiTestBtn{background:#e6efe8;border-color:#bad1c0;color:#2d5c47;font-weight:850}
+#aiTestBtn:disabled{opacity:.5}
 </style>
 <link href="data:image/png;base64,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" rel="icon" type="image/png"/><meta content="v18-single-file-korean-travel" name="oita-build"/></head><body>
 <header class="top"><div class="topinner"><div class="brand brand-globe"><span class="globe-mark" data-earth-avatar=""></span><small>OITA · 10.31 — 11.02</small></div><div class="header-actions"><span class="sync-pill" id="syncStatus">연결 준비 중</span><button class="button dark" hidden="" id="shareBtn" type="button">친구 초대 링크</button><button class="button ghost" hidden="" id="logoutBtn" type="button">로그아웃</button></div></div></header>
@@ -269,12 +277,12 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <div class="reels-list" id="reelList"></div><details class="old-reel-import"><summary>예전 트립꾸에 저장한 릴스 가져오기 (선택)</summary><p class="hint">이전에 같은 Supabase에 저장한 릴스를 읽어, 중복 URL은 제외하고 이 여행방에 복사해요. 원본은 삭제하지 않아요.</p><button class="button" id="importLegacyReels" type="button">기존 릴스 불러오기</button><span id="importLegacyStatus" class="hint" role="status"></span></details>
 </section><section class="page" hidden="" id="assistantPage">
 <div class="section-title"><h2>여행 챗봇</h2><p>오이타 일정과 지출을 물어보고, 일정 변경을 제안받을 수 있어.</p></div>
-<div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 오늘 일정, 정산금, 교통 준비를 물어봐. Gemini AI 연결까지 완료되면 여행 일정 추가 제안도 받을 수 있어.</div></div>
+<div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 오이타 여행 계획을 같이 확인하자. 아래 버튼은 빠른 안내이고, 직접 질문을 입력하면 Gemini AI에게 물어볼게.</div></div>
 <form class="chat-input" id="chatForm"><input autocomplete="off" id="chatInput" maxlength="600" name="message" placeholder="예: 2일 차 일정 알려줘" required=""/><button class="button dark" id="chatSend" type="submit">보내기</button></form>
-<div class="chat-tools"><button class="button" data-chat-quick="2일 차 일정 알려줘" type="button">2일 차</button><button class="button" data-chat-quick="정산 얼마야?" type="button">정산</button><button class="button" data-chat-quick="셔틀과 공항버스 준비 알려줘" type="button">교통 준비</button></div>
-<p class="hint">AI 답변은 제안일 뿐이며, 일정 변경은 확인 버튼을 눌러야 공동 저장돼. AI를 쓰려면 ZIP 안 `oita-chat` Edge Function 배포가 필요해.</p>
+<div class="chat-tools"><button class="button" data-chat-quick="2일 차 일정 알려줘" type="button">2일 차</button><button class="button" data-chat-quick="정산 얼마야?" type="button">정산</button><button class="button" data-chat-quick="셔틀과 공항버스 준비 알려줘" type="button">교통 준비</button><button class="button" id="aiTestBtn" type="button">✨ AI 연결 테스트</button></div><div id="aiStatus" role="status" class="ai-status" data-state="idle">● Gemini 연결 상태: 확인 전</div>
+<p class="hint">빠른 안내 버튼은 기본 답변이야. 직접 입력하거나 ‘AI 연결 테스트’를 누르면 oita-chat 서버를 호출해. AI가 일정 변경을 제안하면 확인 후 공동 저장돼.</p>
 <div class="chat-proposal" hidden="" id="chatProposal"></div></div></section><section class="page" hidden="" id="notesPage"><div class="section-title"><h2>출발 전 체크</h2><p>체크박스와 메모도 친구와 함께 동기화돼</p></div><div class="checklist" id="checklist"></div><div class="card section-card"><h3>공용 메모</h3><textarea id="memo" placeholder="셔틀 예약 시간, 준비물, 맛집 후보…" rows="5"></textarea><button class="button dark" id="saveMemo">메모 저장</button><p class="hint">여권번호·카드번호·로그인 비밀번호는 입력하지 마.</p></div></section></div></div>
-</div><footer class="japan-footer">TRIPKKU · 2026 OITA · 친구와 함께 쓰는 여행 · v18</footer></main>
+</div><footer class="japan-footer">TRIPKKU · 2026 OITA · 친구와 함께 쓰는 여행 · v20</footer></main>
 <dialog id="editDialog"><form class="dialog-form" id="editForm"><h3 id="dialogTitle">일정 수정</h3><input name="id" type="hidden"/><label>날짜<select name="day"><option value="1">10/31 · 첫날</option><option value="2">11/01 · 둘째 날</option><option value="3">11/02 · 마지막 날</option></select></label><div class="time-row"><label>시작<input name="start" required="" type="time"/></label><label>종료<input name="end" required="" type="time"/></label></div><label>일정 이름<input maxlength="110" name="title" required=""/></label><label>장소명<input maxlength="160" name="place" placeholder="지도 검색용"/></label><label>설명<textarea maxlength="450" name="note" rows="3"></textarea></label><div class="dialog-actions"><button class="button danger" id="deleteEvent" type="button">삭제</button><button class="button" id="cancelDialog" type="button">취소</button><button class="button dark" type="submit">저장</button></div></form></dialog>
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
 <script>
@@ -583,7 +591,8 @@ function attachHandlers(){
  });
  $('reelList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-reel]');if(!b||!confirm('이 링크를 목록에서 삭제할까?'))return;void mutate(d=>{d.reels=(d.reels||[]).filter(x=>x.id!==b.dataset.deleteReel);},'링크 삭제 완료');});
  $('chatForm').addEventListener('submit',e=>{e.preventDefault();const msg=$('chatInput').value.trim().slice(0,600);if(!msg)return;$('chatInput').value='';void handleChat(msg);});
- document.querySelectorAll('[data-chat-quick]').forEach(b=>b.addEventListener('click',()=>void handleChat(b.dataset.chatQuick)));
+ document.querySelectorAll('[data-chat-quick]').forEach(b=>b.addEventListener('click',()=>void handleChat(b.dataset.chatQuick,true)));
+ $('aiTestBtn').addEventListener('click',()=>void handleChat('우리 오이타 여행에서 이동할 때 유용한 팁 두 가지를 알려줘.'));
  $('chatProposal').addEventListener('click',e=>{if(e.target.closest('[data-proposal-cancel]')){$('chatProposal').hidden=true;pendingProposal=null;}
   if(e.target.closest('[data-proposal-apply]')){const act=pendingProposal;pendingProposal=null;$('chatProposal').hidden=true;if(act)void applyAIProposal(act);}});
 } 
@@ -653,16 +662,36 @@ function chatAnswerLocal(msg){const m=msg.toLowerCase();
  if(/이치란|몽벨/.test(m))return '이치란 벤텐점과 몽벨 오이타점은 모두 1일 차에 넣어뒀어. 2일 차에는 가마지옥과 유후인 이동에 집중하면 돼.';
  return null;
 }
-async function handleChat(msg){if(chatBusy)return;chatBubble(msg,true);
- const local=chatAnswerLocal(msg);if(local){chatBubble(local);return;}
- chatBusy=true;$('chatSend').disabled=true;chatBubble('Gemini에게 물어보는 중…');const bubble=$('chatMessages').lastElementChild;
+function aiStatus(state,message){
+ const e=$('aiStatus');if(!e)return;e.dataset.state=state;e.textContent=message;
+}
+async function handleChat(msg,quick=false){
+ if(chatBusy)return;
+ chatBubble(msg,true);
+ // Quick buttons are intentionally offline; typed questions ALWAYS call Gemini.
+ const local=quick?chatAnswerLocal(msg):null;
+ if(local){chatBubble(local);return;}
+ if(!client||!room?.id){chatBubble('여행방 연결이 아직 준비되지 않았어. 먼저 로그인하고 여행방에 들어가 줘.');aiStatus('error','● Gemini: 로그인·여행방 확인 필요');return;}
+ chatBusy=true;$('chatSend').disabled=true;$('aiTestBtn').disabled=true;
+ aiStatus('loading','● Gemini: 서버에 연결하는 중…');
+ chatBubble('Gemini에게 물어보는 중…');const bubble=$('chatMessages').lastElementChild;
  try{
   const {data:result,error}=await client.functions.invoke('oita-chat',{body:{roomId:room.id,message:msg}});
-  if(error){let detail='';try{const c=await error.context?.json();detail=c?.error||'';}catch(_){}throw new Error(detail||'AI 서버 연결 실패');}
-  if(!result?.reply)throw new Error('AI 응답이 비어 있어.');bubble.textContent=String(result.reply).slice(0,2000);
+  if(error){
+   let detail='';let status=error.context?.status||error.status||0;
+   try{const c=await error.context?.json();detail=String(c?.error||c?.message||'');}catch(_){}
+   const suffix=status?'HTTP '+status+': ':'';
+   throw new Error(suffix+(detail||error.message||'서버 연결 실패'));
+  }
+  if(!result?.reply)throw new Error('AI 응답이 비어 있어.');
+  bubble.textContent=String(result.reply).slice(0,2000);
+  aiStatus('ok','● Gemini AI 연결 정상 · 답변 수신');
   if(result.action)showAIProposal(result.action);
- }catch(e){bubble.textContent='현재는 기본 안내 챗봇으로 동작하고 있어. 자유 질문용 Gemini 연결은 서버의 oita-chat Edge Function을 배포한 후 사용할 수 있어. ('+String(e.message||'연결 실패').slice(0,120)+')';}
- finally{chatBusy=false;$('chatSend').disabled=false;}
+ }catch(e){
+  const message=String(e?.message||e||'알 수 없는 오류').slice(0,240);
+  bubble.textContent='Gemini 연결을 확인하지 못했어. '+message+'\nSupabase → Edge Functions → oita-chat → Logs에서 원인을 확인해 줘.';
+  aiStatus('error','● Gemini 연결 오류: '+message.slice(0,170));
+ }finally{chatBusy=false;$('chatSend').disabled=false;$('aiTestBtn').disabled=false;}
 }
 function showAIProposal(action){if(!action||typeof action!=='object'||!['add_event','update_event','delete_event'].includes(action.type))return;
  const title=String(action.title||'일정 변경').slice(0,100);
