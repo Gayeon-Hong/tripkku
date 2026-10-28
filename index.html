@@ -3,16 +3,15 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
-<meta content="#f7f4ef" name="theme-color"/><meta content="오이타 2박3일, 두 사람이 실시간으로 여행과 공용정산을 편집하는 여행방" name="description"/>
+<meta content="#f7f4ef" name="theme-color"/><meta content="오이타 2박3일, 두 사람이 여행 일정과 공동·개인 지출을 기록하는 여행방" name="description"/>
 <title>우리 오이타 여행 · 친구와 함께</title>
 <!-- TRIPKKU iPhone Home Screen web-app settings -->
 <link rel="manifest" href="./manifest.webmanifest"/>
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/earth-icon-light-happy-180.png"/> <link rel="icon" type="image/png" sizes="192x192" href="./assets/earth-icon-light-happy-192.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="TRIPKKU"/>
-<meta name="tripkku-layout-revision" content="day2-four-options-stars-todo-crud-shuttle1730-private-v4"/>
+<meta name="tripkku-layout-revision" content="day2-four-options-stars-todo-crud-shuttle1730-private-rename-v5-savedplaces-budget-v2-icons-nav"/>
 <style>:root{font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#202f2a;background:#f7f8f5;line-height:1.55;--ink:#204d40;--sub:#64746b;--border:#e1e8df}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0}button,input,textarea,select{font:inherit}button,a{ -webkit-tap-highlight-color:transparent }button{cursor:pointer}button:disabled{cursor:wait;opacity:.6}a{color:#226a55}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(27px,3vw,38px);line-height:1.2;letter-spacing:-.06em;margin-bottom:7px}h2{font-size:22px;letter-spacing:-.05em}h3{font-size:17px}small,.hint{color:var(--sub);font-size:12px}.eyebrow{display:block;color:#ae7962;letter-spacing:.11em;font-size:10px;font-weight:900;margin-bottom:7px}.top{background:#fffefaed;position:sticky;z-index:10;top:0;border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}.topinner{max-width:1080px;padding:11px 22px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.brand{font-size:17px;line-height:1.1;font-weight:950;letter-spacing:-.04em}.brand span{font-weight:600;color:#ab775f}.brand small{display:block;font-size:10px;font-weight:600;letter-spacing:0;margin-top:6px}.header-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.sync-pill{font-size:10px;color:#496456;background:#e8f2e9;border-radius:99px;padding:6px 9px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wrap{max-width:1080px;margin:auto;padding:25px 22px 100px}.button{background:white;border:1px solid #ccd9d0;color:#244a3d;border-radius:10px;padding:10px 14px;min-height:43px;font-weight:800;font-size:13px}.button.dark{background:var(--ink);color:white;border-color:var(--ink)}.button.ghost{border:0;background:transparent}.button.danger{color:#9e4748}.button.add{width:100%;border-style:dashed;margin-top:10px}.button.wide{grid-column:1/-1;width:100%}.button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #e7b789;outline-offset:2px}.entry{max-width:560px;margin:8vh auto!important;padding:30px!important}.entry h1{font-size:clamp(30px,5vw,45px)}.auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0}.error{color:#b53c45;font-size:13px}.card{background:#fff;border:1px solid var(--border);border-radius:17px;box-shadow:0 7px 24px #294e3a08}.intro{display:grid;gap:18px;grid-template-columns:1fr 1.2fr;align-items:center}.intro p{color:var(--sub);font-size:13px;line-height:1.65;margin-bottom:0}.overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.overview .mini{border:1px solid var(--border);background:#fff;border-radius:13px;padding:13px 15px;min-width:0}.mini small{display:block;font-size:11px;color:var(--sub)}.mini strong{display:block;font-size:15px;line-height:1.45;margin-top:3px;overflow-wrap:anywhere}.mini strong.big{font-size:21px}.mini em{display:block;font-size:10px;font-style:normal;color:#ae6750}.mainnav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:24px 0 23px;border-bottom:1px solid #dfe8dc;padding-bottom:12px}.mainnav button{border:1px solid var(--border);border-radius:11px;background:#fff;padding:11px 5px;min-height:46px;font-weight:850;font-size:13px}.mainnav button.active{color:#fff;background:var(--ink);border-color:var(--ink)}.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:15px 0}.section-title h2{margin:0}.section-title p{color:var(--sub);font-size:12px;margin:0}.weather-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}.weather-item{padding:11px 13px;border-radius:11px;border:1px solid #e3e8de;background:#fff;font-size:12px}.weather-item b{display:block;font-size:12px}.weather-item span{font-weight:800;font-size:13px}.weather-item small{display:block}.daytabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:17px 0 14px}.daytabs button{background:#fff;border:1px solid #dae5db;border-radius:11px;padding:9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px}.daytabs b{font-size:13px}.daytabs button.active{background:#e3f0e8;border-color:#3c7d60;color:#24513d}.dayheading{font-size:14px;font-weight:800;margin:9px 0 10px}.timeline{position:relative;margin:5px 0 10px;padding-left:22px}.timeline:before{content:'';position:absolute;top:23px;bottom:26px;left:6px;width:2px;background:#d4e4d8}.event{position:relative;display:grid;grid-template-columns:116px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:9px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:15px 15px}.event:before{content:'';position:absolute;left:-22px;top:22px;width:11px;height:11px;background:#3e8060;border:3px solid #f7f8f5;border-radius:50%}.event .when{font-size:13px;font-weight:900;color:#356d55;font-variant-numeric:tabular-nums}.event h3{font-size:15px;line-height:1.45;letter-spacing:-.03em;margin-bottom:4px}.event p{font-size:12px;color:var(--sub);margin:0;line-height:1.65}.event .eventfoot{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.event .eventfoot a,.event .eventfoot button{border:0;background:#eef5ee;color:#275743;border-radius:7px;font-size:11px;padding:5px 8px;text-decoration:none;font-weight:800}.event .eventfoot .tag{background:#f9ebe2;color:#935c47}.section-card{padding:20px;margin-bottom:14px}.section-card h3{margin-bottom:10px}.lodging-row{display:flex;align-items:start;justify-content:space-between;gap:12px;border-bottom:1px solid #edf0ea;padding:13px 0}.lodging-row:last-child{border:0}.lodging-row b{font-size:15px}.lodging-row span{color:#50675a;font-size:12px}.lodging-row strong{font-size:15px;white-space:nowrap}.choice{padding:14px 10px;display:flex;gap:11px;align-items:start;border-bottom:1px solid var(--border);cursor:pointer}.choice input{accent-color:#346d54;width:20px;height:20px;margin-top:2px}.choice span{display:flex;flex-direction:column;gap:3px}.choice small{line-height:1.55}.notice{border-radius:10px;padding:12px;margin:13px 0;background:#fff6eb;color:#7a5f43;font-size:12px;line-height:1.7;white-space:pre-line}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:9px}.comparison>div{background:#f3f7f1;padding:13px;border-radius:10px;display:flex;flex-direction:column;gap:3px}.comparison span{font-size:12px}.comparison strong{font-size:21px}.comparison small{line-height:1.55}.link-stack{display:grid;gap:7px}.link-stack a{display:block;padding:11px;background:#f2f6f2;border-radius:8px;text-decoration:none;font-size:12px;font-weight:800}.settlement-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0}.settlebox{border-radius:13px;padding:13px;background:#fff;border:1px solid var(--border);min-width:0}.settlebox span{font-size:11px;color:var(--sub)}.settlebox strong{display:block;font-size:20px;overflow-wrap:anywhere}.settlebox.wide{grid-column:1/-1;background:#e4f0e7}.settlebox.wide strong{font-size:21px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.formgrid label,.dialog-form label{display:block;font-weight:800;font-size:12px;color:#496354}.formgrid input,.formgrid select,.dialog-form input,.dialog-form select,.dialog-form textarea,.section-card textarea{display:block;border-radius:9px;border:1px solid #cbdad0;min-height:45px;background:white;color:#243f33;width:100%;padding:9px;margin-top:5px;font-size:16px}.formgrid button{margin-top:3px}.expense-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);padding:12px 0}.expense-row:last-child{border-bottom:0}.expense-row b{font-size:13px}.expense-row small{display:block}.expense-row>div:last-child{text-align:right}.expense-row strong{display:block;white-space:nowrap}.expense-row button{font-size:12px;border:0;background:#fff1ed;color:#aa4f4c;border-radius:7px;padding:5px 7px}.checklist{display:grid;gap:8px;margin:15px 0}.checkitem{padding:12px;background:white;border:1px solid var(--border);border-radius:10px;display:flex;align-items:start;gap:10px;font-weight:700;font-size:13px}.checkitem input{width:18px;height:18px;accent-color:#326c52;flex:none}.dialog-form{display:grid;gap:12px;padding:20px}dialog{border:1px solid var(--border);border-radius:15px;padding:0;width:min(94vw,510px);box-shadow:0 16px 60px #11281f36}dialog::backdrop{background:#13291e80}.time-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:50px;color:white;background:#244d3d;box-shadow:0 8px 20px #0002;display:none;z-index:30;font-size:13px;max-width:90vw;text-align:center}.toast.show{display:block}[hidden]{display:none!important}@media(max-width:740px){.wrap{padding:19px 12px 100px}.topinner{padding:10px 12px}.intro{grid-template-columns:1fr;gap:12px}.overview{grid-template-columns:repeat(2,1fr)}.mainnav{gap:5px;margin-top:19px}.mainnav button{font-size:12px}.section-title{display:block}.section-title h2{font-size:21px}.section-title p{margin-top:6px}.event{grid-template-columns:1fr;gap:2px;padding:12px 13px}.event .when{font-size:12px}.event h3{font-size:15px}.settlement-summary{grid-template-columns:repeat(2,1fr)}.weather-item{padding:9px}.weather-item small{font-size:10px}.section-card{padding:15px}}@media(max-width:370px){.header-actions .button{padding:7px;font-size:11px}.sync-pill{max-width:85px}.mainnav button{font-size:11px;padding:9px 1px}.intro h1{font-size:27px}.weather-item{padding:7px}.weather-item span{font-size:12px}.comparison{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.daytabs b{font-size:11px}}
 
 
@@ -198,9 +197,6 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 /* v18: compact first-screen actions, no place checklist or hero artwork. */
 .reels-shortcut{border:1px solid #c8d8c9;background:#eaf1e9;color:#2d574c;border-radius:9px;font-size:12px;font-weight:850;padding:8px 11px;min-height:36px;cursor:pointer;margin-left:auto;white-space:nowrap}
 .reels-shortcut:hover,.reels-shortcut:focus-visible{background:#d9e8db}
-.old-reel-import{margin:14px 0 22px;padding:13px 14px;border:1px solid #e3e8df;border-radius:13px;background:#fffdf9;font-size:12px}
-.old-reel-import summary{cursor:pointer;font-weight:800;min-height:35px;display:list-item;align-content:center}
-.old-reel-import button{margin:8px 10px 8px 0}
 #reelList .reel-card{border-left:3px solid #a0b9a5}
 .intro-copy>.globe-mark{width:54px;height:54px}
 .intro-copy{grid-template-columns:54px minmax(0,1fr)!important}
@@ -293,6 +289,59 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 .private-file-title small{display:block;color:#758377;font-weight:450;font-size:11px;margin-top:3px}
 .private-file-actions{display:flex;gap:5px;flex-wrap:wrap}.private-file-actions button[data-file-delete]{color:#b04444;background:#fff4f4;border-color:#f0d6d6}
 @media(max-width:550px){.private-form button{width:100%}.private-file-actions{width:100%}}
+
+/* tripkku-saved-places-v1: shared named-place bookmarks, no external search API */
+.saved-place-panel{border-color:#c8ddce;background:#fbfdf9}
+.saved-place-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.saved-place-head h3{margin:0 0 6px}
+.saved-place-head span{border-radius:999px;background:#eaf3ea;color:#315d48;padding:5px 9px;font-size:11px;font-weight:800}
+.saved-place-form{display:flex;gap:8px;align-items:stretch;margin:12px 0 16px}
+.saved-place-form input{flex:1;min-width:0;border:1px solid #cbdad0;border-radius:9px;min-height:44px;padding:10px 12px;font-size:16px;background:#fff}
+.saved-place-form button{flex:none}
+.saved-place-toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.saved-place-filters{display:flex;flex-wrap:wrap;gap:5px}
+.saved-place-filters button{background:#fff;border:1px solid #d5e1d6;border-radius:99px;padding:6px 10px;font-size:11px;color:#3d6452;cursor:pointer;min-height:34px}
+.saved-place-filters button.active{background:#30594f;border-color:#30594f;color:#fff;font-weight:800}
+.saved-place-maplinks{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.saved-place-maplinks a{display:inline-flex;align-items:center;text-decoration:none;background:#e8efe8;border:1px solid #cfdfd0;border-radius:9px;color:#2c5c48;padding:7px 10px;font-size:12px;font-weight:800}
+.saved-place-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.saved-place-card{border:1px solid #e0e8dc;border-radius:12px;background:#fff;padding:12px;min-width:0}
+.saved-place-card-title{font-size:14px;font-weight:900;overflow-wrap:anywhere;margin-bottom:3px}
+.saved-place-card-sub{font-size:11px;color:#65776b;margin:0 0 10px}
+.saved-place-card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.saved-place-card-actions a,.saved-place-card-actions button{border:1px solid #dae4d8;background:#f3f7f1;border-radius:7px;font-size:12px;color:#275743;padding:7px 9px;text-decoration:none;min-height:35px;font-weight:750}
+.saved-place-card-actions button[data-saved-delete]{border-color:#f0dddd;background:#fff7f5;color:#a35150}
+.saved-place-card-actions button[data-saved-schedule]{background:#30594f;border-color:#30594f;color:#fff}
+.saved-place-card-actions select{border:1px solid #d1dcd0;background:#fff;border-radius:7px;font-size:12px;color:#34594a;min-height:35px;padding:5px;max-width:100%}
+.saved-place-foot{margin:14px 0 0!important;line-height:1.7}
+.saved-place-empty{grid-column:1/-1;color:#738276;background:#f3f7f1;border:1px dashed #d6e4d8;padding:18px;border-radius:11px;font-size:12px}
+@media(max-width:740px){.saved-place-list{grid-template-columns:1fr}.saved-place-form{flex-wrap:wrap}.saved-place-form button{width:100%}.saved-place-card-actions{gap:6px}.saved-place-card-actions select{flex:1}}
+
+/* Budget: shared settlement stays independent from personal travel spending. */
+#settlementPage .settlement-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.budget-currency{background:#fff;border:1px solid #dce3db;border-radius:14px;padding:14px;min-width:0}
+.budget-currency h3{font-size:15px;margin:0 0 10px;color:#264d42}
+.budget-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.budget-metric{background:#f4f7f2;border-radius:9px;padding:10px;min-width:0}
+.budget-metric small,.budget-metric em{display:block;font-size:11px;color:#60766a;font-style:normal}
+.budget-metric strong{display:block;font-size:clamp(13px,1.5vw,17px);line-height:1.4;overflow-wrap:anywhere;color:#2a5047}
+.budget-transfer{border-top:1px solid #dbe3d9;padding-top:10px;margin-top:12px}
+.budget-transfer>span,.budget-transfer small{display:block;font-size:11px;color:#64776c}
+.budget-transfer strong{display:block;color:#284f43;font-size:16px;overflow-wrap:anywhere}
+.budget-form-actions{display:flex;gap:8px;flex-wrap:wrap}
+.budget-form-actions .button{flex:1;min-width:110px}
+.budget-list-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:9px}
+.budget-list-header h3{margin:0}
+.budget-list-header select{border:1px solid #cddacb;background:#fff;border-radius:9px;padding:8px;font-size:13px;min-height:36px}
+.budget-record-actions{display:flex;justify-content:flex-end;gap:4px;margin-top:5px}
+.expense-row small{color:#67776f}.expense-row strong{overflow-wrap:anywhere}
+.budget-record-actions button[data-edit-expense]{background:#edf3ef;color:#28634e}
+.saved-place-heart-link{color:inherit;text-decoration:none;display:inline-block;line-height:1.55}
+.saved-place-heart-link:hover,.saved-place-heart-link:focus-visible{color:#b43b54;text-decoration:underline}
+#expenseForm>.wide{grid-column:1/-1}
+#expenseScopeHint{margin:0 0 3px;font-size:12px;line-height:1.5}
+@media(max-width:740px){#settlementPage .settlement-summary{grid-template-columns:1fr}.budget-metric strong{font-size:15px}}
+@media(max-width:550px){#expenseForm{grid-template-columns:minmax(0,1fr)}#expenseForm>.wide{grid-column:1/-1}}
 </style>
 <link href="data:image/png;base64,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" rel="icon" type="image/png"/><meta content="v18-single-file-korean-travel" name="oita-build"/></head><body>
 <header class="top"><div class="topinner"><div class="brand brand-globe"><span class="globe-mark" data-earth-avatar=""></span><small>OITA · 10.31 — 11.02</small></div><div class="header-actions"><span class="sync-pill" id="syncStatus">연결 준비 중</span><button class="button dark" hidden="" id="shareBtn" type="button">친구 초대 링크</button><button class="button ghost" hidden="" id="logoutBtn" type="button">로그아웃</button></div></div></header>
@@ -310,7 +359,7 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <button aria-label="화난 표정" aria-pressed="false" data-earth-mood="angry" title="화난 표정" type="button">😠</button>
 <button aria-label="졸린 표정" aria-pressed="false" data-earth-mood="sleepy" title="졸린 표정" type="button">😴</button>
 <button aria-label="설레는 표정" aria-pressed="false" data-earth-mood="love" title="설레는 표정" type="button">🥰</button>
-</div></div></div><div class="overview" id="overview"></div></section><div class="tripkku-layout"><aside class="tripkku-side"><div class="side-title">우리의 여행</div><nav aria-label="주요 화면" class="mainnav"><button class="active" data-page="schedule">🗓 일정</button><button data-page="reels">📷 릴스·장소</button><button data-page="transport">🚌 교통·예약</button><button data-page="settlement">💳 공용 정산</button><button data-page="assistant">💬 챗봇</button><button data-page="notes">🧳 준비·메모</button></nav></aside><div class="tripkku-content"><section class="page" id="schedulePage"><div class="section-title scan-heading"><h2>여행 일정</h2><button class="reels-shortcut" type="button" id="reelShortcut">📷 릴스에서 장소 보기</button></div><div class="daytabs"><button class="active" data-day="1">10/31 <b>토 · 첫날</b></button><button data-day="2">11/01 <b>일 · 둘째 날</b></button><button data-day="3">11/02 <b>월 · 마지막 날</b></button></div><div class="dayheading" id="dayHeading"></div>
+</div></div></div><div class="overview" id="overview"></div></section><div class="tripkku-layout"><aside class="tripkku-side"><div class="side-title">우리의 여행</div><nav aria-label="주요 화면" class="mainnav"><button class="active" data-page="schedule">🗓 일정</button><button data-page="transport">🚌 교통·예약</button><button data-page="notes">🧳 준비·메모</button><button data-page="settlement">💳 예산</button><button data-page="assistant">💬 챗봇</button><button data-page="reels">📷 릴스·장소</button></nav></aside><div class="tripkku-content"><section class="page" id="schedulePage"><div class="section-title scan-heading"><h2>여행 일정</h2><button class="reels-shortcut" type="button" id="reelShortcut">📷 릴스에서 장소 보기</button></div><div class="daytabs"><button class="active" data-day="1">10/31 <b>토 · 첫날</b></button><button data-day="2">11/01 <b>일 · 둘째 날</b></button><button data-day="3">11/02 <b>월 · 마지막 날</b></button></div><div class="dayheading" id="dayHeading"></div>
 <div class="route-primer" id="routePrimer" role="status">일정 불러오는 중…</div>
 <div class="plan-picker" id="planPicker" hidden aria-label="2일 차 일정 선택">
   <div class="plan-buttons" role="group" aria-label="2일 차 동선">
@@ -344,8 +393,42 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <div class="luggage-links"><a href="https://beppuinfo.jp/" rel="noopener noreferrer" target="_blank">짐보관 공식 안내 ↗</a><a href="https://www.google.com/maps/search/?api=1&amp;query=WANDER%20COMPASS%20BEPPU" rel="noopener noreferrer" target="_blank">보관소 지도 ↗</a><a href="https://yufumomiji.com/access/" rel="noopener noreferrer" target="_blank">모미지 공식 위치 ↗</a><a href="https://kamadojigoku.com/アクセス/" rel="noopener noreferrer" target="_blank">가마지옥 공식 위치 ↗</a><a href="https://iconia.co.jp/location-hotel-mystays-oita-oita/" rel="noopener noreferrer" target="_blank">첫날 호텔 위치 ↗</a></div>
 <p>위치·보관 서비스 확인: 2026-10-28. 시간표와 나머지 교통비는 기존 계획용 값이며 이번 변경에서 새로 검증한 내용이 아닙니다.</p>
 </details><div class="luggage-apply-row"><button class="button" data-apply-luggage="" id="applyLuggageTransport" type="button">짐 보관 반영</button><span class="hint" id="luggageApplyState" role="status"></span></div>
-</div><div class="card section-card"><h3>2일 차 · 유후인 산책 방식</h3><p class="hint">1~4안 모두 유후인역 17:30 무료 셔틀을 이용해요. 3·4안은 유노츠보 거리를 도보로 관광하고 1·2안은 역 주변에서 쉬는 동선이에요. 아래 선택은 1·2안용입니다.</p><label class="choice"><input name="walkMode" type="radio" value="near"/> <span><b>유후인역 주변 카페·휴식 (추천)</b><small>셔틀 전까지 가까운 카페와 편의점 이용</small></span></label><label class="choice"><input name="walkMode" type="radio" value="center"/> <span><b>유후인역 근처 작은 상점 산책</b><small>도보 범위 내 쇼핑 · 17:15까지 셔틀 승차장 복귀</small></span></label><div class="notice" id="walkNotice"></div></div><div class="card section-card"><h3>교통권 구매 판단</h3><div class="comparison"><div><span>북큐슈 SUNQ 3일 디지털권</span><strong>¥10,000 / 인</strong><small>버스 중심 패스 · JR·택시 제외</small></div><div><span>우리 일정의 버스 개별요금</span><strong>약 ¥4,700 / 인</strong><small>공항→오이타 ¥1,600 + 벳푸→유후인 약 ¥1,100 + 유후인→공항 약 ¥2,000 (기본 구간 예시)</small></div></div><p class="notice">추천: 개별 승차권. 산큐패스 3일권보다 저렴할 가능성이 커. 지하철 패스도 현재 동선에는 필요 없어. 최종 운임·적용 노선은 예약 전에 확인해.</p><div class="link-stack"><a href="https://www.klook.com/ko/activity/28320-kyushu-sunq-pass/" rel="noopener" target="_blank">클룩 · SUNQ 패스 (한국어) ↗</a><a href="https://experiences.myrealtrip.com/products/6082936" rel="noopener" target="_blank">마이리얼트립 · 가메노이 1일권 비교 ↗</a></div><p class="hint">⚠️ 위 마이리얼트립 상품은 후쿠오카공항 국제선에서 실물 교환이 필요한 상품이므로 오이타공항으로 입국하는 이번 여행에는 권장하지 않아.</p></div><div class="card section-card"><h3>주요 지역 지도</h3><iframe loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=131.18%2C33.12%2C131.75%2C33.52&amp;layer=mapnik" style="width:100%;height:260px;border:0;border-radius:12px" title="오이타 벳푸 유후인 주변 지도"></iframe><p class="hint">상세 경로는 아래 Google 지도 링크에서 확인해 줘. 본 지도는 지역 위치 참고용이야.</p></div><div class="card section-card"><h3>교통표·셔틀 준비</h3><div class="link-stack"><a href="https://www.oita-airport.jp/access/bus/" rel="noopener" target="_blank">오이타 공항버스 공식 시간표 확인 ↗</a><a href="https://kamenoibus.com/" rel="noopener" target="_blank">가메노이 버스 36번 운행 확인 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Beppu%20Station&amp;destination=Kamado%20Jigoku&amp;travelmode=transit" rel="noopener" target="_blank">벳푸역 ↔ 가마지옥 이동 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufuin%20Station&amp;destination=Yufu%20Momiji&amp;travelmode=driving" rel="noopener" target="_blank">유후인역 → 유후 모미지 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufu%20Momiji&amp;destination=Yunotsubo%20Kaido&amp;travelmode=walking" rel="noopener" target="_blank">모미지 → 유노츠보 도보 길찾기 ↗</a></div></div></section><section class="page" hidden="" id="settlementPage"><div class="section-title"><h2>우리 둘 공용 정산</h2><p>숙소·식비·택시·입장료를 2명 50:50으로 정산</p></div><div class="settlement-summary" id="settlementSummary"></div><div class="card section-card"><h3>지출 기록 추가</h3><form class="formgrid" id="expenseForm"><label>내용<input maxlength="90" name="title" placeholder="예: 이자카야, 택시" required=""/></label><label>금액<input inputmode="decimal" min="0.01" name="amount" placeholder="금액" required="" step="0.01" type="number"/></label><label>분류<select name="category"><option value="식비">식비</option><option value="숙소">숙소</option><option value="교통">교통</option><option value="입장료">입장료</option><option value="기타">기타</option></select></label><label>결제자<select name="payer"><option value="a">나</option><option value="b">친구</option></select></label><label>통화<select name="currency"><option value="KRW">원화 (₩)</option><option value="JPY">엔화 (¥)</option></select></label><label>사용 날짜<select name="day"><option value="1">10월 31일</option><option value="2">11월 1일</option><option value="3">11월 2일</option></select></label><button class="button dark wide" type="submit">공용 지출 저장</button></form><p class="hint">엔화와 원화는 각각 정산해. 실제 환전환율에 맞게 한 통화로 정산하려면 서로 합의해 줘.</p></div><div class="card section-card"><h3>지출 내역</h3><div class="expense-list" id="expenseList"></div></div></section><section class="page" hidden="" id="reelsPage">
-<div class="section-title"><h2>인스타 릴스·찜한 장소</h2><p>별도 장소 체크박스 없이 영상과 지도 링크로 관리해.</p></div>
+</div><div class="card section-card"><h3>2일 차 · 유후인 산책 방식</h3><p class="hint">1~4안 모두 유후인역 17:30 무료 셔틀을 이용해요. 3·4안은 유노츠보 거리를 도보로 관광하고 1·2안은 역 주변에서 쉬는 동선이에요. 아래 선택은 1·2안용입니다.</p><label class="choice"><input name="walkMode" type="radio" value="near"/> <span><b>유후인역 주변 카페·휴식 (추천)</b><small>셔틀 전까지 가까운 카페와 편의점 이용</small></span></label><label class="choice"><input name="walkMode" type="radio" value="center"/> <span><b>유후인역 근처 작은 상점 산책</b><small>도보 범위 내 쇼핑 · 17:15까지 셔틀 승차장 복귀</small></span></label><div class="notice" id="walkNotice"></div></div><div class="card section-card"><h3>교통권 구매 판단</h3><div class="comparison"><div><span>북큐슈 SUNQ 3일 디지털권</span><strong>¥10,000 / 인</strong><small>버스 중심 패스 · JR·택시 제외</small></div><div><span>우리 일정의 버스 개별요금</span><strong>약 ¥4,700 / 인</strong><small>공항→오이타 ¥1,600 + 벳푸→유후인 약 ¥1,100 + 유후인→공항 약 ¥2,000 (기본 구간 예시)</small></div></div><p class="notice">추천: 개별 승차권. 산큐패스 3일권보다 저렴할 가능성이 커. 지하철 패스도 현재 동선에는 필요 없어. 최종 운임·적용 노선은 예약 전에 확인해.</p><div class="link-stack"><a href="https://www.klook.com/ko/activity/28320-kyushu-sunq-pass/" rel="noopener" target="_blank">클룩 · SUNQ 패스 (한국어) ↗</a><a href="https://experiences.myrealtrip.com/products/6082936" rel="noopener" target="_blank">마이리얼트립 · 가메노이 1일권 비교 ↗</a></div><p class="hint">⚠️ 위 마이리얼트립 상품은 후쿠오카공항 국제선에서 실물 교환이 필요한 상품이므로 오이타공항으로 입국하는 이번 여행에는 권장하지 않아.</p></div><div class="card section-card"><h3>주요 지역 지도</h3><iframe loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=131.18%2C33.12%2C131.75%2C33.52&amp;layer=mapnik" style="width:100%;height:260px;border:0;border-radius:12px" title="오이타 벳푸 유후인 주변 지도"></iframe><p class="hint">상세 경로는 아래 Google 지도 링크에서 확인해 줘. 본 지도는 지역 위치 참고용이야.</p></div><div class="card section-card"><h3>교통표·셔틀 준비</h3><div class="link-stack"><a href="https://www.oita-airport.jp/access/bus/" rel="noopener" target="_blank">오이타 공항버스 공식 시간표 확인 ↗</a><a href="https://kamenoibus.com/" rel="noopener" target="_blank">가메노이 버스 36번 운행 확인 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Beppu%20Station&amp;destination=Kamado%20Jigoku&amp;travelmode=transit" rel="noopener" target="_blank">벳푸역 ↔ 가마지옥 이동 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufuin%20Station&amp;destination=Yufu%20Momiji&amp;travelmode=driving" rel="noopener" target="_blank">유후인역 → 유후 모미지 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufu%20Momiji&amp;destination=Yunotsubo%20Kaido&amp;travelmode=walking" rel="noopener" target="_blank">모미지 → 유노츠보 도보 길찾기 ↗</a></div></div></section><section class="page" hidden="" id="settlementPage"><div class="section-title"><h2>여행 예산</h2><p>공동 지출과 개인 지출을 함께 기록하고, 실제 사용액과 송금액을 따로 확인해.</p></div><div class="settlement-summary" id="settlementSummary"></div><div class="card section-card"><h3>지출 기록 추가</h3>
+ <form class="formgrid" id="expenseForm">
+  <label class="wide">지출 구분<select name="scope" id="expenseScope"><option value="shared">🤝 공동 지출 · 둘이 반반 정산</option><option value="personal">👤 개인 지출 · 해당 사람만 부담</option></select></label>
+  <p class="hint wide" id="expenseScopeHint" aria-live="polite">공동 지출은 두 사람이 50:50으로 부담하며, 실제 결제자 기준으로 송금액이 계산됩니다.</p>
+  <label>내용<input maxlength="90" name="title" placeholder="예: 비행기, 쇼핑, 택시" required=""/></label>
+  <label>금액<input inputmode="decimal" min="0.01" max="9999999999" name="amount" placeholder="금액" required="" step="0.01" type="number"/></label>
+  <label>분류<select name="category"><option value="식비">식비</option><option value="숙소">숙소</option><option value="교통">교통</option><option value="항공권">항공권</option><option value="쇼핑">쇼핑</option><option value="기념품">기념품</option><option value="입장료">입장료</option><option value="기타">기타</option></select></label>
+  <label>사용자 / 결제자<select name="payer"><option value="a">나</option><option value="b">친구</option></select></label>
+  <label>통화<select name="currency"><option value="KRW">원화 (₩)</option><option value="JPY">엔화 (¥)</option></select></label>
+  <label>사용 날짜<select name="day"><option value="1">10월 31일</option><option value="2">11월 1일</option><option value="3">11월 2일</option></select></label>
+  <div class="budget-form-actions wide"><button class="button dark" type="submit" id="expenseSaveBtn">＋ 지출 저장</button><button class="button" id="expenseCancelEdit" type="button" hidden>수정 취소</button></div>
+ </form>
+ <p class="hint">기존 숙박비 등 이전 지출은 공동으로 유지됩니다. 개인 지출은 송금 정산에 포함되지 않습니다. 원화·엔화는 환율 환산 없이 따로 합산합니다.</p>
+ </div><div class="card section-card"><div class="budget-list-header"><h3>지출 내역</h3><select id="expenseFilter" aria-label="지출 내역 필터"><option value="all">전체</option><option value="shared">공동만</option><option value="personal">개인만</option></select></div><div class="expense-list" id="expenseList"></div></div></section><section class="page" hidden="" id="reelsPage">
+<div class="section-title"><h2>릴스 · 우리가 찜한 장소</h2><p>장소 이름만 입력하고 친구와 함께 지도에서 확인해.</p></div>
+<div class="card section-card saved-place-panel" id="savedPlacePanel">
+  <div class="saved-place-head"><h3>❤️ 장소 이름만으로 저장</h3><span>친구와 공유</span></div>
+  <p class="hint">맛집·카페·관광지 이름만 적으면 Google 지도 검색 링크가 자동 생성돼. 링크를 직접 찾거나 복사할 필요 없어.</p>
+  <form id="savedPlaceForm" class="saved-place-form">
+    <input id="savedPlaceInput" name="name" type="text" maxlength="100" autocomplete="off" placeholder="예: 유노츠보 거리, 가마지옥, 긴린코 호수" aria-label="저장할 장소 이름" required />
+    <button id="savedPlaceSubmit" type="submit" class="button dark">❤️ 장소 저장</button>
+  </form>
+  <div class="saved-place-toolbar">
+    <div class="saved-place-filters" id="savedPlaceFilters" aria-label="저장 장소 지역 필터">
+      <button type="button" data-saved-filter="all" class="active" aria-pressed="true">전체</button>
+      <button type="button" data-saved-filter="oita">오이타</button>
+      <button type="button" data-saved-filter="beppu">벳푸</button>
+      <button type="button" data-saved-filter="yufuin">유후인</button>
+      <button type="button" data-saved-filter="other">오이타현</button>
+    </div>
+    <span id="savedPlaceCount" class="hint" aria-live="polite">0개 장소</span>
+  </div>
+  <div class="saved-place-maplinks" id="savedPlaceMapLinks"></div>
+  <div id="savedPlaceList" class="saved-place-list" aria-live="polite"></div>
+  <p class="hint saved-place-foot">지도는 Google Maps에서 열려. 이름이 같은 가게가 있다면 지도를 열어 실제 주소를 확인하고, 카드의 지역을 바꿔 검색 범위를 좁혀 줘. 기존 Google 계정의 하트 목록을 직접 읽어오지는 않아.</p>
+</div>
 <div class="card section-card"><h3>링크 저장</h3>
 <form class="reel-form" id="reelForm">
 <label>인스타 / 유튜브 / 틱톡 URL <input maxlength="1100" name="url" placeholder="https://www.instagram.com/reel/..." required="" type="url"/></label>
@@ -355,7 +438,7 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <label class="wide">영상에서 기억할 내용 <textarea maxlength="350" name="note" placeholder="영상에서 본 음식, 영업시간 메모 등" rows="2"></textarea></label>
 <button class="button dark wide" type="submit">＋ 친구와 공유 목록에 추가</button>
 </form><p class="hint">원본 영상은 저장하지 않고 링크·메모·지도 위치만 함께 기록해.</p></div>
-<div class="reels-list" id="reelList"></div><details class="old-reel-import"><summary>예전 트립꾸에 저장한 릴스 가져오기 (선택)</summary><p class="hint">이전에 같은 Supabase에 저장한 릴스를 읽어, 중복 URL은 제외하고 이 여행방에 복사해요. 원본은 삭제하지 않아요.</p><button class="button" id="importLegacyReels" type="button">기존 릴스 불러오기</button><span id="importLegacyStatus" class="hint" role="status"></span></details>
+<div class="reels-list" id="reelList"></div>
 </section><section class="page" hidden="" id="assistantPage">
 <div class="section-title"><h2>여행 챗봇</h2><p>오이타 일정과 지출을 물어보고, 일정 변경을 제안받을 수 있어.</p></div>
 <div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 오이타 여행 계획을 같이 확인하자. 아래 버튼은 빠른 안내이고, 직접 질문을 입력하면 Gemini AI에게 물어볼게.</div></div>
@@ -363,7 +446,20 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <div class="chat-tools"><button class="button" data-chat-quick="2일 차 일정 알려줘" type="button">2일 차</button><button class="button" data-chat-quick="정산 얼마야?" type="button">정산</button><button class="button" data-chat-quick="셔틀과 공항버스 준비 알려줘" type="button">교통 준비</button><button class="button" id="aiTestBtn" type="button">✨ AI 연결 테스트</button></div><div id="aiStatus" role="status" class="ai-status" data-state="idle">● Gemini 연결 상태: 확인 전</div>
 <p class="hint">빠른 안내 버튼은 기본 답변이야. 직접 입력하거나 ‘AI 연결 테스트’를 누르면 oita-chat 서버를 호출해. AI가 일정 변경을 제안하면 확인 후 공동 저장돼.</p>
 <div class="chat-proposal" hidden="" id="chatProposal"></div></div></section><section class="page" hidden="" id="notesPage">
-<div class="section-title"><h2>할 일 · 공용 메모</h2><p>할 일과 메모는 친구와 함께 동기화돼</p></div>
+<div class="section-title"><h2>준비 · 메모</h2><p>내 예약 파일·QR은 비공개, 할 일과 공용 메모는 친구와 동기화돼</p></div>
+<div class="card section-card private-docs" id="privateFilesPanel">
+ <div class="private-head"><h3>🔐 내 예약 파일 · QR</h3><span class="private-lock">나만 보기</span></div>
+ <p class="hint">비짓재팬 QR 이미지, 항공권·호텔 예약 PDF를 개인 보관함에 저장해. 여행방 친구와 공유되지 않아.</p>
+ <form id="privateFileForm" class="private-form">
+  <label>파일 선택 (여러 개 선택 가능)<input type="file" id="privateFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,application/pdf,image/*" multiple></label>
+  <button class="button dark" id="privateFileUpload" type="submit">📎 업로드</button>
+ </form>
+ <div id="privateFileStatus" class="private-status" role="status" aria-live="polite">PDF·이미지 파일당 15MB · 이름 수정 가능 · 본인만 접근</div>
+ <div class="private-toolbar"><strong>내 저장 파일 · 이름 수정 가능</strong><button type="button" id="privateFileRefresh">새로고침</button></div>
+ <div id="privateFileList"><p class="hint">업로드한 개인 파일이 여기에 표시돼.</p></div>
+ <p class="hint">비공개 Storage에 저장돼. 파일 내용은 공용 메모나 Gemini 챗봇으로 전달되지 않아.</p>
+</div>
+
 <div class="card section-card todo-panel">
   <h3>✅ 할 일 체크리스트</h3>
   <p class="hint">할 일을 직접 추가하고, 완료하면 체크해 줘. 이미 등록된 항목도 수정하거나 삭제할 수 있어.</p>
@@ -381,19 +477,8 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
   <button class="button dark" id="saveMemo" type="button">메모 저장</button>
   <p class="hint">이 메모는 여행방 친구와 공유돼. 계정 로그인 비밀번호·여권번호·카드번호는 입력하지 마.</p>
 </div>
-<div class="card section-card private-docs" id="privateFilesPanel">
- <div class="private-head"><h3>🔐 내 예약 파일 · QR</h3><span class="private-lock">나만 보기</span></div>
- <p class="hint">비짓재팬 QR 이미지, 항공권·호텔 예약 PDF를 개인 보관함에 저장해. 여행방 친구와 공유되지 않아.</p>
- <form id="privateFileForm" class="private-form">
-  <label>파일 선택 (여러 개 선택 가능)<input type="file" id="privateFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,application/pdf,image/*" multiple></label>
-  <button class="button dark" id="privateFileUpload" type="submit">📎 업로드</button>
- </form>
- <div id="privateFileStatus" class="private-status" role="status" aria-live="polite">PDF·이미지 파일당 15MB · 본인만 접근</div>
- <div class="private-toolbar"><strong>내 저장 파일</strong><button type="button" id="privateFileRefresh">새로고침</button></div>
- <div id="privateFileList"><p class="hint">업로드한 개인 파일이 여기에 표시돼.</p></div>
- <p class="hint">비공개 Storage에 저장돼. 파일 내용은 공용 메모나 Gemini 챗봇으로 전달되지 않아.</p>
-</div></section></div></div>
-</div><footer class="japan-footer">TRIPKKU · 2026 OITA · 4가지 2일차 코스 · 17:30 셔틀 공통 · 할 일 관리 · 개인 파일 · v24</footer></main>
+</section></div></div>
+</div><footer class="japan-footer">TRIPKKU · 2026 OITA · 2일차 4안 · 17:30 셔틀 · 예산 · 할 일 · 개인 파일 이름 수정 · v26</footer></main>
 <dialog id="editDialog"><form class="dialog-form" id="editForm"><h3 id="dialogTitle">일정 수정</h3><input name="id" type="hidden"/><label>날짜<select name="day"><option value="1">10/31 · 첫날</option><option value="2">11/01 · 둘째 날</option><option value="3">11/02 · 마지막 날</option></select></label><div class="time-row"><label>시작<input name="start" required="" type="time"/></label><label>종료<input name="end" required="" type="time"/></label></div><label>일정 이름<input maxlength="110" name="title" required=""/></label><label>장소명<input maxlength="160" name="place" placeholder="지도 검색용"/></label><label>설명<textarea maxlength="450" name="note" rows="3"></textarea></label><div class="dialog-actions"><button class="button danger" id="deleteEvent" type="button">삭제</button><button class="button" id="cancelDialog" type="button">취소</button><button class="button dark" type="submit">저장</button></div></form></dialog>
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
 <script>
@@ -450,6 +535,11 @@ function readPreferences(){
  }catch(_){/* Private browsing or disabled storage must not break the controls. */}
 }
 function paintGlobe(){
+ const iconStem=`./assets/earth-icon-${prefs.appearance}-${prefs.mood}`;
+ const appleIcon=document.querySelector('link[rel="apple-touch-icon"]');
+ const favIcon=document.querySelector('link[rel="icon"]');
+ if(appleIcon)appleIcon.href=iconStem+'-180.png';
+ if(favIcon)favIcon.href=iconStem+'-192.png';
  document.querySelectorAll('[data-earth-avatar]').forEach(el=>{
   el.innerHTML=earthAvatarHtml(prefs.appearance,prefs.mood);
   el.dataset.appearance=prefs.appearance;el.dataset.mood=prefs.mood;
@@ -499,7 +589,7 @@ const checklistLabels=[
 ];
 function item(id,start,end,title,note,place,kind='visit'){return {id,start,end,title,note,place,kind};}
 function defaultTrip(){return {
- title:'우리 오이타 2박 3일',walkMode:'near',planMode:'main',nightMode:'room',day2Revision:'2026-10-28-v5-shuttle1730',notes:'',checklist:{},todoItems:checklistLabels.map((title,i)=>({id:'preset-'+i,title,done:false})),reels:[],
+ title:'우리 오이타 2박 3일',walkMode:'near',planMode:'main',nightMode:'room',day2Revision:'2026-10-28-v5-shuttle1730',notes:'',checklist:{},todoItems:checklistLabels.map((title,i)=>({id:'preset-'+i,title,done:false})),reels:[],savedPlaces:[],
  luggagePlan:{version:16,mode:'staffed-station',checkedAt:'2026-10-28'},
  hotels:[{name:'HOTEL MYSTAYS Oita',day:1,price:96200,payer:'a',info:'10/31 체크인 → 11/1 11시 체크아웃 · 짐 먼저 맡기기',place:'HOTEL MYSTAYS Oita, 1-32 Niagemachi, Oita'},
  {name:'유후 모미지',day:2,price:517514,payer:'b',info:'11/1~11/2 · 석식(가이세키) + 조식 포함 · 유후인역 셔틀 약 5분',place:'旅館ゆふもみじ, 大分県由布市湯布院町川北662'}],
@@ -776,7 +866,7 @@ async function signIn(provider){try{
   if(error)throw error;
  }catch(e){fail('authError',e.message+' · Supabase Auth 설정과 Redirect URL을 확인해 줘.');}}
 function newInvite(){const b=new Uint8Array(24);crypto.getRandomValues(b);return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');}
-async function fetchRoom(id){const {data:r,error}=await client.from('oita_rooms').select('id,invite_code,data,revision,updated_at').eq('id',id).single();if(error)throw error;return r;}
+async function fetchRoom(id){const {data:r,error}=await client.from('oita_rooms').select('id,owner_id,invite_code,data,revision,updated_at').eq('id',id).single();if(error)throw error;return r;}
 async function refreshRoom(){if(!room||pending>0)return;try{const r=await fetchRoom(room.id);if(r.revision>revision){room=r;data=r.data;revision=r.revision;renderAll();status('친구 변경 반영 ✓');}}catch(e){console.warn('업데이트 지연',e.message);}}
 async function openRoom(r){if(privateListScope&&privateListScope!==`${user?.id}/${r.id}`){privateList=[];privateListScope='';privateListAt=0;renderPrivateFiles();}room=r;data=r.data;revision=r.revision;screen('appScreen');renderAll();status('공동 저장 연결 ✓');
   if(data?.day2Revision!==DAY2_REVISION)void mutate(d=>upgradeDay2Plans(d),'2일차 1~4안과 별빛 투어를 친구와 공유 저장했어.');
@@ -788,7 +878,7 @@ async function enter(){screen('loadingScreen');try{
  let storedInvite=null;try{storedInvite=sessionStorage.getItem('oita_pending_invite');}catch(_){}
  const invite=new URLSearchParams(location.search).get('invite')||storedInvite;
  if(invite){const {data:id,error}=await client.rpc('oita_join_room',{p_code:invite});if(error)throw error;try{sessionStorage.removeItem('oita_pending_invite');}catch(_){}return openRoom(await fetchRoom(id));}
- const {data:rows,error}=await client.from('oita_rooms').select('id,invite_code,data,revision,updated_at').order('updated_at',{ascending:false}).limit(1);
+ const {data:rows,error}=await client.from('oita_rooms').select('id,owner_id,invite_code,data,revision,updated_at').order('updated_at',{ascending:false}).limit(1);
  if(error)throw error;
  if(rows?.length)return openRoom(rows[0]);
  screen('createScreen');status('로그인 완료');
@@ -823,7 +913,6 @@ function attachHandlers(){
  document.querySelectorAll('input[name="nightMode"]').forEach(i=>i.addEventListener('change',e=>{if(data.planMode!=='third')return;void mutate(d=>applyNightMode(d,e.target.value),'3안의 저녁 선택을 친구와 공유 저장했어.');}));
  $('addEvent').addEventListener('click',()=>showEditor(null));
  $('reelShortcut').addEventListener('click',()=>choosePage('reels'));
- $('importLegacyReels').addEventListener('click',()=>void importLegacyReels());
  $('cancelDialog').addEventListener('click',()=>$('editDialog').close());
  $('editForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);const id=String(f.get('id'))||'new-'+crypto.randomUUID();
   const ev={id,day:Number(f.get('day')),start:String(f.get('start')),end:String(f.get('end')),title:String(f.get('title')).trim(),place:String(f.get('place')).trim(),note:String(f.get('note')).trim(),kind:'visit'};
@@ -833,10 +922,34 @@ function attachHandlers(){
  $('deleteEvent').addEventListener('click',()=>{const id=$('editForm').elements.namedItem('id').value;if(!id||!confirm('이 일정을 삭제할까?'))return;$('editDialog').close();void mutate(d=>allEditableDays(d).forEach(x=>x.events=x.events.filter(item=>item.id!==id)),'일정 삭제 완료');});
  $('timeline').addEventListener('click',e=>{const b=e.target.closest('button[data-edit]');if(b)showEditor(b.dataset.edit);});
  document.querySelectorAll('input[name="walkMode"]').forEach(i=>i.addEventListener('change',e=>{void mutate(d=>applyWalkMode(d,e.target.value),'산책 동선 변경 완료');}));
- $('expenseForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget);const amount=Number(f.get('amount'));if(!Number.isFinite(amount)||amount<=0)return;
-  const record={id:'exp-'+crypto.randomUUID(),title:String(f.get('title')).trim(),amount,currency:String(f.get('currency')),payer:String(f.get('payer')),category:String(f.get('category')),day:Number(f.get('day'))};
-  void mutate(d=>{if(!d.expenses.some(x=>x.id===record.id))d.expenses.push(record);},'공용 지출 저장 완료');e.currentTarget.reset();});
- $('expenseList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-expense]');if(!b||!confirm('이 지출 내역을 삭제할까?'))return;void mutate(d=>{d.expenses=d.expenses.filter(x=>x.id!==b.dataset.deleteExpense);},'지출 내역 삭제 완료');});
+ $('expenseScope').addEventListener('change',updateExpenseScopeHint);
+ $('expenseFilter').addEventListener('change',renderSettlement);
+ $('expenseCancelEdit').addEventListener('click',resetExpenseEditor);
+ $('expenseForm').addEventListener('submit',e=>{
+  e.preventDefault();const form=e.currentTarget,f=new FormData(form);const amount=Number(f.get('amount'));
+  const title=String(f.get('title')||'').trim().slice(0,90),scope=f.get('scope')==='personal'?'personal':'shared';
+  if(!title||!Number.isFinite(amount)||amount<=0||amount>9999999999){toast('내용과 올바른 금액을 입력해 줘.');return;}
+  const editingId=form.dataset.editingExpense||'';
+  const record={id:editingId||'exp-'+crypto.randomUUID(),title,amount,currency:String(f.get('currency')),payer:String(f.get('payer')),category:String(f.get('category')),day:Number(f.get('day')),scope};
+  void mutate(d=>{d.expenses=d.expenses||[];const found=d.expenses.find(x=>x.id===record.id);
+   if(found)Object.assign(found,record);else if(!editingId)d.expenses.push(record);
+  },editingId?'지출 수정 완료':'지출 저장 완료');resetExpenseEditor();
+ });
+ $('expenseList').addEventListener('click',e=>{
+  const del=e.target.closest('[data-delete-expense]');
+  if(del){if(!confirm('이 지출 내역을 삭제할까?'))return;
+   void mutate(d=>{d.expenses=(d.expenses||[]).filter(x=>x.id!==del.dataset.deleteExpense);},'지출 내역 삭제 완료');return;
+  }
+  const edit=e.target.closest('[data-edit-expense]');if(!edit)return;
+  const record=(data.expenses||[]).find(x=>x.id===edit.dataset.editExpense);if(!record)return;
+  const form=$('expenseForm');form.dataset.editingExpense=record.id;
+  for(const k of ['title','amount','currency','payer','category','day']){
+   const el=form.elements.namedItem(k);if(el)el.value=String(record[k]);
+  }
+  form.elements.namedItem('scope').value=expenseScope(record);
+  $('expenseSaveBtn').textContent='수정 저장';$('expenseCancelEdit').hidden=false;
+  updateExpenseScopeHint();form.scrollIntoView({behavior:'smooth',block:'center'});
+ });
  $('todoForm').addEventListener('submit',e=>{
   e.preventDefault();const input=$('todoInput'),title=input.value.trim().slice(0,160);
   if(!title){toast('추가할 할 일을 적어 줘.');return;}
@@ -877,14 +990,55 @@ function attachHandlers(){
  $('privateFileForm').addEventListener('submit',e=>{e.preventDefault();void uploadPrivateFiles();});
  $('privateFileRefresh').addEventListener('click',()=>void refreshPrivateFiles(true));
  $('privateFileList').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-file-view],button[data-file-download],button[data-file-delete]');if(!b)return;
-  const key=b.dataset.fileView||b.dataset.fileDownload||b.dataset.fileDelete;
-  const action=b.dataset.fileView?'view':b.dataset.fileDownload?'download':'delete';
+  const b=e.target.closest('button[data-file-view],button[data-file-rename],button[data-file-download],button[data-file-delete]');if(!b)return;
+  const key=b.dataset.fileView||b.dataset.fileRename||b.dataset.fileDownload||b.dataset.fileDelete;
+  const action=b.dataset.fileView?'view':b.dataset.fileRename?'rename':b.dataset.fileDownload?'download':'delete';
   void privateFileAction(key,action);
  });
  $('memo').addEventListener('input',()=>{memoDirty=true;});
  $('saveMemo').addEventListener('click',()=>{const value=$('memo').value;
   void mutate(d=>{d.notes=value;},'공용 메모 저장 완료').then(()=>{if(data?.notes===value&&$('memo').value===value)memoDirty=false;});
+ });
+ // A name is enough: Google Maps resolves the entered place name when opened.
+ $('savedPlaceForm').addEventListener('submit',e=>{
+  e.preventDefault();const field=$('savedPlaceInput');const name=field.value.trim().replace(/\s+/g,' ').slice(0,100);
+  if(name.length<2){toast('장소 이름을 두 글자 이상 적어 줘.');return;}
+  const normalized=name.toLocaleLowerCase('ko-KR');
+  if(savedPlacesFor(data).some(x=>x.name.toLocaleLowerCase('ko-KR')===normalized)){toast('이미 저장한 장소야. 아래 목록에서 확인해 줘.');return;}
+  if(savedPlacesFor(data).length>=80){toast('저장 장소는 여행방당 최대 80개까지야.');return;}
+  const newId='place-'+crypto.randomUUID();const area=inferSavedPlaceArea(name);
+  $('savedPlaceSubmit').disabled=true;
+  void mutate(d=>{d.savedPlaces=Array.isArray(d.savedPlaces)?d.savedPlaces:[];
+   if(!d.savedPlaces.some(x=>String(x.name||'').toLocaleLowerCase('ko-KR')===normalized))d.savedPlaces.unshift({id:newId,name,area,createdBy:user?.id||'',createdAt:new Date().toISOString()});
+  },'장소 이름과 지도 링크를 친구와 공유 저장했어.').then(()=>{
+   if(savedPlacesFor(data).some(x=>x.id===newId)&&field.value.trim()===name){field.value='';savedPlaceFilter='all';renderSavedPlaces();}
+  }).finally(()=>$('savedPlaceSubmit').disabled=false);
+ });
+ $('savedPlaceFilters').addEventListener('click',e=>{
+  const button=e.target.closest('[data-saved-filter]');if(!button)return;
+  savedPlaceFilter=button.dataset.savedFilter;renderSavedPlaces();
+ });
+ $('savedPlaceList').addEventListener('change',e=>{
+  const select=e.target.closest('select[data-saved-area]');if(!select)return;
+  const id=select.dataset.savedArea,area=select.value;
+  if(!['oita','beppu','yufuin','other'].includes(area))return;
+  void mutate(d=>{const p=(d.savedPlaces||[]).find(x=>x.id===id);if(p)p.area=area;},'지역을 바꿨어. Google 지도 검색 위치가 업데이트돼.');
+ });
+ $('savedPlaceList').addEventListener('click',e=>{
+  const del=e.target.closest('button[data-saved-delete]');
+  if(del){if(!confirm('저장한 장소를 목록에서 삭제할까? (이미 추가한 일정은 유지돼)'))return;
+   void mutate(d=>{d.savedPlaces=(d.savedPlaces||[]).filter(x=>x.id!==del.dataset.savedDelete);},'장소를 목록에서 삭제했어.');return;}
+  const add=e.target.closest('button[data-saved-schedule]');if(!add)return;
+  const place=savedPlacesFor(data).find(x=>x.id===add.dataset.savedSchedule);if(!place)return;
+  const card=add.closest('.saved-place-card');const selected=Number(card?.querySelector('select[data-saved-day]')?.value||'2');
+  const day=[1,2,3].includes(selected)?selected:2;
+  activeDay=day;showEditor(null);
+  const f=$('editForm');f.elements.namedItem('day').value=String(day);
+  f.elements.namedItem('title').value='📍 '+place.name;
+  f.elements.namedItem('place').value=savedPlaceQuery(place).slice(0,160);
+  f.elements.namedItem('note').value='❤️ 저장한 장소에서 추가 · 방문 시간과 영업시간 확인';
+  $('dialogTitle').textContent='저장 장소를 여행 일정에 추가';
+  toast('날짜와 방문 시간을 확인한 뒤 저장해 줘.');
  });
  $('reelForm').addEventListener('submit',e=>{
   e.preventDefault();const f=new FormData(e.currentTarget),raw=String(f.get('url')).trim();
@@ -905,9 +1059,9 @@ function choosePage(page){activePage=page;document.querySelectorAll('[data-page]
  ['schedule','transport','settlement','reels','assistant','notes'].forEach(p=>$(p+'Page').hidden=p!==page);
  if(page==='notes'&&user?.id&&room?.id)void refreshPrivateFiles();
 }
-function renderOverview(){const krw=currencies('KRW'),net=krw.net;
- const transfer=net<0?`나 → 친구 ${won(-net)}`:net>0?`친구 → 나 ${won(net)}`:'정산 완료';
- $('overview').innerHTML=`<div class="mini"><small>🏨 확정 숙소</small><strong>MYSTAYS → 유후 모미지</strong><em>둘째 날 가이세키·조식 포함</em></div><div class="mini"><small>💳 현재 공용 정산</small><strong class="big">${esc(transfer)}</strong><em>합계 ${won(krw.total)} · 2명 반반</em></div>`;
+function renderOverview(){const krw=currencies('KRW'),t=budgetTotals('KRW'),j=budgetTotals('JPY'),net=krw.net;
+ const relative=relativeNet(net);const transfer=relative<0?`나 → 친구 ${won(-relative)}`:relative>0?`친구 → 나 ${won(relative)}`:'정산 완료';
+ $('overview').innerHTML=`<div class="mini"><small>🏨 확정 숙소</small><strong>MYSTAYS → 유후 모미지</strong><em>둘째 날 가이세키·조식 포함</em></div><div class="mini"><small>💳 예산 · 공동 정산</small><strong class="big">${esc(transfer)}</strong><em>총 지출 ${won(t.total)}${j.total?' · '+yen(j.total):''} · 공동만 반반 정산</em></div>`;
 }
 
 function renderTimeline(){renderLuggageState();const day=selectedDayData(data,activeDay);$('dayHeading').textContent=names[activeDay-1]+' · '+day.title;
@@ -927,17 +1081,56 @@ function showEditor(id){const entry=id?allEditableDays(data).flatMap(d=>d.events
  $('dialogTitle').textContent=entry?'일정 수정':'일정 추가';$('deleteEvent').hidden=!entry;$('editDialog').showModal();
 }
 function renderLodgings(){const h=data.hotels;const all=data.expenses.filter(x=>x.currency==='KRW'&&x.category==='숙소');
- $('lodgings').innerHTML=`<h3>확정된 숙소 2곳</h3>${h.map((x,i)=>`<div class="lodging-row"><div><small>${i===0?'10/31 · 첫날':'11/01 · 둘째 날'}</small><b style="display:block">${esc(x.name)}</b><span>${esc(x.info)}</span><div><a href="${urlMap(x.place)}" target="_blank" rel="noopener" style="font-size:12px">지도 보기 ↗</a></div></div><div><strong>${won(x.price)}</strong><small style="display:block">${x.payer==='a'?'내 결제':'친구 결제'}</small></div></div>`).join('')}<p class="hint">숙소비는 공용 정산에 등록돼 있어. 별도로 다시 입력하면 중복 정산되므로 주의해 줘.</p>`;
+ $('lodgings').innerHTML=`<h3>확정된 숙소 2곳</h3>${h.map((x,i)=>`<div class="lodging-row"><div><small>${i===0?'10/31 · 첫날':'11/01 · 둘째 날'}</small><b style="display:block">${esc(x.name)}</b><span>${esc(x.info)}</span><div><a href="${urlMap(x.place)}" target="_blank" rel="noopener" style="font-size:12px">지도 보기 ↗</a></div></div><div><strong>${won(x.price)}</strong><small style="display:block">${payerLabel(x.payer)} 결제</small></div></div>`).join('')}<p class="hint">숙소비는 예산의 공동 지출로 등록돼 있어. 중복 입력하지 않도록 주의해 줘.</p>`;
  document.querySelectorAll('[name="walkMode"]').forEach(i=>i.checked=i.value===data.walkMode);
  $('walkNotice').textContent=(['third','fourth'].includes(data.planMode)?'3·4안에서는 아카리노야도에 캐리어를 맡기고 유노츠보까지 도보로 다녀와. 아래 선택은 1·2안에서만 적용돼. ':'')+(data.walkMode==='center'?'1·2안: 유후인역 주변 작은 상점이나 실내 쇼핑 중심. ':'1·2안: 유후인역 주변 카페·휴식 중심. ')+'1~4안 전부 17:30 셔틀을 타며, 17:15까지 역으로 돌아오자.';
 }
-function currencies(code){const exp=data.expenses.filter(e=>e.currency===code);
- const total=exp.reduce((a,e)=>a+Number(e.amount),0);const a=exp.filter(e=>e.payer==='a').reduce((a,e)=>a+Number(e.amount),0);
- return {total,a,b:total-a,net:a-total/2,fmt:code==='JPY'?yen:won};}
-function renderSettlement(){const krw=currencies('KRW'),jpy=currencies('JPY');
- const result=(x)=>x.total===0?'정산할 금액 없음':x.net>0?`친구 → 나 ${x.fmt(x.net)}`:x.net<0?`나 → 친구 ${x.fmt(-x.net)}`:'정산 완료';
- $('settlementSummary').innerHTML=`<div class="settlebox"><span>공용 지출 (원)</span><strong>${won(krw.total)}</strong></div><div class="settlebox"><span>나 / 친구 결제</span><strong>${won(krw.a)} / ${won(krw.b)}</strong></div><div class="settlebox"><span>원화 각자 부담</span><strong>${won(krw.total/2)}</strong></div><div class="settlebox wide"><span>원화 송금 결론</span><strong>${esc(result(krw))}</strong><small>엔화는 별도 정산: ${esc(result(jpy))}</small></div>`;
- $('expenseList').innerHTML=data.expenses.length?data.expenses.slice().reverse().map(e=>`<div class="expense-row"><div><b>${esc(e.title)}</b><small>${names[e.day-1]||'기타'} · ${esc(e.category)} · ${e.payer==='a'?'내 결제':'친구 결제'}</small></div><div><strong>${e.currency==='JPY'?yen(e.amount):won(e.amount)}</strong><button type="button" data-delete-expense="${esc(e.id)}">삭제</button></div></div>`).join(''):'<p class="hint">지출 기록이 없어.</p>';
+// Previous saved records have no scope: they remain shared, preserving old 50:50 settlement.
+const expenseScope=e=>e?.scope==='personal'?'personal':'shared';
+const amountOf=e=>Number.isFinite(Number(e?.amount))?Number(e.amount):0;
+const ownerIsViewer=()=>!room?.owner_id||room.owner_id===user?.id;
+const payerLabel=k=>k==='a'?(ownerIsViewer()?'나':'친구'):(ownerIsViewer()?'친구':'나');
+const relativeNet=net=>ownerIsViewer()?net:-net;
+
+function budgetTotals(code){
+ const all=(data.expenses||[]).filter(e=>e.currency===code);
+ const shared=all.filter(e=>expenseScope(e)==='shared');
+ const personal=all.filter(e=>expenseScope(e)==='personal');
+ const sum=list=>list.reduce((n,e)=>n+amountOf(e),0);
+ const sharedTotal=sum(shared),personalA=sum(personal.filter(e=>e.payer==='a')),personalB=sum(personal.filter(e=>e.payer==='b'));
+ const sharedPaidA=sum(shared.filter(e=>e.payer==='a')),sharedPaidB=sharedTotal-sharedPaidA;
+ return {code,total:sharedTotal+personalA+personalB,sharedTotal,personalA,personalB,
+  personalTotal:personalA+personalB,sharedPaidA,sharedPaidB,
+  myBurden:sharedTotal/2+personalA,friendBurden:sharedTotal/2+personalB,
+  myPaid:sharedPaidA+personalA,friendPaid:sharedPaidB+personalB,
+  transfer:sharedPaidA-sharedTotal/2,fmt:code==='JPY'?yen:won};
+}
+function currencies(code){
+ const t=budgetTotals(code);
+ return {total:t.sharedTotal,a:t.sharedPaidA,b:t.sharedPaidB,net:t.transfer,fmt:t.fmt};
+}
+function renderSettlement(){
+ const t=[budgetTotals('KRW'),budgetTotals('JPY')];
+ const money=(n,fmt)=>esc(fmt(n));
+ const result=x=>{const net=relativeNet(x.transfer);return x.sharedTotal===0?'공동 정산 없음':net>0?`친구 → 나 ${money(net,x.fmt)}`:net<0?`나 → 친구 ${money(-net,x.fmt)}`:'공동 정산 완료';};
+ const owner=ownerIsViewer();
+ const payerSelect=$('expenseForm')?.elements.namedItem('payer');
+ if(payerSelect){payerSelect.options[0].textContent=owner?'나':'친구';payerSelect.options[1].textContent=owner?'친구':'나';
+  if(!$('expenseForm').dataset.editingExpense && !document.activeElement?.closest?.('#expenseForm'))payerSelect.value=owner?'a':'b';}
+ $('settlementSummary').innerHTML=t.map(x=>`<section class="budget-currency"><h3>${x.code==='KRW'?'🇰🇷 원화 예산':'🇯🇵 엔화 예산'}</h3>
+ <div class="budget-grid"><div class="budget-metric"><small>총 지출</small><strong>${money(x.total,x.fmt)}</strong></div><div class="budget-metric"><small>공동 / 개인</small><strong>${money(x.sharedTotal,x.fmt)}</strong><em>개인 ${money(x.personalTotal,x.fmt)}</em></div><div class="budget-metric"><small>내 부담액</small><strong>${money(owner?x.myBurden:x.friendBurden,x.fmt)}</strong><em>내 개인 지출 ${money(owner?x.personalA:x.personalB,x.fmt)}</em></div><div class="budget-metric"><small>친구 부담액</small><strong>${money(owner?x.friendBurden:x.myBurden,x.fmt)}</strong><em>친구 개인 지출 ${money(owner?x.personalB:x.personalA,x.fmt)}</em></div></div>
+ <div class="budget-transfer"><span>🤝 공동 지출 정산</span><strong>${result(x)}</strong><small>실제 결제: 나 ${money(owner?x.myPaid:x.friendPaid,x.fmt)} · 친구 ${money(owner?x.friendPaid:x.myPaid,x.fmt)}</small></div></section>`).join('');
+ const filter=$('expenseFilter')?.value||'all';
+ const visible=(data.expenses||[]).filter(e=>filter==='all'||expenseScope(e)===filter);
+ $('expenseList').innerHTML=visible.length?visible.slice().reverse().map(e=>`<div class="expense-row"><div><b>${esc(e.title)}</b><small>${expenseScope(e)==='personal'?'👤 개인':'🤝 공동'} · ${names[e.day-1]||'기타'} · ${esc(e.category)} · ${payerLabel(e.payer)} 결제</small></div><div><strong>${e.currency==='JPY'?yen(e.amount):won(e.amount)}</strong><div class="budget-record-actions"><button type="button" data-edit-expense="${esc(e.id)}">수정</button><button type="button" data-delete-expense="${esc(e.id)}">삭제</button></div></div></div>`).join(''):'<p class="hint">선택한 구분의 지출 기록이 없어.</p>';
+}
+function resetExpenseEditor(){
+ const form=$('expenseForm');form.reset();delete form.dataset.editingExpense;form.elements.namedItem('payer').value=ownerIsViewer()?'a':'b';
+ $('expenseSaveBtn').textContent='＋ 지출 저장';$('expenseCancelEdit').hidden=true;
+ updateExpenseScopeHint();
+}
+function updateExpenseScopeHint(){
+ $('expenseScopeHint').textContent=$('expenseScope').value==='personal'?'개인 지출은 선택한 사람의 사용액에만 더하며, 친구와의 공동 송금액에는 영향을 주지 않습니다.':'공동 지출은 두 사람이 50:50으로 부담하며, 실제 결제자 기준으로 송금액이 계산됩니다.';
 }
 // Existing rooms keep their old preset checklist and checked states until the first to-do change.
 function todoItemsFor(d){
@@ -982,7 +1175,7 @@ function renderPrivateFiles(){
   const name=decodePrivateKey(f.name)||'이름 없는 파일',size=Number(f.metadata?.size||0);
   const showSize=size>=1048576?`${(size/1048576).toFixed(1)}MB`:size>=1024?`${(size/1024).toFixed(1)}KB`:`${size}B`;
   const type=fileExt(name)==='pdf'?'📄':'🖼️',key=esc(f.name);
-  return `<div class="private-file-row"><div class="private-file-title">${type} ${esc(name)}<small>${esc(showSize)} · 비공개</small></div><div class="private-file-actions"><button data-file-view="${key}" type="button">보기</button><button data-file-download="${key}" type="button">저장</button><button data-file-delete="${key}" type="button">삭제</button></div></div>`;
+  return `<div class="private-file-row"><div class="private-file-title">${type} ${esc(name)}<small>${esc(showSize)} · 비공개</small></div><div class="private-file-actions"><button data-file-view="${key}" type="button">보기</button><button data-file-rename="${key}" type="button">이름 수정</button><button data-file-download="${key}" type="button">저장</button><button data-file-delete="${key}" type="button">삭제</button></div></div>`;
  }).join('');
 }
 async function refreshPrivateFiles(force=false){
@@ -1029,6 +1222,38 @@ async function uploadPrivateFiles(){
 async function privateFileAction(key,action){
  const obj=privateList.find(x=>x.name===key),scope=fileScope();if(!obj||!scope)return;
  const name=decodePrivateKey(key)||'download';
+ if(action==='rename'){
+  if(privateFileBusy){toast('다른 파일 작업이 끝난 뒤 다시 시도해 줘.');return;}
+  const ext=fileExt(name);
+  const suffix=ext?'.'+ext:'';
+  const oldBase=suffix?name.slice(0,-suffix.length):name;
+  const entered=prompt('새 파일 이름을 입력해 줘. 확장자는 자동으로 유지돼.',oldBase);
+  if(entered===null)return;
+  let base=entered.normalize('NFC').trim();
+  if(suffix&&base.toLowerCase().endsWith(suffix))base=base.slice(0,-suffix.length).trim();
+  if(!base||base==='.'||base==='..'||/[\\/\u0000-\u001f\u007f]/.test(base)){toast('파일 이름에 사용할 수 없는 문자가 있어.');return;}
+  const nextName=base+suffix;
+  if(nextName===name){toast('기존 파일 이름과 같아.');return;}
+  let nextKey;
+  try{nextKey=makePrivateKey(nextName);}catch(e){toast(e.message);return;}
+  privateFileBusy=true;
+  $('privateFileStatus').textContent=`파일 이름 수정 중: ${name} → ${nextName}`;
+  let uploaded=false;
+  try{
+   const from=`${scope}/${key}`,to=`${scope}/${nextKey}`;
+   const {data:blob,error:downloadError}=await client.storage.from(PRIVATE_BUCKET).download(from);
+   if(downloadError)throw downloadError;
+   if(scope!==fileScope())throw Error('로그인한 여행방이 변경됐어.');
+   const {error:uploadError}=await client.storage.from(PRIVATE_BUCKET).upload(to,blob,{upsert:false,cacheControl:'60',contentType:PRIVATE_TYPES[ext]||blob.type||'application/octet-stream'});
+   if(uploadError)throw uploadError;
+   uploaded=true;
+   const {error:deleteError}=await client.storage.from(PRIVATE_BUCKET).remove([from]);
+   if(deleteError)throw Error('새 이름으로 복사됐지만 기존 파일 삭제에 실패했어. 목록에서 두 파일을 확인한 후 이전 이름 파일을 삭제해 줘: '+deleteError.message);
+   toast('파일 이름을 수정했어.');
+  }catch(e){toast((uploaded?'확인 필요: ':'이름 수정 실패: ')+e.message);$('privateFileStatus').textContent=e.message;}
+  finally{privateFileBusy=false;privateListAt=0;await refreshPrivateFiles(true);}
+  return;
+ }
  if(action==='delete'){
   if(!confirm(`이 개인 파일을 삭제할까?\n${name}`))return;
   try{
@@ -1061,14 +1286,53 @@ function renderReels(){const reels=Array.isArray(data.reels)?data.reels:[];
   return `<article class="reel-card"><span class="reel-kind">${category}</span><strong>${esc(r.title)}</strong>${r.place?`<p>📍 ${esc(r.place)}</p>`:''}${r.note?`<p>${esc(r.note)}</p>`:''}<div class="reel-actions">${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">영상 보러 가기 ↗</a>`:''}${r.place?`<a href="${urlMap(r.place)}" target="_blank" rel="noopener noreferrer">지도 ↗</a>`:''}<button type="button" data-delete-reel="${esc(r.id)}">삭제</button></div></article>`;
  }).join(''):'<div class="card section-card" style="grid-column:1/-1;color:#697c74;font-size:13px">아직 저장한 링크가 없어. 인스타에서 찾은 음식점과 장소를 이곳에 모아봐.</div>';
 }
+// Name-only saved places: Google Maps search URLs do not require a Places API key.
+let savedPlaceFilter='all';
+const SAVED_AREAS={oita:'오이타',beppu:'벳푸',yufuin:'유후인',other:'오이타현'};
+const SAVED_AREA_QUERY={oita:'大分市 大分県 日本',beppu:'別府市 大分県 日本',yufuin:'由布市 湯布院町 大分県 日本',other:'大分県 日本'};
+function savedPlacesFor(d){return Array.isArray(d?.savedPlaces)?d.savedPlaces.filter(p=>p&&typeof p.name==='string'&&p.name.trim()&&typeof p.id==='string'):[];}
+function inferSavedPlaceArea(name){
+ const n=String(name||'').toLocaleLowerCase();
+ if(/유후인|유노츠보|긴린코|금린호|플로랄|모미지|아카리노야도|湯布院|由布院|湯の坪|金鱗湖|yufuin|yunotsubo|kinrin|floral village|momiji/.test(n))return 'yufuin';
+ if(/벳푸|가마지옥|카마도|가마도|지옥순례|지옥온천|간나와|칸나와|別府|地獄|鉄輪|beppu|kamado|kannawa/.test(n))return 'beppu';
+ if(/오이타|이치란|몽벨|미스테이즈|大分市|oita|ichiran|montbell|mystays/.test(n))return 'oita';
+ return 'other';
+}
+function savedPlaceQuery(place){return String(place.name||'').trim()+', '+(SAVED_AREA_QUERY[place.area]||SAVED_AREA_QUERY.other);}
+function savedPlaceMapUrl(place){return urlMap(savedPlaceQuery(place));}
+function savedPlacesOverviewUrl(places){
+ const few=places.slice(0,5).map(p=>savedPlaceQuery(p));
+ if(few.length<2)return '';
+ const url=new URL('https://www.google.com/maps/dir/');url.searchParams.set('api','1');
+ url.searchParams.set('origin',few[0]);url.searchParams.set('destination',few[few.length-1]);
+ if(few.length>2)url.searchParams.set('waypoints',few.slice(1,-1).join('|'));
+ return url.toString().length<2048?url.toString():'';
+}
+function renderSavedPlaces(){
+ const all=savedPlacesFor(data),chosen=all.filter(p=>savedPlaceFilter==='all'||p.area===savedPlaceFilter);
+ $('savedPlaceCount').textContent=all.length+'개 저장 · '+chosen.length+'개 표시';
+ document.querySelectorAll('[data-saved-filter]').forEach(b=>{const yes=b.dataset.savedFilter===savedPlaceFilter;b.classList.toggle('active',yes);b.setAttribute('aria-pressed',String(yes));});
+ const route=savedPlacesOverviewUrl(chosen);
+ $('savedPlaceMapLinks').innerHTML=route?`<a href="${esc(route)}" target="_blank" rel="noopener noreferrer">🗺 선택 지역 장소 ${Math.min(chosen.length,5)}곳 지도에서 함께 보기 ↗</a><span class="hint">이름 기반 임시 경로 · 실제 동선은 지도에서 확인</span>`:'';
+ $('savedPlaceList').innerHTML=chosen.length?chosen.map(p=>{
+  const area=SAVED_AREAS[p.area]||SAVED_AREAS.other;
+  const areaOptions=Object.entries(SAVED_AREAS).map(([key,label])=>`<option value="${key}" ${key===p.area?'selected':''}>${label}</option>`).join('');
+  const inferredDay=p.area==='oita'?'1':'2';
+  const dayOptions=[['1','10/31 · 첫날'],['2','11/1 · 둘째 날'],['3','11/2 · 마지막 날']].map(([key,label])=>`<option value="${key}" ${key===inferredDay?'selected':''}>${label}</option>`).join('');
+  return `<article class="saved-place-card"><div class="saved-place-card-title"><a class="saved-place-heart-link" href="${esc(savedPlaceMapUrl(p))}" target="_blank" rel="noopener noreferrer" title="${esc(p.name)} Google 지도에서 열기">❤️ ${esc(p.name)} <span aria-hidden="true">↗</span></a></div><p class="saved-place-card-sub">📍 ${esc(area)} · ${p.createdBy?(p.createdBy===user?.id?'내가 저장':'친구가 저장'):'공유 장소'}</p>
+   <div class="saved-place-card-actions"><a href="${esc(savedPlaceMapUrl(p))}" target="_blank" rel="noopener noreferrer" title="Google 지도에서 검색 결과 확인">🗺 Google 지도 ↗</a><select data-saved-area="${esc(p.id)}" aria-label="${esc(p.name)} 검색 지역">${areaOptions}</select></div>
+   <div class="saved-place-card-actions" style="margin-top:8px"><select data-saved-day="${esc(p.id)}" aria-label="${esc(p.name)} 추가할 여행 날짜">${dayOptions}</select><button type="button" data-saved-schedule="${esc(p.id)}">＋ 일정에 추가</button><button type="button" data-saved-delete="${esc(p.id)}">삭제</button></div>
+  </article>`;
+ }).join(''):'<p class="saved-place-empty">아직 저장한 장소가 없어. 위 칸에 장소 이름 하나만 적어 봐! 저장하면 Google 지도 버튼이 만들어져.</p>';
+}
 let pendingProposal=null,chatBusy=false;
 function chatBubble(s,mine=false){const e=document.createElement('div');e.className='chat-bubble '+(mine?'me':'bot');e.textContent=String(s).slice(0,2000);$('chatMessages').appendChild(e);$('chatMessages').scrollTop=$('chatMessages').scrollHeight;}
 function chatAnswerLocal(msg){const m=msg.toLowerCase();
  if(/짐|캐리어|보관|로커|코인/.test(m))return '11/1 벳푸 관광을 한다면 벳푸역 WANDER COMPASS에 맡겼다가 버스를 타기 전에 짐을 찾고, 유후인 도착 뒤에는 모미지 계열 아카리노야도에 무료로 짐을 맡길 수 있어. 3·4안은 유노츠보 거리를 도보로 둘러보고, 모두 17:30 유후인역 무료 셔틀을 타면 돼.';
 
  if(/정산|숙소비|돈|송금|결제|경비|예산/.test(m)){
-  const k=currencies('KRW'),j=currencies('JPY');const who=k.net<0?'내가 친구에게':k.net>0?'친구가 나에게':'정산 완료';
-  return `현재 공용 지출 총 ${won(k.total)}, 한 명당 ${won(k.total/2)}이야. ${who}${k.net===0?'':(' '+won(Math.abs(k.net))+'을 보내면 돼.')}${j.total?' 엔화는 '+yen(j.total)+' 별도 정산.':''}`;
+  const k=currencies('KRW'),j=currencies('JPY');const net=relativeNet(k.net);const who=net<0?'내가 친구에게':net>0?'친구가 나에게':'정산 완료';
+  return `현재 여행 총지출은 원화 ${won(budgetTotals('KRW').total)}, 엔화 ${yen(budgetTotals('JPY').total)}이고, 공동 지출만 정산해. 공동 원화 ${won(k.total)}, 한 명당 ${won(k.total/2)}이야. ${who}${net===0?'':(' '+won(Math.abs(net))+'을 보내면 돼.')}${j.total?' 엔화 공동 지출 '+yen(j.total)+' 별도 정산.':''}`;
  }
  if(/첫날|1일차|10\/31|토요일/.test(m))return '10/31: 오이타공항 → 공항버스 → HOTEL MYSTAYS 짐 보관 → 이치란 → 몽벨 → 이자카야. 1일 차 탭에서 각 시각과 지도 링크를 볼 수 있어.';
  if(/둘째|2일차|2일 차|11\/1|가마|벳푸/.test(m)){const events=selectedDayData(data,2)?.events||[];return '지금 선택된 둘째 날 일정이야.\n'+[...events].sort((a,b)=>a.start.localeCompare(b.start)).map(e=>`${e.start}–${e.end} ${e.title}`).join('\n');}
@@ -1123,33 +1387,7 @@ async function applyAIProposal(a){if(!a||a.type!=='add_event')return;
 }
 
 
-// Optional import of the user's already accessible Tripkku reels into the shared Oita room.
-// User explicitly presses a button. Old records are only read and never edited.
-async function importLegacyReels(){
- const statusEl=$('importLegacyStatus'),button=$('importLegacyReels');
- if(!client||!room){statusEl.textContent='로그인한 뒤 사용해 줘.';return;}
- button.disabled=true;statusEl.textContent='기존 릴스 조회 중…';
- try{
-  const {data:items,error}=await client.from('trip_reels').select('url,title,place_name,category,caption').limit(60);
-  if(error)throw error;
-  const existing=new Set((data.reels||[]).map(r=>String(r.url||'').split('?')[0]));
-  const fresh=[];
-  for(const r of items||[]){
-   try{
-    const u=new URL(r.url);if(u.protocol!=='https:'||!validReelHost(u.hostname))continue;
-    const key=u.href.split('?')[0];if(existing.has(key))continue;
-    existing.add(key);
-    fresh.push({id:'reel-'+crypto.randomUUID(),url:u.href,title:String(r.title||'저장한 릴스').slice(0,90),place:String(r.place_name||'').slice(0,130),note:String(r.caption||'').slice(0,350),category:['food','place','other'].includes(r.category)?r.category:'other'});
-   }catch(_){}
-  }
-  if(!fresh.length){statusEl.textContent='가져올 새 릴스가 없어. 기존 여행이 다르거나 권한이 없을 수도 있어.';return;}
-  await mutate(d=>{d.reels=Array.isArray(d.reels)?d.reels:[];const seen=new Set(d.reels.map(r=>String(r.url||'').split('?')[0]));for(const r of fresh){if(!seen.has(r.url.split('?')[0])){d.reels.push(r);seen.add(r.url.split('?')[0]);}}},'기존 릴스 '+fresh.length+'개를 여행방에 복사했어.');
-  statusEl.textContent='중복 제외 '+fresh.length+'개 가져오기 완료. 원본은 그대로야.';
- }catch(e){statusEl.textContent='기존 릴스 조회 실패. 예전 트립꾸 저장소 테이블 또는 접근 권한을 확인해 줘. ('+String(e.message||'오류').slice(0,95)+')';}
- finally{button.disabled=false;}
-}
-
-function renderAll(){if(!data)return;renderOverview();renderTimeline();renderLodgings();renderSettlement();renderReels();renderNotes();choosePage(activePage);}
+function renderAll(){if(!data)return;renderOverview();renderTimeline();renderLodgings();renderSettlement();renderReels();renderSavedPlaces();renderNotes();choosePage(activePage);}
 async function mutate(update,success){
  pending++;status('저장 중…');
  saveQueue=saveQueue.then(async()=>{
