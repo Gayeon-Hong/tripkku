@@ -143,7 +143,7 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 .dayheading{font-size:16px;margin:11px 0 7px;line-height:1.4}
 .route-primer{padding:11px 13px;border:1px solid #cfddce;border-radius:11px;background:#edf2e9;color:#294e40;font-size:13px;line-height:1.6;font-weight:850;word-break:keep-all;margin:0 0 12px}
 .plan-picker{margin:0 0 13px}
-.plan-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.plan-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}.plan-button[data-plan-mode="third"]{grid-column:1/-1}.night-options{margin:9px 0 5px;padding:12px;border:1px solid #d6e0d5;border-radius:12px;background:#f1f6ef}.night-options>strong{display:block;font-size:12px;margin-bottom:6px}.night-options .night-choices{display:flex;gap:12px;flex-wrap:wrap}.night-options label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}.night-options label input{accent-color:#376e5a}.night-options p{margin:7px 0 0;color:#64756a;font-size:11px;line-height:1.6}
 .plan-button{border:1px solid #d8ded6;background:#fffefa;border-radius:12px;text-align:left;padding:11px 13px;color:#394d46;min-height:61px;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .plan-button b{font-size:13px}.plan-button small{font-size:11px}
 .plan-button.active{border:2px solid #477766;background:#e6efe7;padding:10px 12px;color:#1d5746}
@@ -243,10 +243,19 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
 <div class="route-primer" id="routePrimer" role="status">일정 불러오는 중…</div>
 <div class="plan-picker" id="planPicker" hidden aria-label="2일 차 일정 선택">
   <div class="plan-buttons" role="group" aria-label="2일 차 동선">
-    <button class="plan-button active" type="button" data-plan-mode="main" aria-pressed="true"><b>기본 일정</b><small>가마지옥 경유</small></button>
-    <button class="plan-button" type="button" data-plan-mode="backup" aria-pressed="false"><b>지연·우천 대안</b><small>유후인 직행</small></button>
+    <button class="plan-button active" type="button" data-plan-mode="main" aria-pressed="true"><b>1안 · 기본 일정</b><small>가마지옥 경유 · 료칸 휴식</small></button>
+    <button class="plan-button" type="button" data-plan-mode="backup" aria-pressed="false"><b>2안 · 우천·지연 대안</b><small>유후인 직행</small></button>
+    <button class="plan-button" type="button" data-plan-mode="third" aria-pressed="false"><b>3안 · 온천마을 + 가이세키 + 온천 + 야식</b><small>가마지옥 경유 · 유노츠보 산책 · 저녁 자유 선택</small></button>
   </div>
   <p class="plan-hint" id="planHint"></p>
+  <div class="night-options" id="nightOptions" hidden>
+    <strong>🌙 3안 · 온천 후 저녁 선택 (친구와 공동 저장)</strong>
+    <div class="night-choices">
+      <label><input type="radio" name="nightMode" value="room"/> 🥡 숙소에서 편의점 간식</label>
+      <label><input type="radio" name="nightMode" value="izakaya"/> 🍶 유후인 이자카야 (택시 왕복)</label>
+    </div>
+    <p>편의점 간식은 해 지기 전 미리 구매 권장. 이자카야는 영업·라스트오더와 귀가 택시를 미리 확인해 주세요.</p>
+  </div>
 </div><details class="weather-fold"><summary>🌤 여행 3일 날씨 확인</summary><div class="weather-grid" id="weather"><div class="weather-item"><b>10/31 · 오이타</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div><div class="weather-item"><b>11/1 · 유후인</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div><div class="weather-item"><b>11/2 · 유후인</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div></div></details>
 <div class="luggage-update" hidden="" id="luggageUpdateBanner">
 <div><strong>코인로커 대신 직원에게 짐 맡기기</strong><p>숙소는 가마지옥 근처가 아니어서 벳푸역 유인 보관을 이용해요.</p></div>
@@ -381,11 +390,12 @@ const checklistLabels=[
  '유후 모미지 도착 셔틀 5분 · 픽업 시각 사전 연락',
  '유후 모미지 가이세키 석식·조식 제공 시간 확인',
  '11/2 유후인 09:45 공항버스·료칸 송영 확인',
- '항공편 시간·수하물·여권·eSIM 점검'
+ '항공편 시간·수하물·여권·eSIM 점검',
+ '11/1 3안: 유노츠보 상점 마감·택시 왕복·온천 이용시간 확인'
 ];
 function item(id,start,end,title,note,place,kind='visit'){return {id,start,end,title,note,place,kind};}
 function defaultTrip(){return {
- title:'우리 오이타 2박 3일',walkMode:'near',planMode:'main',notes:'',checklist:{},reels:[],
+ title:'우리 오이타 2박 3일',walkMode:'near',planMode:'main',nightMode:'room',notes:'',checklist:{},reels:[],
  luggagePlan:{version:16,mode:'staffed-station',checkedAt:'2026-10-28'},
  hotels:[{name:'HOTEL MYSTAYS Oita',day:1,price:96200,payer:'a',info:'10/31 체크인 → 11/1 11시 체크아웃 · 짐 먼저 맡기기',place:'HOTEL MYSTAYS Oita, 1-32 Niagemachi, Oita'},
  {name:'유후 모미지',day:2,price:517514,payer:'b',info:'11/1~11/2 · 석식(가이세키) + 조식 포함 · 유후인역 셔틀 약 5분',place:'旅館ゆふもみじ, 大分県由布市湯布院町川北662'}],
@@ -444,14 +454,57 @@ function backupDay2Template(){return {day:2,title:'비·지연 시 유후인 직
  item('alt-d2-dinner','18:00','19:30','🍱 모미지 가이세키 석식','숙박비 포함. 제공 시각은 예약 안내를 우선해요.','Yufu Momiji','food'),
  item('alt-d2-night','19:30','21:00','🌙 온천·휴식','친구와 편하게 쉬기.','Yufu Momiji','hotel')
 ]};}
-function selectedDayData(d,day){return day===2&&d.planMode==='backup'?(d.backupDay2||backupDay2Template()):d.days.find(x=>x.day===day);}
-function editableDayData(d,day){if(day!==2||d.planMode!=='backup')return d.days.find(x=>x.day===day);
- if(!d.backupDay2)d.backupDay2=backupDay2Template();return d.backupDay2;}
-function allEditableDays(d){return [...d.days,...(d.backupDay2?[d.backupDay2]:[])];}
+// 3안: 가마지옥까지는 기존 1안 동선을 복제해 두고, 체크인 이후 일정만 별도로 관리합니다.
+// 새로운 방뿐 아니라 이미 저장된 여행방에도 선택 시 생성하여 기존 일정·정산을 보존합니다.
+function thirdNightEvents(mode){
+ if(mode==='izakaya')return [
+  item('third-d2-night-taxi','20:30','20:50','🚕 숙소 → 유후인역 주변 이자카야','료칸 송영은 20시 종료. 야간 택시 사전 예약 필수, 이동시간은 현장 상황에 따라 변동.','Maru, 3728-50 Yufuincho Kawakami, Yufu','move'),
+  item('third-d2-night-izakaya','20:50','21:25','🍶 이자카야에서 가볍게 1잔','후보: まる(Maru). 일요일 22시 영업 종료로 안내되나 라스트오더·예약 및 당일 영업 필수 확인. 가이세키 직후라 간단한 안주만.','Maru, 3728-50 Yufuincho Kawakami, Yufu','food'),
+  item('third-d2-night-return','21:25','21:45','🚕 택시로 유후 모미지 복귀','왕복 택시 확보가 안 되면 이자카야는 포기하고 객실에서 야식. 야간 도보 복귀 비추천.','Yufu Momiji','move')
+ ];
+ return [item('third-d2-night-room','20:30','21:30','🥡 숙소에서 편의점 간식·휴식','오후에 미리 구매한 주먹밥·디저트·음료 등을 객실에서 즐기기. 가이세키 후 배부르면 간식은 생략.','Yufu Momiji','food')];
+}
+function thirdDay2Template(source,nightMode='room'){
+ const ids=new Set(['d2-out','d2-jr','d2-bag','d2-taxik','d2-kamado','d2-back','d2-wait','d2-bus','d2-shuttle','d2-room']);
+ const previous=(source?.events||[]).filter(e=>ids.has(e.id)).map(e=>({...clone(e),id:'third-'+e.id}));
+ const shuttle=previous.find(e=>e.id==='third-d2-shuttle');
+ if(shuttle)Object.assign(shuttle,{start:'15:32',end:'16:10',title:'🚐 유후인역 16:00 예약 셔틀 → 모미지',note:'15:32 도착 후 16:00 셔틀 가정. 30분 간격·전날까지 예약 필수. 셔틀 지연 시 이후 산책 축소.',kind:'move'});
+ const room=previous.find(e=>e.id==='third-d2-room');
+ if(room)Object.assign(room,{start:'16:10',end:'16:25',title:'🏡 유후 모미지 체크인·짐 풀기',note:'짐 정리 후 바로 출발. 18:00 가이세키 예약 여부를 숙소에 확인.',kind:'hotel'});
+ return {day:2,title:'3안 · 온천마을 산책·가이세키·온천·야식',events:[...previous,
+  item('third-d2-to-town','16:25','16:40','🚕 료칸 → 유노츠보 거리','유후인 중심가까지 택시 이용 계획. 택시 호출·대기시간에 따라 산책 시간이 줄어듦.','Yunotsubo Kaido, Yufuin','move'),
+  item('third-d2-town','16:40','17:10','🌿 유노츠보 온천마을 산책·사진','유후인 대표 온천마을 거리. 다수 상점은 17시 전후에 마감하므로 짧은 구경과 사진 중심. 긴린코까지 왕복은 어려움.','Yunotsubo Kaido, Yufuin','visit'),
+  item('third-d2-convenience','17:10','17:20','🏪 편의점에서 밤 간식 미리 구매 (선택)','유노츠보 인근 세븐일레븐(湯布院湯の坪店) 등에서 간식·음료를 미리 구입. 이자카야 선택 시 생략 가능.','7-Eleven Yufuin Yunotsubo, 3011-4 Yufuincho Kawakami','food'),
+  item('third-d2-from-town','17:20','17:40','🚕 유노츠보 → 료칸 복귀','가이세키를 놓치지 않도록 17:20 전 출발을 목표로 택시 준비.','Yufu Momiji','move'),
+  item('third-d2-ready','17:40','18:00','🧳 가이세키 준비','예약 식사 시간 18:00 기준. 숙소가 18:30을 지정했다면 현장에 맞춰 조정.','Yufu Momiji','hotel'),
+  item('third-d2-kaiseki','18:00','19:30','🍱 유후 모미지 가이세키','2인 숙박비에 포함된 저녁 식사. 숙소는 18:00 또는 18:30 시작으로 안내.','Yufu Momiji','food'),
+  item('third-d2-onsen','19:40','20:30','♨️ 식사 후 객실 전용 온천','모미지는 전 객실 전용 온천을 제공. 식후 충분히 쉬었다가 온천욕하고 무리하지 않기.','Yufu Momiji','hotel'),
+  ...thirdNightEvents(nightMode)]};
+}
+function applyNightMode(d,mode){
+ d.nightMode=mode==='izakaya'?'izakaya':'room';
+ if(!d.thirdDay2)d.thirdDay2=thirdDay2Template(d.days.find(x=>x.day===2),d.nightMode);
+ d.thirdDay2.events=d.thirdDay2.events.filter(e=>!e.id.startsWith('third-d2-night-'));
+ d.thirdDay2.events.push(...thirdNightEvents(d.nightMode));
+}
+function selectedDayData(d,day){
+ if(day!==2)return d.days.find(x=>x.day===day);
+ if(d.planMode==='third')return d.thirdDay2||thirdDay2Template(d.days.find(x=>x.day===2),d.nightMode||'room');
+ return d.planMode==='backup'?(d.backupDay2||backupDay2Template()):d.days.find(x=>x.day===2);
+}
+function editableDayData(d,day){
+ if(day!==2)return d.days.find(x=>x.day===day);
+ if(d.planMode==='third'){if(!d.thirdDay2)d.thirdDay2=thirdDay2Template(d.days.find(x=>x.day===2),d.nightMode||'room');return d.thirdDay2;}
+ if(d.planMode==='backup'){if(!d.backupDay2)d.backupDay2=backupDay2Template();return d.backupDay2;}
+ return d.days.find(x=>x.day===day);
+}
+function allEditableDays(d){return [...d.days,...(d.backupDay2?[d.backupDay2]:[]),...(d.thirdDay2?[d.thirdDay2]:[])];}
 function renderPlanPicker(){const box=$('planPicker');if(!box||!data)return;box.hidden=activeDay!==2;
- const current=data.planMode==='backup'?'backup':'main';
+ const current=['backup','third'].includes(data.planMode)?data.planMode:'main';
  document.querySelectorAll('[data-plan-mode]').forEach(b=>{const active=b.dataset.planMode===current;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
- $('planHint').textContent=current==='backup'?'비나 지연으로 벳푸를 생략하는 별도 동선이야. 1·3일 차와 정산은 그대로 유지돼.':'기본 동선은 가마지옥을 들른 후 36번 버스로 유후인에 가는 일정이야.';
+ $('planHint').textContent=current==='third'?'3안은 가마지옥 이후 체크인·유노츠보 산책·가이세키·객실 온천으로 이어지는 별도 일정이야. 16시 이후 상점 마감이 빨라 사진 위주로 짧게 방문해.':current==='backup'?'비나 지연으로 벳푸를 생략하는 별도 동선이야. 1·3일 차와 정산은 그대로 유지돼.':'기본 동선은 가마지옥을 들른 후 36번 버스로 유후인에 가는 일정이야.';
+ $('nightOptions').hidden=current!=='third';
+ document.querySelectorAll('input[name="nightMode"]').forEach(i=>i.checked=i.value===(data.nightMode||'room'));
 }
 
 const LUGGAGE_PATCHES=[
@@ -562,7 +615,8 @@ function attachHandlers(){
  });
  document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>choosePage(b.dataset.page)));
  document.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',()=>{activeDay=Number(b.dataset.day);renderTimeline();}));
- document.querySelectorAll('[data-plan-mode]').forEach(b=>b.addEventListener('click',()=>{const mode=b.dataset.planMode;if(!['main','backup'].includes(mode)||data.planMode===mode)return;void mutate(d=>{d.planMode=mode;if(mode==='backup'&&!d.backupDay2){d.backupDay2=backupDay2Template();if(d.walkMode==='center')applyWalkMode(d,'center','backup');}},mode==='backup'?'지연 대체안으로 전환했어.':'가마지옥 기본안으로 돌아왔어.');}));
+ document.querySelectorAll('[data-plan-mode]').forEach(b=>b.addEventListener('click',()=>{const mode=b.dataset.planMode;if(!['main','backup','third'].includes(mode)||data.planMode===mode)return;void mutate(d=>{d.planMode=mode;if(mode==='backup'&&!d.backupDay2){d.backupDay2=backupDay2Template();if(d.walkMode==='center')applyWalkMode(d,'center','backup');}if(mode==='third'&&!d.thirdDay2)d.thirdDay2=thirdDay2Template(d.days.find(x=>x.day===2),d.nightMode||'room');},mode==='third'?'3안 온천마을·가이세키·온천 일정으로 전환했어.':mode==='backup'?'지연 대체안으로 전환했어.':'가마지옥 기본안으로 돌아왔어.');}));
+ document.querySelectorAll('input[name="nightMode"]').forEach(i=>i.addEventListener('change',e=>{if(data.planMode!=='third')return;void mutate(d=>applyNightMode(d,e.target.value),'3안의 저녁 선택을 친구와 공유 저장했어.');}));
  $('addEvent').addEventListener('click',()=>showEditor(null));
  $('reelShortcut').addEventListener('click',()=>choosePage('reels'));
  $('importLegacyReels').addEventListener('click',()=>void importLegacyReels());
@@ -608,7 +662,7 @@ function renderTimeline(){renderLuggageState();const day=selectedDayData(data,ac
  document.querySelectorAll('[data-day]').forEach(b=>{const selected=Number(b.dataset.day)===activeDay;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
  renderPlanPicker();
  const summaries=['🧳 짐 보관  →  🍜 이치란  →  🎒 몽벨  →  🍶 이자카야',
- data.planMode==='backup'?'🚆 유후인 직행  →  🚐 모미지 셔틀  →  ♨️ 온천·가이세키':'♨️ 가마지옥  →  🚌 유후인  →  🚐 모미지 셔틀  →  🍱 가이세키',
+ data.planMode==='third'?'♨️ 가마지옥  →  🏡 모미지  →  🌿 유노츠보  →  🍱 가이세키  →  ♨️ 온천  →  🥡 야식/🍶 이자카야':data.planMode==='backup'?'🚆 유후인 직행  →  🚐 모미지 셔틀  →  ♨️ 온천·가이세키':'♨️ 가마지옥  →  🚌 유후인  →  🚐 모미지 셔틀  →  🍱 가이세키',
  '🍚 모미지 조식  →  🚌 공항버스  →  ✈️ 귀국'];
  $('routePrimer').textContent=summaries[activeDay-1];
  const sorted=[...day.events].sort((a,b)=>a.start.localeCompare(b.start)||a.end.localeCompare(b.end));
@@ -623,7 +677,7 @@ function showEditor(id){const entry=id?allEditableDays(data).flatMap(d=>d.events
 function renderLodgings(){const h=data.hotels;const all=data.expenses.filter(x=>x.currency==='KRW'&&x.category==='숙소');
  $('lodgings').innerHTML=`<h3>확정된 숙소 2곳</h3>${h.map((x,i)=>`<div class="lodging-row"><div><small>${i===0?'10/31 · 첫날':'11/01 · 둘째 날'}</small><b style="display:block">${esc(x.name)}</b><span>${esc(x.info)}</span><div><a href="${urlMap(x.place)}" target="_blank" rel="noopener" style="font-size:12px">지도 보기 ↗</a></div></div><div><strong>${won(x.price)}</strong><small style="display:block">${x.payer==='a'?'내 결제':'친구 결제'}</small></div></div>`).join('')}<p class="hint">숙소비는 공용 정산에 등록돼 있어. 별도로 다시 입력하면 중복 정산되므로 주의해 줘.</p>`;
  document.querySelectorAll('[name="walkMode"]').forEach(i=>i.checked=i.value===data.walkMode);
- $('walkNotice').textContent=data.walkMode==='center'?'택시 왕복을 전제로 오후 4시대 유노츠보 거리 방문. 거리가 약 2.3km 편도이므로 도보 왕복은 비추천이야.':'모미지 셔틀로 도착한 후 짐을 풀고 숙소 근처 산책. 저녁 식사를 여유 있게 준비할 수 있어.';
+ $('walkNotice').textContent=(data.planMode==='third'?'현재 3안은 위 [일정] 화면에서 선택해. 이 산책 방식 버튼은 1안·2안에만 적용돼. ':'')+(data.walkMode==='center'?'택시 왕복을 전제로 오후 4시대 유노츠보 거리 방문. 도보 왕복은 비추천이야.':'료칸에 도착한 후 짐을 풀고 숙소 근처 산책.');
 }
 function currencies(code){const exp=data.expenses.filter(e=>e.currency===code);
  const total=exp.reduce((a,e)=>a+Number(e.amount),0);const a=exp.filter(e=>e.payer==='a').reduce((a,e)=>a+Number(e.amount),0);
