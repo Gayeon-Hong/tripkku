@@ -1,4 +1,4 @@
-// Build v16.1 - compact globe controls and reviewed luggage guidance.
+// Build v18.0 - compact globe controls and reviewed luggage guidance.
 // Neutral migration service worker. New friend app does not register a service worker.
 // Previously installed Tripkku SW may update to this file, stop caching and unregister.
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
