@@ -1,168 +1,71 @@
-<!doctype html>
-<html lang="ko"><head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#365a54"/>
-  <link rel="icon" type="image/png" href="./assets/favicon.png"/>
-  <meta name="description" content="함께 꾸미는 여행, 트립꾸. 일정·지도·공동경비·개인예산을 한눈에."/>
-  <link rel="manifest" href="./manifest.webmanifest"/><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png"/>
-  <link rel="stylesheet" href="./style.css?v=route-timing-20261027-v5"/>
-  <title>트립꾸 · 함께 꾸미는 여행</title>
-</head><body data-theme="forest" data-appearance="light" data-view="home">
-  <header class="topbar"><div class="topline">
-    <a class="brand" href="#home" aria-label="트립꾸 홈"><img id="brandLogo" class="brand-logo" src="./assets/light-64.png" alt="트립꾸 지구 로고"/><span>트립꾸</span><small>TRIPKKU</small></a>
-    <div class="header-actions"><button type="button" id="goHome" class="btn tiny outline">🏠 홈</button><button type="button" id="goTripDetail" class="btn tiny outline">🗓️ 여행 계획</button><div id="uiLanguageSwitch" class="ui-lang-switch" role="group" aria-label="Interface language"><button type="button" data-ui-lang="ko" aria-pressed="true">한국어</button><button type="button" data-ui-lang="en" aria-pressed="false">EN</button></div><span id="connectionBadge" class="status-pill">로컬 데모</span><button id="headerAccount" class="btn tiny outline" data-go="account">👥 멤버/로그인</button></div>
-  </div></header>
-  <aside id="myTripSidebar" class="my-trip-sidebar" aria-label="내 여행 목록">
-    <div class="sidebar-head"><strong>🧳 내 여행</strong><div class="sidebar-head-actions"><button type="button" id="sideNewTrip" class="btn tiny outline">+ 새 여행</button><button type="button" id="sidebarToggle" class="btn tiny outline" aria-controls="sidebarTripList" aria-expanded="true" title="사이드바 접기">◀ 접기</button></div></div>
-    <p id="sidebarHelper" class="sidebar-hint">로그인하면 저장한 여행이 여기에 보여요.</p>
-    <div id="sidebarTripList" class="sidebar-trip-list"></div>
-    <div id="sidebarSample" class="sidebar-sample">🧪 샘플은 홈에서 미리 보고 복사할 수 있어요.</div>
-  </aside>
+<!DOCTYPE html>
 
-  <!-- Sidebar works independently of app.js and user authentication. -->
-  <script id="sidebar-control-v3">
-  (() => {
-    const sidebar = document.getElementById('myTripSidebar');
-    const button = document.getElementById('sidebarToggle');
-    if (!sidebar || !button) return;
-    const key = 'tripkku-sidebar-collapsed';
-    const breakpoint = window.matchMedia('(max-width: 1060px)');
-    let saved = null;
-    try { saved = window.localStorage.getItem(key); } catch (_) {}
-    let manuallyChosen = saved === '1' || saved === '0';
-    function apply(collapsed) {
-      document.body.classList.toggle('sidebar-collapsed', collapsed);
-      sidebar.dataset.collapsed = String(collapsed);
-      button.innerHTML = collapsed
-        ? '<span aria-hidden="true">▶</span><span class="sidebar-toggle-label">펼치기</span>'
-        : '<span aria-hidden="true">◀</span><span class="sidebar-toggle-label">접기</span>';
-      button.setAttribute('aria-expanded', String(!collapsed));
-      button.setAttribute('aria-label', collapsed ? '내 여행 펼치기' : '내 여행 접기');
-      button.title = collapsed ? '내 여행 펼치기' : '내 여행 접기';
-      for (const id of ['sidebarTripList', 'sidebarHelper', 'sidebarSample']) {
-        const part = document.getElementById(id);
-        if (part) part.setAttribute('aria-hidden', String(collapsed));
-      }
-    }
-    document.body.dataset.sidebarVersion = 'fix-20261027-v3';
-    apply(saved === null ? breakpoint.matches : saved === '1');
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const next = !document.body.classList.contains('sidebar-collapsed');
-      apply(next);
-      manuallyChosen = true;
-      try { window.localStorage.setItem(key, next ? '1' : '0'); } catch (_) {}
-    });
-    const responsive = (event) => { if (!manuallyChosen) apply(event.matches); };
-    if (breakpoint.addEventListener) breakpoint.addEventListener('change', responsive);
-    else if (breakpoint.addListener) breakpoint.addListener(responsive);
-    window.TripkkuSidebar = Object.freeze({
-      setCollapsed: (value) => apply(Boolean(value)),
-      isCollapsed: () => document.body.classList.contains('sidebar-collapsed')
-    });
-  })();
-  </script>
-  <main class="container" id="home">
-    <section class="hero"><div class="hero-main"><div class="hero-kicker">MAKE MEMORIES, TOGETHER <span>✦ 2026</span></div>
-      <h1>우리만의 여행을<br/><em>같이 꾸며봐!</em></h1>
-      <p>여행지 지도와 현지 날씨부터 일정·예산까지.<br/>친구와 함께 여행을 만들어봐!</p><div id="heroWeatherText" class="hero-weather-chip">📍 목적지와 여행 날짜를 설정해 봐!</div>
-      <div class="hero-buttons"><button class="btn white" id="heroNewTrip" type="button">＋ AI 여행 계획 만들기</button><button class="btn frosted" id="heroOpenTrip" type="button">선택한 여행 열기 ↗</button></div>
-    </div><div class="hero-art" aria-hidden="true"><div class="globe-hero-image"><div id="heroEarthArt" class="earth-canvas hero-canvas" role="img" aria-label="트립꾸 지구"></div></div><div class="sun"></div><div class="hill h1"></div><div class="hill h2"></div><div class="ticket"><span>GOOD VIBES</span><strong>TRIP<br/>WITH<br/>FRIENDS</strong><small>LET'S GO ✳</small></div><div class="spark">✴</div></div></section>
-    <div class="notice" id="demoNotice"><span>💌</span><div><b>내 여행을 꾸며봐!</b> 현재 이 기기에 저장되는 여행 플래너야. 계정 기능이 연결되면 친구들과 함께 수정할 수 있어.</div></div>
-    <section class="section ai-start" id="aiTripStart"><div class="sectiontitle"><div><span class="eyebrow">START YOUR OWN JOURNEY</span><h2>✨ AI로 여행 계획 처음부터 만들기</h2><p>여행지·기간·인원·전체 예산을 여기서 한 번에 입력하세요. Gemini가 여행 초안을 제안하고, 상세 화면에서 언제든 수정할 수 있습니다.</p></div></div><div class="ai-start-grid"><label>여행 나라<input id="startCountry" placeholder="예: 일본" maxlength="80"></label><label>여행 도시<input id="startCity" placeholder="예: 도쿄" maxlength="100"></label><label>출발일<input id="startDate" type="date"></label><label>귀국일<input id="endDate" type="date"></label><label>인원<input id="startPeople" type="number" min="1" max="30" value="2"></label><label class="budget-start-field">💰 전체 여행 예산 <span class="budget-field-subtitle">일행 전체 합계 · 원</span><input id="startBudget" type="number" min="10000" max="100000000" step="10000" inputmode="numeric" placeholder="예: 2000000" aria-describedby="startBudgetPerPerson"><small id="startBudgetPerPerson" class="budget-start-preview" aria-live="polite">전체 여행 예산을 입력하면 1인당 예상 예산도 보여드려요.</small></label><label class="wide">여행 취향<select id="startTaste"><option value="balanced">명소·맛집 골고루</option><option value="food">맛집 중심</option><option value="photo">인생샷 중심</option><option value="budget">가성비 중심</option><option value="relax">휴식 중심</option></select></label></div><button type="button" id="startGenerateTrip" class="btn dark">🌏 여행 만들고 Gemini 초안 생성</button><p id="startGenerationStatus" role="status" aria-live="polite">추천은 AI의 초안입니다. 항공편·운영시간·가격은 예약 전 확인하세요.</p></section>
-<section class="section" id="trips"><div class="sectiontitle"><div><span class="eyebrow">01 / YOUR TRIP</span><h2>어디로 떠날까?</h2></div><button id="makeTrip" class="btn dark">＋ AI로 여행 만들기</button></div>
-      <div class="theme-control" id="themePicker"><span>🎨 테마 바꾸기</span><button data-theme="forest" class="theme-dot t-forest" aria-label="그린 테마" title="그린">🌿</button><button data-theme="pink" class="theme-dot t-pink" aria-label="핑크 테마" title="핑크">🌸</button><button data-theme="sea" class="theme-dot t-sea" aria-label="바다 테마" title="바다">🌊</button><button data-theme="citrus" class="theme-dot t-citrus" aria-label="노랑 테마" title="노랑">🍋</button></div>
-<div class="preset-grid" id="presetGrid"></div><div class="trip-select" id="tripSelectArea" hidden><label for="tripSelect">내가 참여한 여행</label><select id="tripSelect"></select></div>
-    </section>
-    <section id="plans" class="section"><div class="trip-back"><button id="backHome" class="btn outline" type="button">← 홈 · 여행 목록</button><span>선택한 여행의 일정 · 항공 · 숙소 · 예산 · AI 편집</span></div><div class="sectiontitle"><div><span class="eyebrow">02 / TRAVEL PLANS</span><h2 id="tripTitle">오이타 2박 3일</h2><p id="tripSubtitle">온천보다 맛집·쇼핑·인생샷</p></div><div class="trip-meta"><span class="outlined-pill" id="tripDates">날짜 미정</span><button id="editTripInfo" class="btn tiny outline">✏️ 여행 정보</button><button id="deleteTrip" type="button" class="btn tiny outline" hidden>🗑️ 여행방 삭제</button></div></div>
-      <section id="detailPersonalize" class="detail-personalize"><h3>🎨 이 여행 꾸미기</h3><p>여행 날짜·지구 표정·낮/밤·테마를 여기서도 바꿀 수 있어요.</p><div class="detail-theme-row"><button type="button" data-theme="forest">🌿 그린</button><button type="button" data-theme="pink">🌸 핑크</button><button type="button" data-theme="sea">🌊 바다</button><button type="button" data-theme="citrus">🍋 노랑</button></div><label class="upload-theme">🖼️ 여행 배경 사진 고르기 (내 기기 미리보기)<input id="tripCoverUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><div id="tripCoverPreview" class="trip-cover-preview">선택한 배경 사진이 여기에 표시됩니다.</div><div class="couple-photos"><label>👫 첫 번째 사람 사진<input id="tripPersonA" type="file" accept="image/jpeg,image/png,image/webp"></label><label>👫 두 번째 사람 사진<input id="tripPersonB" type="file" accept="image/jpeg,image/png,image/webp"></label></div><div id="couplePreview" class="couple-preview">두 사람 사진을 선택하면 여기서 미리 볼 수 있어요.</div><p class="photo-disclaimer">사진은 현재 브라우저에서만 미리보기로 사용하며 자동 업로드되지 않습니다. 캐릭터 일러스트 AI 생성은 이미지 생성 서비스 연동 후 사용할 수 있습니다.</p></section>      <div class="customizer" id="characterCustomizer">
-        <div class="customizer-head"><span class="eyebrow">MY LITTLE EARTH</span><h3>🌏 여행지 지구</h3><p>선택한 여행지의 실제 해안선과 위치 핀, 출발일의 날씨를 한 번에 볼 수 있어.</p></div>
-        <div class="customizer-body">
-          <div class="earth-portrait"><div id="customEarthArt" class="earth-canvas" role="img" aria-label="목적지 지도"></div><strong id="earthTagline" class="earth-caption">벳푸 · 일본</strong><small class="map-credit">지형: NOAA/GSHHS · 여행지 중심 지도</small></div>
-          <div class="customizer-choices">
-            <div class="choice-row"><span class="choice-label">☀️ 낮 / 🌙 밤</span><div class="choices" role="group" aria-label="로고 밝기"><button data-appearance="light" aria-pressed="true">☀️ 낮</button><button data-appearance="dark" aria-pressed="false">🌙 밤</button></div></div>
-            <div class="choice-row"><span class="choice-label">💬 오늘 지구 기분</span><div class="choices" role="group" aria-label="지구 기분"><button data-mood="happy">😄 신남</button><button data-mood="angry">😠 화남</button><button data-mood="sleepy">😴 졸림</button><button data-mood="love">🥰 설렘</button></div></div>
-            <div class="choice-row"><span class="choice-label">🌍 지구 화면</span><div class="choices" role="group" aria-label="지구 표시 모드"><button data-earth-mode="map">📍 실제 지도</button><button data-earth-mode="face">😊 지구 표정</button></div></div>
-            <div class="choice-row"><span class="choice-label">📍 여행 도시/나라</span><div class="destination-fields"><input type="text" id="travelCity" maxlength="100" placeholder="예: Tokyo, London, 오이타" aria-label="여행 목적지 도시"/><button type="button" id="saveTravelCity" class="btn dark">위치 적용</button></div></div>
-            <div class="choice-row"><span class="choice-label">📅 여행 날짜 (현지 날씨 확인)</span><div class="destination-fields travel-date-fields"><input type="date" id="travelStart" aria-label="출발 날짜"/><span>~</span><input type="date" id="travelEnd" aria-label="돌아오는 날짜"/><button type="button" id="saveTravelDates" class="btn outline">날짜 저장</button></div></div>
-            <div id="weatherCard" class="weather-card" aria-live="polite"><b id="weatherHeadline">🌦️ 날짜를 지정하면 날씨를 보여줄게.</b><div id="weatherDays" class="weather-days"></div><small>날씨 제공: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · 예보는 변경될 수 있어요.</small></div>
-          </div>
-        </div>
-        <p class="customizer-note">실제 해안선을 이용한 여행지 중심 지도야. 📍 위치 핀과 날씨를 확인하고, 원하면 표정 모드로 전환할 수 있어.</p>
-      </div>
-<div class="plan-grid"><button id="planA" class="plan-card active" data-plan="A"><span class="plan-top">PLAN A <span class="plan-mark">EASY & BUDGET</span></span><span id="planALabel" class="plan-name">🛏️ 벳푸 일반 호텔 2박</span><small id="planADesc">한 호텔에서 연박 · 짐 이동 0회</small><span class="plan-bottom">가볍게 다니고 맛집에 더 쓰기 <b>→</b></span></button>
-      <button id="planB" class="plan-card" data-plan="B"><span class="plan-top">PLAN B <span class="plan-mark">SPECIAL STAY</span></span><span id="planBLabel" class="plan-name">✨ 일반 호텔 1박 + 료칸 1박</span><small id="planBDesc">벳푸 안에서 1회 이동 · 료칸 객실 40만원 미만 목표</small><span class="plan-bottom">한 번쯤 특별한 숙소에서 <b>→</b></span></button></div>
-      <div class="flight-note" id="flightNote"><div><span class="flightemoji">✈️</span><b>우리 항공편</b></div><div>인천 ICN <b>11:05 → 13:00</b> 오이타 OIT <span class="flight-sep">·</span> 귀국 <b>14:00 → 15:45</b> 인천 <small>※ 항공편 시간은 이전 대화 기준, 확정 예약 내역으로 재확인</small></div></div>
-      <div class="section-subhead"><h3>Day by day</h3><button id="addEvent" class="btn tiny outline">＋ 일정 추가</button></div><div id="eventList" class="timeline"></div>
-    </section>
-    <section class="section" id="budget"><div class="sectiontitle"><div><span class="eyebrow">03 / MONEY TALK</span><h2>예산은 우리 마음대로</h2><p>홈에서 입력한 총예산을 기준으로 공동 지출·개인 지출을 관리합니다. 여행을 만든 뒤에도 수정할 수 있어요.</p></div><span class="outlined-pill">단위 KRW · 원</span></div>
-      <div class="budget-grid">
-        <article class="money-card"><div class="money-head"><div><span class="overline">SHARED WALLET</span><h3>👭 우리 공동 경비</h3></div><span class="privacy-tag">멤버 전체 공개</span></div>
-          <label class="inputlabel" for="sharedTarget">공동 목표 예산 · 모두 합계</label><div class="field-unit"><input type="number" id="sharedTarget" min="0" step="10000" inputmode="numeric"/><span>원</span></div>
-          <div class="money-meter"><div class="meter-track"><i id="sharedProgress"></i></div><div class="meter-numbers"><span>현재 예상 사용액</span><strong id="sharedSpent">0원</strong></div></div>
-          <div class="budget-result" id="sharedBudgetResult">목표 예산 이내</div>
-          <div class="night-costs"><h4>🏨 2인 1실 객실 전체 요금</h4><label>첫날 숙소 <div class="field-unit"><input id="night1" type="number" min="0" step="10000" inputmode="numeric"/><span>원</span></div></label><label>둘째 날 숙소 <div class="field-unit"><input id="night2" type="number" min="0" step="10000" inputmode="numeric"/><span>원</span></div></label><p id="ryokanLimit" class="tinycopy"></p></div>
-          <div class="divider"></div><div class="section-subhead compact"><h4>🍚 공동 지출 항목</h4><button id="addExpense" class="text-btn">＋ 추가</button></div><div id="expenseList" class="expense-list"></div>
-        </article>
-        <article class="money-card personal"><div class="money-head"><div><span class="overline">MY PRIVATE WALLET</span><h3>💌 나만의 예산</h3></div><span class="privacy-tag private">🔒 본인만</span></div>
-          <label class="inputlabel" for="personalTarget">내 목표 총예산</label><div class="field-unit"><input type="number" id="personalTarget" min="0" step="10000" inputmode="numeric"/><span>원</span></div>
-          <div class="personal-fields"><label>✈️ 내가 결제한 왕복 항공권 <div class="field-unit"><input type="number" id="airfare" min="0" step="10000" inputmode="numeric" placeholder="예약 금액 입력"/><span>원</span></div></label><label>🛍️ 나만의 쇼핑·개인 경비 <div class="field-unit"><input type="number" id="personalExtra" min="0" step="10000" inputmode="numeric" placeholder="예상 금액 입력"/><span>원</span></div></label></div>
-          <div class="money-meter"><div class="meter-track"><i id="personalProgress"></i></div><div class="meter-numbers"><span>내 예상 합계</span><strong id="personalSpent">0원</strong></div></div>
-          <div class="budget-result" id="personalBudgetResult">목표 예산 이내</div>
-          <div class="calculation-note" id="personalFormula"></div>
-          <div class="privacy-note">※ 공동경비는 멤버수로 균등 분할해 내 예상액에 더해. 개인 목표·항공권·쇼핑비는 다른 멤버에게 공개되지 않아. 실제 정산 기능은 아직 없어.</div>
-        </article>
-      </div>
-    </section>
-    <section class="section" id="places"><div class="sectiontitle"><div><span class="eyebrow">04 / GO EXPLORE</span><h2>길 찾고, 예약하고, 찜!</h2><p>여행에서 화면을 나가지 않아도 빠르게 목적지를 찾을 수 있게 모았어.</p></div></div><div id="placeGrid" class="place-grid"></div><div class="section-subhead"><h3>숙소·티켓 예약 링크</h3></div><div class="booking" id="bookingList"></div><p class="tinycopy" id="linkPolicy">지도·예약 링크는 외부 서비스로 이동해요. 여행 날짜와 요금을 직접 확인하세요.</p></section>
-    <section class="section" id="reelBoard"><div class="sectiontitle"><div><span class="eyebrow">05 / REELS & FOOD</span><h2>📸 릴스에서 찜한 장소 · 꼭 먹을 것</h2><p>인스타·유튜브 링크와 음식·장소를 여행별로 모으고 체크하세요.</p></div></div>
-      <div class="reel-add"><label>릴스 / 쇼츠 URL<input id="reelUrl" type="url" placeholder="https://www.instagram.com/reel/..." maxlength="1200"/></label>
-      <label>제목 / 음식 이름<input id="reelTitle" maxlength="150" placeholder="예: 벳푸 토리텐 꼭 먹기"/></label>
-      <label>장소 / 가게명<input id="reelPlace" maxlength="150" placeholder="예: 벳푸 토리텐 맛집"/></label>
-      <label>카테고리<select id="reelCategory"><option value="food">🍜 꼭 먹을 것</option><option value="place">📍 가볼 곳</option><option value="other">📷 영상·기타</option></select></label>
-      <label>영상 설명/캡션 (AI 장소·음식 추출용)<textarea id="reelCaption" rows="2" maxlength="2500" placeholder="영상 설명에 나온 장소·음식 이름을 붙여넣으세요."></textarea></label>
-      <label>썸네일 이미지 URL (선택)<input id="reelThumb" type="url" maxlength="1200" placeholder="가능한 경우 이미지 주소 입력"/></label>
-      <div class="reel-controls"><button type="button" class="btn outline" id="reelAnalyze">✨ 설명에서 AI 추출</button><button type="button" class="btn dark" id="reelSave">＋ 내 여행에 저장</button></div>
-      <p id="reelStatus" role="status" class="tinycopy">인스타그램은 자동 썸네일·본문 조회가 제한될 수 있습니다. 링크는 항상 저장되며, 캡션을 넣으면 AI가 분석할 수 있습니다.</p></div>
-      <div id="reelList" class="reel-grid" aria-live="polite"></div></section>
-    <section class="section" id="travelDetails"><div class="sectiontitle"><div><span class="eyebrow">05 / SMART TRAVEL GUIDE</span><h2>✨ 내 여행 맞춤 추천</h2><p>고정된 오이타 가이드가 아니라 <strong>선택한 여행의 도시·기간·예산</strong>을 참고해 추천합니다. 내용과 가격은 예약 전 다시 확인해 주세요.</p></div></div>
-      <div class="rec-config">
-        <div class="rec-fields"><label>📍 여행지<input id="recCity" placeholder="예: 후쿠오카, 런던, 부산" maxlength="100"/></label><label>💰 추천 기준 총예산 (원)<input id="recBudget" type="number" min="10000" step="10000" placeholder="예: 600000"/></label><label>🎒 여행 취향<select id="recTaste"><option value="balanced">골고루 · 첫 여행</option><option value="food">맛집·카페 중심</option><option value="photo">인생샷·명소 중심</option><option value="budget">가성비·대중교통 중심</option><option value="relax">휴식·숙소 중심</option></select></label></div>
-        <div class="rec-toolbar"><button id="recGenerate" type="button" class="btn dark">✨ Gemini로 추천 만들기</button><span id="recStatus" role="status">여행을 선택하면 자동으로 도시와 예산을 불러옵니다.</span></div>
-        <p class="rec-disclaimer">AI 추천은 실시간 검색 결과나 확정 요금이 아닙니다. 지도와 공식 사이트에서 주소·영업시간·요금을 확인하세요. 저장한 여행에서만 생성·보관됩니다.</p>
-      </div>
-      <div id="recResults" class="rec-results" aria-live="polite"></div>
-      <div class="td-card td-upload"><h3>📷 항공권·숙소 예약 캡처 자동 입력</h3><p>이미지에서 예약 정보를 읽고 확인 후 저장합니다. 예약번호·여권번호·카드번호는 가리고 업로드하세요.</p>
-      <input id="bookingImage" type="file" accept="image/jpeg,image/png,image/webp" aria-label="예약 내역 이미지"/>
-      <button id="bookingAnalyze" type="button">Gemini로 사진 분석</button><p id="bookingStatus" aria-live="polite"></p>
-      <div id="bookingReview" hidden><label>종류 <select id="bookingType"><option value="flight">항공권</option><option value="hotel">숙소</option></select></label><label>예약명 / 항공사·숙소명 <input id="bookingProvider" maxlength="150"/></label><label>출발·체크인 날짜 <input id="bookingStart" placeholder="YYYY-MM-DD"/></label><label>도착·체크아웃 날짜 <input id="bookingEnd" placeholder="YYYY-MM-DD"/></label><label>출발·도착/체크인·체크아웃 시간 <input id="bookingTime" maxlength="90"/></label><label>출발지·도착지 또는 주소 <input id="bookingRoute" maxlength="180"/></label><label>금액·통화 <input id="bookingPrice" maxlength="90"/></label><label>추가 메모 <textarea id="bookingMemo" rows="2" maxlength="500"></textarea></label><button id="bookingSave" type="button">내용 확인 후 예약 정보 저장</button><button id="bookingCancel" type="button">취소</button></div>
-      <div id="bookingSavedList" class="td-grid"></div><small>원본 사진은 DB에 저장하지 않습니다. 등록한 예약 정보는 여행 멤버가 볼 수 있습니다.</small></div>
-    </section>
-    <section class="section" id="account"><div class="sectiontitle"><div><span class="eyebrow">05 / FRIENDS CLUB</span><h2>친구랑 같이 편집하기</h2><p>링크로 초대하고, 일정과 공동경비는 함께 고쳐봐.</p></div></div>
-      <div class="account-grid"><article class="panel"><h3>🔑 계정 & 로그인</h3><p id="accountInfo">연동 전 데모: 데이터는 이 기기에만 저장됩니다.</p>
-        <button id="checkSupabase" class="btn tiny outline" type="button">🔌 계정 연결 상태</button>
-        <div id="authButtons" class="authbuttons"><button data-login="google" class="btn dark">Google 로그인</button><button data-login="kakao" class="btn kakao">카카오 로그인</button><button id="logout" class="btn outline" hidden>로그아웃</button></div>
-        <p class="tinycopy" id="authHelp">계정 로그인은 서비스 연결 후 사용할 수 있어요.</p>
-        <div class="divider"></div><h4>우리 여행 멤버</h4><div id="memberList" class="member-list"></div><label class="inputlabel" for="nickname">내 표시 이름</label><div class="inline-form"><input id="nickname" type="text" maxlength="24" placeholder="별명"/><button id="saveNickname" class="btn outline">저장</button></div>
-      </article><article class="panel invite-panel"><h3>💌 초대장 보내기</h3><p>초대받은 친구는 로그인한 뒤 같은 여행에 합류해. 여행 일정과 공동 경비는 실시간으로 동기화돼.</p>
-        <div class="invite-graphic" aria-hidden="true">✳ <span>Let's travel<br/>together!</span> ✳</div>
-        <button id="inviteButton" class="btn dark block">🔗 친구 초대 링크 만들기</button><div id="inviteLinkBox" class="copybox" hidden><input id="inviteURL" readonly aria-label="친구 초대 URL"/><button id="copyInvite" class="btn outline">복사</button></div>
-        <p class="tinycopy">초대 링크는 기본 7일 동안 유효하고, 최대 15명의 신규 멤버가 사용할 수 있어. 링크를 공유한 사람만 초대하도록 주의해줘.</p>
-      </article></div>
-    </section>
-    <section class="section" id="assistant"><div class="sectiontitle"><div><span class="eyebrow">06 / LITTLE HELPER</span><h2>말로도 일정 편집! 💬</h2><p>로그인한 공동 여행에서는 Gemini AI로 수정 제안을 받을 수 있어. 승인하면 친구들과 함께 반영돼.</p></div></div>
-      <p id="aiStatus" class="ai-help">💬 여행 내용을 바꾸는 간단한 명령을 사용할 수 있어요. AI 자동 제안은 계정 연결 후 제공해요.</p><div class="chat-shell"><div class="chat-messages" id="chatMessages"><div class="bubble ai">안녕! "B안으로 바꿔줘", "공동 목표 60만원", "항공권 25만원", "2일차 카페 추가"라고 말해봐 😊</div></div><form id="chatForm" class="chat-input"><input id="chatInput" placeholder="예: B안으로 바꾸고 료칸 35만원으로 해줘" autocomplete="off"/><button type="submit" class="btn dark">보내기 →</button></form></div>
-      <div class="section-subhead"><h3>🌏 여행 필수 회화</h3><span class="tinycopy" id="languageText">한국어 → 일본어</span></div><div id="phraseList" class="phrase-grid"></div>
-    </section>
-    <footer><strong>🌍 Tripkku</strong><span>좋은 여행은 같이 만드는 거니까.</span><p>© 2026 Tripkku · 날씨와 경로는 출발 전에 다시 확인해 주세요.</p></footer>
-  </main>
-  <nav class="mobile-nav" aria-label="모바일 빠른 이동"><button data-go="plans"><span>🗓️</span><b>일정</b></button><button data-go="budget"><span>💰</span><b>예산</b></button><button data-go="places"><span>🗺️</span><b>지도</b></button><button data-go="account"><span>👭</span><b>친구</b></button><button data-go="assistant"><span>💬</span><b>도우미</b></button></nav>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./app.js?v=route-timing-20261027-v5"></script>
-  <script type="module" src="./trip-reels.js?v=trip-studio-20261027-1"></script>
-  <script type="module" src="./trip-studio.js?v=sidebar-click-fix-20261027-v3"></script>
-  <script type="module" src="./trip-recommend.js?v=sidebar-click-fix-20261027-v3"></script>
-  <script src="./trip-extras.js" defer></script>
-  <script type="module" src="./trip-bookings.js"></script>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="#f7f4ef" name="theme-color"/><meta content="오이타 2박3일, 두 사람이 실시간으로 여행과 공용정산을 편집하는 여행방" name="description"/>
+<title>오이타 여행 · 친구와 함께</title>
+<link href="./style.css?v=16.1" rel="stylesheet"/>
+<link href="./assets/favicon.png" rel="icon" type="image/png"/><meta content="v16.1-compact-globe-luggage" name="oita-build"/></head><body>
+<header class="top"><div class="topinner"><div class="brand brand-globe"><span class="globe-mark" data-earth-avatar=""></span><small>OITA · 10.31 — 11.02</small></div><div class="header-actions"><span class="sync-pill" id="syncStatus">연결 준비 중</span><button class="button dark" hidden="" id="shareBtn" type="button">친구 초대 링크</button><button class="button ghost" hidden="" id="logoutBtn" type="button">로그아웃</button></div></div></header>
+<main class="wrap">
+<section class="entry card" id="authScreen"><img alt="지구 로고" class="auth-earth" height="74" src="./assets/earth.png" width="74"/><span class="eyebrow">PRIVATE TRAVEL ROOM</span><h1>친구와 같은 여행표를 열어요</h1><p>기존 Tripkku 대신 오이타 여행만 정리했어. 로그인하고 둘이 일정을 수정해.</p><div class="auth-actions"><button class="button dark" id="googleLogin">Google로 로그인</button><button class="button" id="kakaoLogin">카카오로 로그인</button></div><p class="hint">처음 만드는 사람은 로그인 후 여행방을 만들고, 친구는 받은 초대 링크로 로그인하면 돼.</p><p class="error" id="authError" role="alert"></p></section>
+<section class="entry card" hidden="" id="createScreen"><img alt="지구 로고" class="auth-earth" height="74" src="./assets/earth.png" width="74"/><span class="eyebrow">ONE-TIME SETUP</span><h1>오이타 여행방 만들기</h1><p>현재 확정된 HOTEL MYSTAYS Oita·유후 모미지 일정과 숙소비 2건을 처음부터 넣어둘게. 이미 수정한 v13 HTML을 가지고 있다면 나중에 일정은 이 화면에서 직접 조정할 수 있어.</p><button class="button dark wide" id="createBtn">우리 여행방 생성하기</button><p class="error" id="createError" role="alert"></p></section>
+<section class="entry card" hidden="" id="loadingScreen"><h2>여행방 연결 중…</h2><p>로그인 상태와 권한을 확인하고 있어.</p></section>
+<div hidden="" id="appScreen">
+<section class="intro"><div class="intro-copy"><span class="globe-mark" data-earth-avatar=""></span><div class="intro-meta"><span class="eyebrow">JAPAN · OITA / BEPPU / YUFUIN</span><p class="intro-trip-label">10월 31일 토요일 — 11월 2일 월요일 · 2명</p><p class="intro-short">시간표 · 확정 숙소 · 같이 쓰는 돈</p></div><div aria-label="지구 모양 바꾸기" class="earth-mini-controls" data-earth-controls="">
+<div aria-label="지구 낮과 밤" class="earth-button-group" role="group">
+<button aria-label="지구 낮 배경" aria-pressed="true" data-earth-appearance="light" title="지구 낮 배경" type="button">☀ 낮</button>
+<button aria-label="지구 밤 배경" aria-pressed="false" data-earth-appearance="dark" title="지구 밤 배경" type="button">☾ 밤</button>
+</div><div aria-label="지구 표정" class="earth-button-group" role="group">
+<button aria-label="신난 표정" aria-pressed="true" data-earth-mood="happy" title="신난 표정" type="button">😄</button>
+<button aria-label="화난 표정" aria-pressed="false" data-earth-mood="angry" title="화난 표정" type="button">😠</button>
+<button aria-label="졸린 표정" aria-pressed="false" data-earth-mood="sleepy" title="졸린 표정" type="button">😴</button>
+<button aria-label="설레는 표정" aria-pressed="false" data-earth-mood="love" title="설레는 표정" type="button">🥰</button>
+</div></div></div><div class="overview" id="overview"></div></section><div class="tripkku-layout"><aside class="tripkku-side"><div class="side-title">우리의 여행</div><nav aria-label="주요 화면" class="mainnav"><button class="active" data-page="schedule">🗓 일정</button><button data-page="transport">🚌 교통·예약</button><button data-page="settlement">💳 공용 정산</button><button data-page="reels">📷 인스타 링크</button><button data-page="assistant">💬 챗봇</button><button data-page="notes">✅ 준비·메모</button></nav></aside><div class="tripkku-content"><section class="page" id="schedulePage"><div class="section-title"><h2>날짜별 일정</h2><p>시간순으로 표시 · 직접 시간과 장소 수정 가능</p></div><div class="weather-grid" id="weather"><div class="weather-item"><b>10/31 · 오이타</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div><div class="weather-item"><b>11/1 · 유후인</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div><div class="weather-item"><b>11/2 · 유후인</b><span>날씨 확인 중</span><small>최신 예보 불러오기</small></div></div><div class="daytabs"><button class="active" data-day="1">10/31 <b>토 · 첫날</b></button><button data-day="2">11/01 <b>일 · 둘째 날</b></button><button data-day="3">11/02 <b>월 · 마지막 날</b></button></div><div class="dayheading" id="dayHeading"></div><div class="luggage-update" hidden="" id="luggageUpdateBanner">
+<div><strong>코인로커 대신 직원에게 짐 맡기기</strong><p>숙소는 가마지옥 근처가 아니어서 벳푸역 유인 보관을 이용해요.</p></div>
+<button class="button" data-apply-luggage="" type="button">짐 보관 반영</button></div><div class="timeline" id="timeline"></div><button class="button add" id="addEvent">＋ 일정 직접 추가</button></section><section class="page" hidden="" id="transportPage"><div class="section-title"><h2>교통·숙소·미리 예약</h2><p>실제 이동 동선에 필요한 것만 모았어</p></div><div class="card section-card" id="lodgings"></div><div class="card section-card luggage-guide" id="luggageGuide">
+<h3>짐은 가볍게, 되돌아가지 않기</h3>
+<p class="hint">현재 숙소 두 곳은 가마지옥 도보권이 아니에요. 숙소 보관 때문에 오이타나 유후인으로 되돌아가는 동선은 넣지 않았어요.</p>
+<div class="luggage-step"><b>첫날</b><span>HOTEL MYSTAYS Oita에 먼저 짐 맡기기 <small>짐 보관 가능 여부는 호텔에 확인</small></span></div>
+<div class="luggage-step"><b>둘째 날</b><span>벳푸역 WANDER COMPASS에서 직원에게 맡기기 <small>가마지옥 관람 → 같은 곳에서 회수 → 역 서쪽 출구에서 유후인행 버스</small></span></div>
+<div class="luggage-step"><b>유후인 도착</b><span>캐리어와 함께 모미지 셔틀 약 5분 → 숙소에 짐 풀기 <small>셔틀 약 5분은 숙소에서 안내받은 내용. 픽업 시각은 사전 연락</small></span></div>
+<details class="luggage-details"><summary>숙소 보관 조건 · 위치 근거 보기</summary>
+<p>가마지옥은 벳푸시 간나와, 유후 모미지는 유후인 가와키타, MYSTAYS는 오이타 시내에 있어요. 현재 예약은 그대로 유지합니다.</p>
+<p>숙소가 가마지옥 근처로 변경되고 체크인 전 보관을 허용할 때만 숙소에 맡기는 경로로 바꾸세요. 현재 예약에서는 가까운 숙소라는 가정을 하지 않습니다.</p>
+<p>WANDER COMPASS의 짐 보관은 별도 유료 서비스입니다. 당일 접수·크기별 요금·회수 마감은 현장 확인이 필요하며, 예상 보관료는 정산에 자동 추가하지 않습니다.</p>
+<div class="luggage-links"><a href="https://beppuinfo.jp/" rel="noopener noreferrer" target="_blank">짐보관 공식 안내 ↗</a><a href="https://www.google.com/maps/search/?api=1&amp;query=WANDER%20COMPASS%20BEPPU" rel="noopener noreferrer" target="_blank">보관소 지도 ↗</a><a href="https://yufumomiji.com/access/" rel="noopener noreferrer" target="_blank">모미지 공식 위치 ↗</a><a href="https://kamadojigoku.com/アクセス/" rel="noopener noreferrer" target="_blank">가마지옥 공식 위치 ↗</a><a href="https://iconia.co.jp/location-hotel-mystays-oita-oita/" rel="noopener noreferrer" target="_blank">첫날 호텔 위치 ↗</a></div>
+<p>위치·보관 서비스 확인: 2026-10-28. 시간표와 나머지 교통비는 기존 계획용 값이며 이번 변경에서 새로 검증한 내용이 아닙니다.</p>
+</details><div class="luggage-apply-row"><button class="button" data-apply-luggage="" id="applyLuggageTransport" type="button">짐 보관 반영</button><span class="hint" id="luggageApplyState" role="status"></span></div>
+</div><div class="card section-card"><h3>2일 차 · 유후인 산책 방식</h3><p class="hint">셔틀로 체크인한 다음 나갈 거라면, 중심가 왕복은 다소 멀어. 실제 산책 방식에 맞게 일정이 바뀌어.</p><label class="choice"><input name="walkMode" type="radio" value="near"/> <span><b>숙소 근처 가볍게 산책 (추천)</b><small>료칸 주변에서 20~30분, 저녁 가이세키 전에 휴식</small></span></label><label class="choice"><input name="walkMode" type="radio" value="center"/> <span><b>유노츠보 중심가 택시 왕복</b><small>거리 약 2.3km 편도 기준. 도보 왕복 약 1시간 이상이므로 택시 추천. 상점 마감 주의</small></span></label><div class="notice" id="walkNotice"></div></div><div class="card section-card"><h3>교통권 구매 판단</h3><div class="comparison"><div><span>북큐슈 SUNQ 3일 디지털권</span><strong>¥10,000 / 인</strong><small>버스 중심 패스 · JR·택시 제외</small></div><div><span>우리 일정의 버스 개별요금</span><strong>약 ¥4,700 / 인</strong><small>공항→오이타 ¥1,600 + 벳푸→유후인 약 ¥1,100 + 유후인→공항 약 ¥2,000 (기본 구간 예시)</small></div></div><p class="notice">추천: 개별 승차권. 산큐패스 3일권보다 저렴할 가능성이 커. 지하철 패스도 현재 동선에는 필요 없어. 최종 운임·적용 노선은 예약 전에 확인해.</p><div class="link-stack"><a href="https://www.klook.com/ko/activity/28320-kyushu-sunq-pass/" rel="noopener" target="_blank">클룩 · SUNQ 패스 (한국어) ↗</a><a href="https://experiences.myrealtrip.com/products/6082936" rel="noopener" target="_blank">마이리얼트립 · 가메노이 1일권 비교 ↗</a></div><p class="hint">⚠️ 위 마이리얼트립 상품은 후쿠오카공항 국제선에서 실물 교환이 필요한 상품이므로 오이타공항으로 입국하는 이번 여행에는 권장하지 않아.</p></div><div class="card section-card"><h3>주요 지역 지도</h3><iframe loading="lazy" referrerpolicy="no-referrer" src="https://www.openstreetmap.org/export/embed.html?bbox=131.18%2C33.12%2C131.75%2C33.52&amp;layer=mapnik" style="width:100%;height:260px;border:0;border-radius:12px" title="오이타 벳푸 유후인 주변 지도"></iframe><p class="hint">상세 경로는 아래 Google 지도 링크에서 확인해 줘. 본 지도는 지역 위치 참고용이야.</p></div><div class="card section-card"><h3>교통표·셔틀 준비</h3><div class="link-stack"><a href="https://www.oita-airport.jp/access/bus/" rel="noopener" target="_blank">오이타 공항버스 공식 시간표 확인 ↗</a><a href="https://kamenoibus.com/" rel="noopener" target="_blank">가메노이 버스 36번 운행 확인 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Beppu%20Station&amp;destination=Kamado%20Jigoku&amp;travelmode=transit" rel="noopener" target="_blank">벳푸역 ↔ 가마지옥 이동 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufuin%20Station&amp;destination=Yufu%20Momiji&amp;travelmode=driving" rel="noopener" target="_blank">유후인역 → 유후 모미지 지도 ↗</a><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Yufu%20Momiji&amp;destination=Yunotsubo%20Kaido&amp;travelmode=walking" rel="noopener" target="_blank">모미지 → 유노츠보 도보 길찾기 ↗</a></div></div></section><section class="page" hidden="" id="settlementPage"><div class="section-title"><h2>우리 둘 공용 정산</h2><p>숙소·식비·택시·입장료를 2명 50:50으로 정산</p></div><div class="settlement-summary" id="settlementSummary"></div><div class="card section-card"><h3>지출 기록 추가</h3><form class="formgrid" id="expenseForm"><label>내용<input maxlength="90" name="title" placeholder="예: 이자카야, 택시" required=""/></label><label>금액<input inputmode="decimal" min="0.01" name="amount" placeholder="금액" required="" step="0.01" type="number"/></label><label>분류<select name="category"><option value="식비">식비</option><option value="숙소">숙소</option><option value="교통">교통</option><option value="입장료">입장료</option><option value="기타">기타</option></select></label><label>결제자<select name="payer"><option value="a">나</option><option value="b">친구</option></select></label><label>통화<select name="currency"><option value="KRW">원화 (₩)</option><option value="JPY">엔화 (¥)</option></select></label><label>사용 날짜<select name="day"><option value="1">10월 31일</option><option value="2">11월 1일</option><option value="3">11월 2일</option></select></label><button class="button dark wide" type="submit">공용 지출 저장</button></form><p class="hint">엔화와 원화는 각각 정산해. 실제 환전환율에 맞게 한 통화로 정산하려면 서로 합의해 줘.</p></div><div class="card section-card"><h3>지출 내역</h3><div class="expense-list" id="expenseList"></div></div></section><section class="page" hidden="" id="reelsPage">
+<div class="section-title"><h2>인스타에서 찜한 곳</h2><p>인스타 릴스·게시물·유튜브 링크를 친구와 같이 저장해.</p></div>
+<div class="card section-card"><h3>링크 저장</h3>
+<form class="reel-form" id="reelForm">
+<label>인스타 / 유튜브 URL <input maxlength="1100" name="url" placeholder="https://www.instagram.com/reel/..." required="" type="url"/></label>
+<label>이름 <input maxlength="90" name="title" placeholder="예: 유후인 디저트 맛집" required=""/></label>
+<label>장소 <input maxlength="130" name="place" placeholder="예: 유후인 유노츠보 거리"/></label>
+<label>분류 <select name="category"><option value="food">🍜 식당·간식</option><option value="place">📍 관광·쇼핑</option><option value="other">🎥 참고 영상</option></select></label>
+<label class="wide">영상에서 기억할 내용 <textarea maxlength="350" name="note" placeholder="영상에서 본 음식, 영업시간 메모 등" rows="2"></textarea></label>
+<button class="button dark wide" type="submit">＋ 친구와 공유 목록에 추가</button>
+</form><p class="hint">인스타그램 콘텐츠를 자동 다운로드하거나 분석하지 않고 링크를 안전하게 보관해.</p></div>
+<div class="reels-list" id="reelList"></div>
+</section><section class="page" hidden="" id="assistantPage">
+<div class="section-title"><h2>여행 챗봇</h2><p>오이타 일정과 지출을 물어보고, 일정 변경을 제안받을 수 있어.</p></div>
+<div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 오늘 일정, 정산금, 교통 준비를 물어봐. Gemini AI 연결까지 완료되면 여행 일정 추가 제안도 받을 수 있어.</div></div>
+<form class="chat-input" id="chatForm"><input autocomplete="off" id="chatInput" maxlength="600" name="message" placeholder="예: 2일 차 일정 알려줘" required=""/><button class="button dark" id="chatSend" type="submit">보내기</button></form>
+<div class="chat-tools"><button class="button" data-chat-quick="2일 차 일정 알려줘" type="button">2일 차</button><button class="button" data-chat-quick="정산 얼마야?" type="button">정산</button><button class="button" data-chat-quick="셔틀과 공항버스 준비 알려줘" type="button">교통 준비</button></div>
+<p class="hint">AI 답변은 제안일 뿐이며, 일정 변경은 확인 버튼을 눌러야 공동 저장돼. AI를 쓰려면 ZIP 안 `oita-chat` Edge Function 배포가 필요해.</p>
+<div class="chat-proposal" hidden="" id="chatProposal"></div></div></section><section class="page" hidden="" id="notesPage"><div class="section-title"><h2>출발 전 체크</h2><p>체크박스와 메모도 친구와 함께 동기화돼</p></div><div class="checklist" id="checklist"></div><div class="card section-card"><h3>공용 메모</h3><textarea id="memo" placeholder="셔틀 예약 시간, 준비물, 맛집 후보…" rows="5"></textarea><button class="button dark" id="saveMemo">메모 저장</button><p class="hint">여권번호·카드번호·로그인 비밀번호는 입력하지 마.</p></div></section></div></div>
+</div><footer class="japan-footer">TRIPKKU · OITA 2026 · 친구끼리만 함께 편집</footer></main>
+<dialog id="editDialog"><form class="dialog-form" id="editForm"><h3 id="dialogTitle">일정 수정</h3><input name="id" type="hidden"/><label>날짜<select name="day"><option value="1">10/31 · 첫날</option><option value="2">11/01 · 둘째 날</option><option value="3">11/02 · 마지막 날</option></select></label><div class="time-row"><label>시작<input name="start" required="" type="time"/></label><label>종료<input name="end" required="" type="time"/></label></div><label>일정 이름<input maxlength="110" name="title" required=""/></label><label>장소명<input maxlength="160" name="place" placeholder="지도 검색용"/></label><label>설명<textarea maxlength="450" name="note" rows="3"></textarea></label><div class="dialog-actions"><button class="button danger" id="deleteEvent" type="button">삭제</button><button class="button" id="cancelDialog" type="button">취소</button><button class="button dark" type="submit">저장</button></div></form></dialog>
+<div aria-live="polite" class="toast" id="toast" role="status"></div>
+<script>
+// Migrate away from the former Tripkku PWA service worker to avoid stale cached UI.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(list =>
+    list.filter(reg => new URL(reg.scope).pathname.startsWith('/tripkku/')).forEach(reg => reg.unregister())
+  ).catch(() => {});
+}
+</script>
+<script src="./earth-controls.js?v=16.1" type="module"></script><script src="./app.js?v=16.1" type="module"></script>
 </body></html>
