@@ -19,7 +19,7 @@ function toast(message){const el=$('toast');el.textContent=String(message);el.cl
 function mapUrl(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place||trip?.destination||'');}
 function directionsUrl(start,end){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(start)+'&destination='+encodeURIComponent(end);}
 function safeUrl(url){try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
-function showScreen(screen){for(const name of ['auth','home','trip'])$(name+'Screen').hidden=name!==screen;}
+function showScreen(screen){for(const name of ['auth','home','trip','feedback'])$(name+'Screen').hidden=name!==screen;}
 function isoDay(d){return new Date(d).toISOString().slice(0,10);}
 function daysBetween(start,end){if(!dateRE.test(start)||!dateRE.test(end))return [];
  const a=Date.parse(start+'T00:00:00Z'),b=Date.parse(end+'T00:00:00Z');if(!Number.isFinite(a)||!Number.isFinite(b)||b<a||b-a>=14*86400000)return [];
@@ -33,6 +33,7 @@ function activeDoc(){return trip?.data||{};}
 function normalizeDoc(d){d.meta??={};d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
+let feedbackReturnScreen='home',isBetaAdmin=false,feedbackEntries=[];
 let user=null, trips=[],trip=null,revision=0,members=[],personalExpenses=[],privateFiles=[],activeTab='schedule',activeDate='',pendingPlan=null,pendingChatActions=[],chatHistory=[],editingEventId=null,saveQueue=Promise.resolve(),subscription=null,pendingConflict=null,recognition=null,lastTranslatedLang='';
 function demoTrips(){try{return JSON.parse(localStorage.getItem(DEFAULT_DEMO_KEY)||'[]');}catch{return [];}}
 function setDemoTrips(rows){localStorage.setItem(DEFAULT_DEMO_KEY,JSON.stringify(rows));}
@@ -66,17 +67,17 @@ function applyTheme(){const night=localStorage.getItem('tripkku-next-night')==='
  document.querySelectorAll('.hero-earth,.trip-earth').forEach(img=>img.src=`./assets/earth-icon-${night?'dark':'light'}-${mood[0]}-192.png`);}
 
 async function init(){initCountryPicker();applyTheme();bindHandlers();
- if(DEMO){user={id:MY_UID,user_metadata:{full_name:'체험 사용자'}};$('logoutBtn').hidden=true;$('authError').textContent='';await loadTrips();return;}
- client.auth.onAuthStateChange((event,session)=>{if(session?.user){const changed=user?.id!==session.user.id;user=session.user;$('logoutBtn').hidden=false;if(changed)queueMicrotask(()=>loadTrips());}
-  else{user=null;trip=null;trips=[];$('logoutBtn').hidden=true;showScreen('auth');}});
+ if(DEMO){user={id:MY_UID,user_metadata:{full_name:'체험 사용자'}};$('logoutBtn').hidden=true;$('feedbackTop').hidden=false;$('authError').textContent='';await loadTrips();return;}
+ client.auth.onAuthStateChange((event,session)=>{if(session?.user){const changed=user?.id!==session.user.id;user=session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;if(changed)queueMicrotask(()=>loadTrips());}
+  else{user=null;trip=null;trips=[];isBetaAdmin=false;$('logoutBtn').hidden=true;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');}});
  const {data,error}=await client.auth.getSession();if(error)console.warn('TRIPKKU auth',error.message);
- if(data.session?.user){user=data.session.user;$('logoutBtn').hidden=false;await loadTrips();}else showScreen('auth');
+ if(data.session?.user){user=data.session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;await loadTrips();}else showScreen('auth');
 }
 async function login(){try{const redirectTo=location.origin+location.pathname+(location.search||'');const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo}});if(error)throw error;}catch(e){$('authError').textContent='로그인 실패: '+e.message;}}
 async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 목록 동기화 중');showScreen('home');try{
  if(DEMO)trips=demoTrips();
  else{const {data,error}=await client.from('tripkku_trips').select('id,owner_id,invite_code,title,destination,country_code,start_date,end_date,data,revision,updated_at').order('updated_at',{ascending:false}).limit(50);if(error)throw error;trips=data||[];}
- renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');
+ renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');await refreshBetaAdminRole();
  const inv=new URLSearchParams(location.search).get('invite');if(inv&&!DEMO){history.replaceState({},'',location.pathname);await joinTrip(inv);}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }
@@ -343,14 +344,14 @@ function swapTranslate(){const x=$('translationDirection');x.value=x.value==='to
  $('translateExternal').href=translateExternalUrl();}
 function renderChat(){if(!trip)return;
  $('chatMessages').innerHTML=chatHistory.length?chatHistory.map(m=>`<p class="${m.role==='user'?'chat-user':'chat-bot'}">${esc(m.text)}</p>`).join(''):
- '<p class="chat-bot">일정을 질문하거나 바꿔 달라고 해 보세요. AI가 만든 변경 제안은 확인 후에만 적용됩니다.</p>';
+ '<p class="chat-bot">여행·맛집·교통·일상 질문까지 편하게 물어보세요. 일정 변경은 확인 후에만 적용됩니다.</p>';
  const box=$('chatProposals');box.innerHTML=pendingChatActions.map((a,i)=>`<div class="chat-proposal"><p><strong>${a.op==='delete_event'?'일정 삭제':a.op==='update_event'?'일정 변경':'일정 추가'} 제안</strong><br>${esc(fmtDate(a.date))}${a.op==='delete_event'?'':` · ${esc(a.start)}~${esc(a.end)}`}<br>${esc(a.title||findEvent(a.id)?.title||'선택 일정')}</p><button class="btn primary" data-accept-ai="${i}">확인 후 적용</button> <button class="btn" data-reject-ai="${i}">거절</button></div>`).join('');
  box.querySelectorAll('[data-accept-ai]').forEach(b=>b.addEventListener('click',()=>void applyChatAction(Number(b.dataset.acceptAi))));
  box.querySelectorAll('[data-reject-ai]').forEach(b=>b.addEventListener('click',()=>{pendingChatActions.splice(Number(b.dataset.rejectAi),1);renderChat();}));
  $('chatMessages').scrollTop=$('chatMessages').scrollHeight;}
 async function sendChat(e){e.preventDefault();if(!trip)return;const f=e.currentTarget,message=f.elements.message.value.trim();if(!message)return;
- const btn=f.querySelector('button[type=submit]');chatHistory.push({role:'user',text:message});renderChat();f.reset();setBusy(btn,true);
- try{const res=await aiCall('chat',{message});chatHistory.push({role:'bot',text:res.reply||'다시 시도해 주세요.'});
+ const btn=f.querySelector('button[type=submit]');const history=chatHistory.slice(-8).map(m=>({role:m.role==='bot'?'assistant':'user',text:String(m.text||'').slice(0,850)}));chatHistory.push({role:'user',text:message});renderChat();f.reset();setBusy(btn,true);
+ try{const res=await aiCall('chat',{message,history});chatHistory.push({role:'bot',text:res.reply||'다시 시도해 주세요.'});
   pendingChatActions=Array.isArray(res.actions)?res.actions:[];
  }catch(e){chatHistory.push({role:'bot',text:'답변을 가져오지 못했습니다. '+e.message});}
  finally{setBusy(btn,false,'보내기');renderChat();}}
@@ -367,11 +368,72 @@ async function applyChatAction(index){const a=pendingChatActions[index];if(!a)re
   else await saveEvent(candidate,existing?.id||null,[]);
  }
  pendingChatActions.splice(index,1);renderChat();}
+// Feedback: a signed-in user can submit/view own records; DB RLS grants all-record and status control to SQL-provisioned admins only.
+const feedbackStatusNames={new:'접수됨',reviewing:'검토 중',resolved:'처리 완료'};
+const feedbackCategoryNames={bug:'🐛 오류·불편',idea:'💡 개선·기능 제안',other:'💬 기타'};
+async function refreshBetaAdminRole(){
+ if(DEMO||!user){isBetaAdmin=false;$('adminFeedbackBtn').hidden=true;return;}
+ const {data,error}=await client.from('tripkku_beta_admins').select('user_id').eq('user_id',user.id).maybeSingle();
+ isBetaAdmin=!error&&!!data;$('adminFeedbackBtn').hidden=!isBetaAdmin;
+ if(error)console.warn('TRIPKKU feedback setup not complete:',error.message);
+}
+function feedbackFormTrips(){const select=$('feedbackTripSelect');const selected=select.value;
+ select.innerHTML='<option value="">전체 서비스</option>'+trips.map(t=>`<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
+ select.value=(trip?.id||selected||'');if(!select.value)select.selectedIndex=0;
+}
+async function openFeedback(admin=false){
+ if(!user)return toast('피드백은 로그인 후 사용할 수 있습니다.');
+ feedbackReturnScreen=trip?'trip':'home';showScreen('feedback');feedbackFormTrips();
+ $('feedbackAdminPanel').hidden=!isBetaAdmin;
+ $('feedbackNotice').textContent=DEMO?'체험 모드에서는 실제 피드백을 제출할 수 없습니다. Google 계정으로 로그인해 주세요.':'작성한 의견은 관리자에게만 전달됩니다.';
+ if(DEMO){$('myFeedbackList').innerHTML=emptyMessage('데모 모드에서는 피드백 저장이 제공되지 않습니다.');return;}
+ await refreshFeedback();
+ if(admin&&isBetaAdmin)$('feedbackAdminPanel').scrollIntoView({behavior:'smooth',block:'start'});
+ else window.scrollTo({top:0,behavior:'smooth'});
+}
+function closeFeedback(){showScreen(feedbackReturnScreen==='trip'&&trip?'trip':'home');window.scrollTo({top:0,behavior:'smooth'});}
+function feedbackStamp(value){if(!value)return '';const d=new Date(value);return Number.isFinite(d.getTime())?d.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):String(value);}
+function renderFeedback(){
+ const own=feedbackEntries.filter(x=>x.user_id===user?.id);
+ $('myFeedbackList').innerHTML=own.length?own.map(x=>`<article class="feedback-entry"><div class="feedback-entry-head"><strong>${esc(feedbackCategoryNames[x.category]||'💬 기타')}</strong><span class="feedback-state">${esc(feedbackStatusNames[x.status]||x.status)}</span></div><p>${esc(x.message)}</p><small>${esc(feedbackStamp(x.created_at))}</small>${x.admin_note?`<div class="feedback-reply"><strong>관리자 답변</strong><p>${esc(x.admin_note)}</p></div>`:''}</article>`).join(''):emptyMessage('아직 남긴 피드백이 없어요.');
+ $('feedbackAdminPanel').hidden=!isBetaAdmin;
+ if(!isBetaAdmin)return;
+ const filter=$('feedbackFilter').value,all=feedbackEntries.filter(x=>filter==='all'||x.status===filter);
+ $('feedbackAdminCount').textContent=feedbackEntries.length+'건';
+ $('feedbackAdminList').innerHTML=all.length?all.map(x=>`<article class="feedback-entry" data-feedback-id="${esc(x.id)}"><div class="feedback-entry-head"><strong>${esc(feedbackCategoryNames[x.category]||'💬 기타')}</strong><small>${esc(feedbackStamp(x.created_at))}</small></div><p>${esc(x.message)}</p><small>작성자 ID: ${esc(String(x.user_id).slice(0,8))}…${x.trip_id?' · 관련 여행: '+esc(String(x.trip_id).slice(0,8))+'…':''}</small><div class="feedback-admin-fields"><label>처리 상태<select data-fb-status><option value="new"${x.status==='new'?' selected':''}>접수됨</option><option value="reviewing"${x.status==='reviewing'?' selected':''}>검토 중</option><option value="resolved"${x.status==='resolved'?' selected':''}>처리 완료</option></select></label><label>관리자 답변<textarea rows="2" maxlength="2000" data-fb-note placeholder="작성자에게 보일 답변">${esc(x.admin_note||'')}</textarea></label><button class="btn primary small" data-fb-save="${esc(x.id)}" type="button">상태·답변 저장</button></div></article>`).join(''):emptyMessage('해당 상태의 피드백이 없습니다.');
+}
+async function refreshFeedback(){if(DEMO||!user)return;
+ $('feedbackNotice').textContent='피드백을 불러오는 중…';
+ const {data,error}=await client.from('tripkku_beta_feedback')
+  .select('id,user_id,trip_id,category,message,status,admin_note,created_at,updated_at')
+  .order('created_at',{ascending:false}).limit(200);
+ if(error){$('feedbackNotice').textContent='피드백을 불러올 수 없어요. Supabase SQL Editor에서 02-beta-feedback.sql을 실행했는지 확인해 주세요. ('+error.message+')';return;}
+ feedbackEntries=data||[];$('feedbackNotice').textContent='의견은 작성자 본인과 관리자만 열람할 수 있습니다.';renderFeedback();
+}
+async function submitFeedback(e){e.preventDefault();if(DEMO)return toast('데모에서는 제출할 수 없습니다. 로그인해 주세요.');
+ if(!user)return toast('먼저 로그인해 주세요.');
+ const form=e.currentTarget,category=form.elements.category.value,message=form.elements.message.value.trim(),tripId=form.elements.tripId.value;
+ if(!['bug','idea','other'].includes(category)||message.length<5||message.length>2000)return toast('의견은 5~2000자로 작성해 주세요.');
+ const button=$('feedbackSendBtn');setBusy(button,true,'관리자에게 보내기');
+ try{const row={category,message,trip_id:tripId||null};
+  const {error}=await client.from('tripkku_beta_feedback').insert(row);if(error)throw error;
+  form.elements.message.value='';$('feedbackNotice').textContent='피드백이 접수됐습니다. 감사합니다!';toast('피드백을 보냈습니다.');await refreshFeedback();
+ }catch(err){$('feedbackNotice').textContent='전송 실패: '+err.message;}finally{setBusy(button,false,'관리자에게 보내기');}
+}
+async function updateAdminFeedback(id){if(!isBetaAdmin||DEMO)return;
+ const entry=[...document.querySelectorAll('[data-feedback-id]')].find(e=>e.dataset.feedbackId===id);if(!entry)return;
+ const status=entry.querySelector('[data-fb-status]').value,admin_note=entry.querySelector('[data-fb-note]').value.trim();
+ if(!['new','reviewing','resolved'].includes(status)||admin_note.length>2000)return toast('처리 상태와 답변을 확인해 주세요.');
+ const btn=entry.querySelector('[data-fb-save]');setBusy(btn,true,'상태·답변 저장');
+ try{const {data,error}=await client.from('tripkku_beta_feedback').update({status,admin_note}).eq('id',id).select('id');
+  if(error)throw error;if(!data?.length)throw new Error('관리자 권한을 확인해 주세요.');toast('처리 상태와 답변이 저장됐습니다.');await refreshFeedback();
+ }catch(err){toast('관리자 저장 실패: '+err.message);}finally{setBusy(btn,false,'상태·답변 저장');}
+}
 function bindHandlers(){
  $('goHome').addEventListener('click',goHome);$('backHome').addEventListener('click',goHome);
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();});
- $('loginBtn').addEventListener('click',()=>void login());$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;showScreen('auth');});
+ $('loginBtn').addEventListener('click',()=>void login());$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());
  $('tripList').addEventListener('click',e=>{const b=e.target.closest('[data-open-trip]');if(b)void openTrip(b.dataset.openTrip);});
@@ -398,6 +460,13 @@ function bindHandlers(){
  $('translateSwitch').addEventListener('click',swapTranslate);
  $('translateInput').addEventListener('input',()=>{$('translateExternal').href=translateExternalUrl();});
  $('chatForm').addEventListener('submit',e=>void sendChat(e));
+ $('feedbackTop').addEventListener('click',()=>void openFeedback(false));
+ $('adminFeedbackBtn').addEventListener('click',()=>void openFeedback(true));
+ $('feedbackBack').addEventListener('click',closeFeedback);
+ $('feedbackForm').addEventListener('submit',e=>void submitFeedback(e));
+ $('feedbackRefresh').addEventListener('click',()=>void refreshFeedback());
+ $('feedbackFilter').addEventListener('change',renderFeedback);
+ $('feedbackAdminList').addEventListener('click',e=>{const b=e.target.closest('[data-fb-save]');if(b)void updateAdminFeedback(b.dataset.fbSave);});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&trip&&!DEMO)void refreshTripFromCloud();});
 }
 void init();

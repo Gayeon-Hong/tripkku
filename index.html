@@ -524,10 +524,10 @@ html{background:var(--paper)}body{background:var(--paper);color:#24373b}
  <p class="hint trans-footnote">번역은 로그인된 여행방에서 Gemini 서버를 통해 처리하고, 번역 문장은 여행방에 저장하지 않습니다. 음성은 아이폰 Safari의 마이크·읽어주기 지원에 따라 달라질 수 있습니다. 마이크가 지원되지 않으면 아이폰 키보드의 받아쓰기 버튼을 이용하세요.</p>
 </div>
 <div class="section-title"><h2>💬 여행 챗봇</h2><p>오이타 일정·지출을 묻거나 일정 변경을 제안받아 보세요.</p></div>
-<div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 오이타 여행 계획을 같이 확인하자. 아래 버튼은 빠른 안내이고, 직접 질문을 입력하면 Gemini AI에게 물어볼게.</div></div>
-<form class="chat-input" id="chatForm"><input autocomplete="off" id="chatInput" maxlength="600" name="message" placeholder="예: 2일 차 일정 알려줘" required=""/><button class="button dark" id="chatSend" type="submit">보내기</button></form>
+<div class="card section-card chat-card"><div aria-live="polite" class="chat-log" id="chatMessages"><div class="chat-bubble bot">안녕! 여행·맛집·교통·번역·일상 질문까지 편하게 물어봐. 일정 변경은 확인 후 적용돼.</div></div>
+<form class="chat-input" id="chatForm"><input autocomplete="off" id="chatInput" maxlength="600" name="message" placeholder="예: 벳푸 온천 추천해 줘 / 아이폰 사진 정리 방법 알려줘" required=""/><button class="button dark" id="chatSend" type="submit">보내기</button></form>
 <div class="chat-tools"><button class="button" data-chat-quick="2일 차 일정 알려줘" type="button">2일 차</button><button class="button" data-chat-quick="정산 얼마야?" type="button">정산</button><button class="button" data-chat-quick="셔틀과 공항버스 준비 알려줘" type="button">교통 준비</button><button class="button" id="aiTestBtn" type="button">✨ AI 연결 테스트</button></div><div id="aiStatus" role="status" class="ai-status" data-state="idle">● Gemini 연결 상태: 확인 전</div>
-<p class="hint">빠른 안내 버튼은 기본 답변이야. 직접 입력하거나 ‘AI 연결 테스트’를 누르면 oita-chat 서버를 호출해. AI가 일정 변경을 제안하면 확인 후 공동 저장돼.</p>
+<p class="hint">여행뿐 아니라 일반 질문도 할 수 있어. 일정 변경은 승인 후 공동 저장되고, 최신 정보는 별도 확인이 필요해.</p>
 <div class="chat-proposal" hidden="" id="chatProposal"></div></div>
 <div class="card section-card assistant-links"><h3>✦ 다른 도구 바로가기</h3><p class="hint">Gemini의 답변이 부족하면 ChatGPT에서 다시 질문해 보세요. 번역이 안 될 때는 Papago를 이용할 수 있어요.</p>
 <div class="tool-links"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" aria-label="ChatGPT 열기">✦ ChatGPT 열기 ↗</a><a href="https://papago.naver.com/" target="_blank" rel="noopener noreferrer" aria-label="Papago 한일 번역 열기">🇰🇷↔🇯🇵 Papago 번역 ↗</a></div>
@@ -1498,6 +1498,8 @@ function renderSavedPlaces(){
  }).join(''):'<p class="saved-place-empty">아직 저장한 장소가 없어. 위 칸에 장소 이름 하나만 적어 봐! 저장하면 Google 지도 버튼이 만들어져.</p>';
 }
 let pendingProposal=null,chatBusy=false;
+// Chat context is local to this browser session; never persisted to the shared trip.
+let generalChatHistory=[],generalChatRoomId='';
 function chatBubble(s,mine=false){const e=document.createElement('div');e.className='chat-bubble '+(mine?'me':'bot');e.textContent=String(s).slice(0,2000);$('chatMessages').appendChild(e);$('chatMessages').scrollTop=$('chatMessages').scrollHeight;}
 function chatAnswerLocal(msg){const m=msg.toLowerCase();
  if(/짐|캐리어|보관|로커|코인/.test(m))return '11/1 벳푸 관광을 한다면 벳푸역 WANDER COMPASS에 맡겼다가 버스를 타기 전에 짐을 찾고, 유후인 도착 뒤에는 모미지 계열 아카리노야도에 무료로 짐을 맡길 수 있어. 3·4안은 유노츠보 거리를 도보로 둘러보고, 모두 17:30 유후인역 무료 셔틀을 타면 돼.';
@@ -1518,16 +1520,19 @@ function aiStatus(state,message){
 }
 async function handleChat(msg,quick=false){
  if(chatBusy)return;
+ const activeRoom=String(room?.id||'');
+ if(generalChatRoomId!==activeRoom){generalChatHistory=[];generalChatRoomId=activeRoom;}
+ const previous=generalChatHistory.slice(-8);
  chatBubble(msg,true);
- // Quick buttons are intentionally offline; typed questions ALWAYS call Gemini.
+ // Quick guide buttons can reply offline; typed messages always call the AI.
  const local=quick?chatAnswerLocal(msg):null;
- if(local){chatBubble(local);return;}
+ if(local){chatBubble(local);generalChatHistory.push({role:'user',text:msg},{role:'assistant',text:local});generalChatHistory=generalChatHistory.slice(-10);return;}
  if(!client||!room?.id){chatBubble('여행방 연결이 아직 준비되지 않았어. 먼저 로그인하고 여행방에 들어가 줘.');aiStatus('error','● Gemini: 로그인·여행방 확인 필요');return;}
  chatBusy=true;$('chatSend').disabled=true;$('aiTestBtn').disabled=true;
  aiStatus('loading','● Gemini: 서버에 연결하는 중…');
- chatBubble('Gemini에게 물어보는 중…');const bubble=$('chatMessages').lastElementChild;
+ chatBubble('Gemini에게 물어보는 중…');const bubble=$('chatMessages').lastElementChild;$('chatMessages').lastElementChild;
  try{
-  const {data:result,error}=await client.functions.invoke('oita-chat',{body:{roomId:room.id,message:msg}});
+  const {data:result,error}=await client.functions.invoke('oita-chat',{body:{roomId:room.id,message:msg,history:previous}});
   if(error){
    let detail='';let status=error.context?.status||error.status||0;
    try{const c=await error.context?.json();detail=String(c?.error||c?.message||'');}catch(_){}
@@ -1536,6 +1541,8 @@ async function handleChat(msg,quick=false){
   }
   if(!result?.reply)throw new Error('AI 응답이 비어 있어.');
   bubble.textContent=String(result.reply).slice(0,2000);
+  generalChatHistory.push({role:'user',text:msg},{role:'assistant',text:bubble.textContent});
+  generalChatHistory=generalChatHistory.slice(-10);
   aiStatus('ok','● Gemini AI 연결 정상 · 답변 수신');
   if(result.action)showAIProposal(result.action);
  }catch(e){

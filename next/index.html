@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TRIPKKU · AI 여행 플래너</title><meta name="description" content="여행지와 날짜를 입력하면 AI가 일정 추천, 친구와 일정·예산·메모 공유, 국가별 음성 번역까지 제공하는 여행 플래너">
-<meta name="theme-color" content="#f7f5f0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="TRIPKKU"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>TRIPKKU NEXT Beta · AI 여행 플래너</title><meta name="description" content="여행지와 날짜를 입력하면 AI가 일정 추천, 친구와 일정·예산·메모 공유, 국가별 음성 번역까지 제공하는 여행 플래너">
+<meta name="theme-color" content="#f7f5f0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="TRIPKKU NEXT"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="./assets/apple-touch-icon.png"><link rel="icon" href="./assets/favicon.png"><link rel="stylesheet" href="./style.css">
 </head><body>
 <header class="topbar"><div class="topbar-inner">
- <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="./assets/icon-192.png"><span>TRIPKKU<small>우리만의 여행을, 어디서든</small></span></button>
- <div class="topbar-actions"><span id="syncBadge" class="sync-badge" aria-live="polite">여행을 준비해요</span><button id="moodToggle" class="btn icononly" type="button" aria-label="지구 표정 변경" title="지구 표정 변경">😊</button><button id="themeToggle" class="btn icononly" type="button" aria-label="낮 밤 테마 바꾸기">☾</button><button id="inviteTop" class="btn" type="button" hidden>친구 초대</button><button id="logoutBtn" class="btn ghost" type="button" hidden>로그아웃</button></div>
+ <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="./assets/icon-192.png"><span>TRIPKKU NEXT<small>베타 · 우리만의 여행을, 어디서든</small></span></button>
+ <div class="topbar-actions"><span id="syncBadge" class="sync-badge" aria-live="polite">여행을 준비해요</span><button id="moodToggle" class="btn icononly" type="button" aria-label="지구 표정 변경" title="지구 표정 변경">😊</button><button id="themeToggle" class="btn icononly" type="button" aria-label="낮 밤 테마 바꾸기">☾</button><button id="feedbackTop" class="btn" type="button" hidden>💌 피드백</button><button id="adminFeedbackBtn" class="btn" type="button" hidden>🛠 관리자</button><button id="inviteTop" class="btn" type="button" hidden>친구 초대</button><button id="logoutBtn" class="btn ghost" type="button" hidden>로그아웃</button></div>
 </div></header>
 <main id="main" class="shell">
 <section id="authScreen" class="auth card">
@@ -33,7 +33,7 @@
  </form>
  <div class="home-side"><div class="card home-list"><div class="card-title"><h2>내 여행</h2><button id="refreshTrips" class="btn small" type="button">새로고침</button></div><div id="tripList" class="trip-list"><p class="muted">여행을 불러오는 중…</p></div></div>
  <div class="card invite-panel"><h3>친구가 초대했나요?</h3><p>초대 링크나 초대 코드를 입력하면 같은 일정과 공동 예산을 관리할 수 있어요.</p><div class="horizontal"><input id="joinCode" placeholder="초대 코드 24자리" maxlength="24"><button id="joinBtn" class="btn" type="button">참여</button></div></div>
- <div class="card legacy-panel"><div><b>🧳 기존 오이타 여행</b><p>지금까지 만든 오이타 2박 3일 앱은 따로 보관했어요.</p></div><a href="./oita.html" class="btn">기존 여행 열기</a></div>
+ <div class="card legacy-panel"><div><b>🧳 기존 오이타 여행</b><p>지금까지 만든 오이타 2박 3일 앱은 따로 보관했어요.</p></div><a href="../" class="btn">기존 여행 열기</a></div>
  </div></div>
 </section>
 <section id="tripScreen" hidden>
@@ -50,8 +50,28 @@
  <section id="transportPage" class="workspace-page" hidden><div class="page-title"><div><h2>교통·예약</h2><p>항공편·열차·호텔 예약 정보를 저장해 주세요.</p></div></div><div class="card section"><form id="bookingForm" class="form-row"><label>구분 <select name="kind"><option>항공</option><option>열차</option><option>버스</option><option>숙소</option><option>기타 예약</option></select></label><label>이름 <input name="title" required maxlength="120" placeholder="예: 11월 1일 후쿠오카행 항공편"></label><label>날짜 <input name="date" type="date" id="bookingDate"></label><label>시간 <input name="time" type="time"></label><label class="wide">메모 <input name="note" maxlength="300" placeholder="예: 예약번호는 개인 파일에 저장"></label><button class="btn primary" type="submit">＋ 예약 추가</button></form></div><div id="bookingList" class="stack-list"></div></section>
  <section id="assistantPage" class="workspace-page" hidden><div class="page-title"><div><h2>번역·AI 챗봇</h2><p>여행 국가에 맞춰 언어가 바뀌고, 한국어로 일정 변경을 요청할 수 있어요.</p></div></div>
  <div class="card section translator"><div class="card-title"><h3 id="translationTitle">🌏 현지어 번역</h3><span class="tag">양방향 · 음성</span></div><p id="translateCountryHint" class="muted"></p><div class="form-row"><label>번역 언어 <select id="localLanguage"></select></label><label>번역 방향 <select id="translationDirection"><option value="auto">✨ 언어 자동 감지</option><option value="to-local">한국어 → 현지어</option><option value="to-ko">현지어 → 한국어</option></select></label></div><div class="translate-box"><label>입력 문장<textarea id="translateInput" rows="3" maxlength="1300" placeholder="예: 체크인 시간을 조금 늦출 수 있나요?"></textarea></label><div class="translate-actions"><button id="translateMic" class="btn" type="button">🎙 말하기</button><button id="translateRun" class="btn primary" type="button">번역</button><button id="translateSourceSpeak" class="btn" type="button">🔊 원문</button></div><label>번역 결과<textarea id="translateOutput" rows="3" readonly placeholder="번역 결과가 여기에 표시됩니다."></textarea></label><div class="translate-actions"><button id="translateSpeak" class="btn" type="button">🔊 번역 읽기</button><button id="translateCopy" class="btn" type="button">복사</button><button id="translateSwitch" class="btn" type="button">⇄ 방향 바꾸기</button></div><p id="translateStatus" class="tiny" aria-live="polite"></p></div><div class="shortcut-links"><a id="translateExternal" target="_blank" rel="noopener noreferrer" href="https://translate.google.com/">외부 번역기 ↗</a><a id="papagoExternal" target="_blank" rel="noopener noreferrer" href="https://papago.naver.com/">Papago ↗</a></div><p class="tiny">아이폰에서 마이크 버튼이 작동하지 않으면 키보드의 마이크 받아쓰기를 이용하세요. 번역은 AI 결과이므로 중요한 의료·법률 문장은 직접 확인하세요.</p></div>
- <div class="card section chat-panel"><div class="card-title"><h3>💬 여행 AI 챗봇</h3><span class="tag">일정 편집 제안</span></div><div id="chatMessages" class="chat-messages"><p class="chat-bot">여행 계획을 물어보세요. 예: “둘째 날 카페 대신 미술관을 넣어줘.” 수정 제안은 확인 후 적용됩니다.</p></div><div id="chatProposals"></div><form id="chatForm" class="horizontal"><input name="message" maxlength="1500" placeholder="여행 일정 질문 또는 변경 요청" required><button class="btn primary" type="submit">보내기</button></form><div class="shortcut-links"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT에서 더 자세히 ↗</a></div></div></section>
+ <div class="card section chat-panel"><div class="card-title"><h3>💬 AI 챗봇</h3><span class="tag">일반 질문 답변 · 일정 편집 제안</span></div><div id="chatMessages" class="chat-messages"><p class="chat-bot">여행·맛집·교통·일상 질문까지 편하게 물어보세요. 일정 변경은 확인 후에만 적용됩니다.</p></div><div id="chatProposals"></div><form id="chatForm" class="horizontal"><input name="message" maxlength="1500" placeholder="무엇이든 물어보세요 (여행·일상·번역)" required><button class="btn primary" type="submit">보내기</button></form><div class="shortcut-links"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPT에서 더 자세히 ↗</a></div></div></section>
  </div></div>
+</section>
+
+<section id="feedbackScreen" hidden>
+ <div class="feedback-header"><div><span class="eyebrow">TRIPKKU NEXT · BETA</span><h1>💌 피드백</h1><p class="muted">불편한 점이나 추가되었으면 하는 기능을 알려 주세요. 관리자만 전체 의견을 볼 수 있어요.</p></div><button class="btn" id="feedbackBack" type="button">← 여행으로 돌아가기</button></div>
+ <div class="feedback-layout">
+  <div class="card section">
+   <h2>의견 남기기</h2><form id="feedbackForm" class="feedback-form">
+    <label>유형 <select name="category" required><option value="bug">🐛 오류·불편</option><option value="idea" selected>💡 개선·기능 제안</option><option value="other">💬 기타 의견</option></select></label>
+    <label>관련 여행 (선택) <select name="tripId" id="feedbackTripSelect"><option value="">전체 서비스</option></select></label>
+    <label>상세 내용 <textarea name="message" rows="6" required minlength="5" maxlength="2000" placeholder="어떤 화면에서 어떤 일이 있었나요? 또는 어떤 기능을 원하시나요? (5~2000자)"></textarea></label>
+    <p class="tiny">여권번호·예약번호·비밀번호·QR 이미지 같은 민감한 정보는 여기에 적지 마세요. 로그인 계정의 식별자와 메시지가 관리자에게 전달됩니다.</p>
+    <button class="btn primary" type="submit" id="feedbackSendBtn">관리자에게 보내기</button>
+   </form>
+   <div id="feedbackNotice" class="muted" aria-live="polite"></div>
+  </div>
+  <div class="card section"><div class="card-title"><h2>내가 남긴 피드백</h2><button type="button" class="btn small" id="feedbackRefresh">새로고침</button></div><div id="myFeedbackList" class="feedback-list"><p class="muted">제출한 의견이 여기에 표시됩니다.</p></div></div>
+ </div>
+ <section class="card section admin-feedback" id="feedbackAdminPanel" hidden aria-label="관리자 피드백 관리"><div class="card-title"><div><h2>🛠 관리자 · 접수 현황</h2><p class="muted">등록된 피드백을 확인하고 답변이나 처리 상태를 변경할 수 있습니다.</p></div><span class="tag" id="feedbackAdminCount">0건</span></div>
+  <div class="horizontal"><label for="feedbackFilter">상태 필터</label><select id="feedbackFilter"><option value="all">전체</option><option value="new">접수됨</option><option value="reviewing">검토 중</option><option value="resolved">처리 완료</option></select></div><div id="feedbackAdminList" class="feedback-list"></div>
+ </section>
 </section>
 </main>
 <dialog id="eventDialog"><form method="dialog" id="eventForm" class="modal-content"><header class="modal-header"><h3 id="eventDialogTitle">일정 추가</h3><button type="button" class="btn icononly" data-close-dialog="eventDialog">×</button></header><label>날짜 <select name="date" id="eventDate" required></select></label><div class="form-row"><label>시작 <input name="start" type="time" value="10:00" required></label><label>종료 <input name="end" type="time" value="11:00" required></label></div><label>일정 이름 <input name="title" maxlength="120" required placeholder="예: 아침 식사"></label><label>장소 <input name="place" maxlength="180" placeholder="예: 도쿄역"></label><label>내용 <textarea name="note" rows="3" maxlength="500" placeholder="기억할 사항"></textarea></label><footer class="modal-actions"><button type="button" class="btn" data-close-dialog="eventDialog">취소</button><button class="btn primary" type="submit">일정 저장</button></footer></form></dialog>
