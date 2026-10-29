@@ -64,3 +64,36 @@ body.night :is(input,textarea)::placeholder{color:#c0d0c3;opacity:1}
 body.night :is(.schedule-after-save,.translator .muted,.home-hero .muted){color:#d3e9d9}
 body.night .translator-swap-top{background:#3c8567;color:#ffffff;border:1px solid #85b697}
 @media(max-width:600px){.translator-swap-top{margin-top:0;font-size:13px}}
+
+/* Admin-only access and one-time legacy import. Hidden truly means hidden even with display:flex rules. */
+.legacy-panel[hidden],.legacy-import[hidden],.legacy-variant-bar[hidden],.legacy-private-box[hidden]{display:none!important}
+.legacy-import{padding:17px;display:grid;gap:9px}.legacy-import h3{font-size:14px;margin:0}.legacy-import p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.legacy-import .legacy-private-opt{font-size:12px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}.legacy-private-opt input{width:18px;min-height:18px;flex:none}
+.legacy-import-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:11px;flex-wrap:wrap}
+.legacy-import-row b{font-size:12px}.legacy-import-row small{display:block;color:var(--muted);font-size:11px}.legacy-variant-bar{padding:11px 13px;margin:1px 0 14px;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+.legacy-variant-bar strong{display:block;font-size:12px;margin-bottom:9px}.legacy-variant-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.legacy-variant-buttons button{min-width:0;white-space:normal;min-height:45px;padding:7px 5px;line-height:1.3;font-size:11px;border:1px solid var(--border);border-radius:9px;background:var(--soft);color:var(--ink);cursor:pointer}
+.legacy-variant-buttons button.selected{border-color:#368665;background:#d8ebe0;color:#204c36;font-weight:900}
+.legacy-private-box{margin-top:15px;padding:12px;background:var(--soft);border-radius:10px}.legacy-private-box p{margin:3px 0 10px;line-height:1.5}
+body.night .legacy-variant-buttons button.selected{background:#39594a;color:#e6f9ed;border-color:#7cb397}
+@media(max-width:540px){.legacy-variant-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}.legacy-import .card-title{align-items:center}}
+
+/* Private invitation UI: never turn hidden admin or invite panels back on via layout rules. */
+.invite-dialog{max-width:540px}.invite-dialog form{display:grid;gap:12px}.invite-dialog h4{font-size:13px;margin:13px 0 6px}
+.invite-dialog input{width:100%}.invite-dialog #inviteCreatedBox[hidden]{display:none!important}
+.invite-member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--border);border-radius:10px}
+.invite-member-row .tiny{margin:0}.invite-member-row strong{font-size:12px}
+#adminLegacyPanel[hidden],#adminOitaImportPanel[hidden],#inviteDialog[hidden]{display:none!important}
+
+/* Admin-owned vs others: independent read-only oversight panel */
+.admin-trips{margin-top:16px}.admin-trips .trip-list{margin:15px 0}
+.admin-trip-preview{border:1px solid var(--border);border-radius:13px;padding:17px;background:var(--card)}
+.admin-preview-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.admin-preview-header h3{margin:0 0 3px}.admin-shared-note{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:var(--muted)}
+.admin-day{border:1px solid var(--border);padding:12px;margin:11px 0;border-radius:10px}
+.admin-event{display:grid;grid-template-columns:95px minmax(0,1fr);gap:5px 10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.admin-event:last-child{border-bottom:0}.admin-event span{font-variant-numeric:tabular-nums;color:var(--forest)}.admin-event small{grid-column:2;color:var(--muted)}
+.budget-overview{margin-bottom:13px}.budget-overview-head{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.budget-overview-head h3{margin:0 0 9px}.budget-overview .summary-grid{margin-bottom:5px}.budget-highlight{border:2px solid #65a580;background:var(--soft)}
+body.night .budget-highlight{border-color:#78bd95}.budget-overview>.tiny{color:var(--muted)}
+@media(max-width:600px){.admin-event{grid-template-columns:75px minmax(0,1fr)}.admin-preview-header{align-items:start}.admin-trips .trip-card{flex-wrap:wrap}}
