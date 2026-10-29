@@ -1,5 +1,7 @@
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm';
 import {COUNTRIES,BY_COUNTRY,LANGUAGES,suggestCountry,countryInfo,languageLabel} from './countries.js';
+import {OITA_DEFAULTS} from './oita-templates.js';
+import {convertOitaRoom} from './oita-import.mjs';
 
 // Public URL and publishable key are safe in the browser; never put GEMINI_API_KEY here.
 const CONFIG={url:'https://aachvbbblwycutggzdpp.supabase.co',publishable:'sb_publishable_VeMIoHqNqCTnxZSMCqLHVg_FLQTW6Pq'};
@@ -37,7 +39,8 @@ function activeDoc(){return trip?.data||{};}
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[d.meta.countryCode||'JP'];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(d.meta.countryCode||'JP');d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
-let feedbackReturnScreen='home',isBetaAdmin=false,feedbackEntries=[];
+let feedbackReturnScreen='home',isBetaAdmin=false,feedbackEntries=[],legacyRooms=[],adminTripIndex=[];
+let budgetFxRates={KRW:1},budgetFxDate='',budgetFxLast=0,budgetFxFetching=false,budgetFxError='';
 let user=null, trips=[],trip=null,revision=0,members=[],personalExpenses=[],privateFiles=[],activeTab='schedule',activeDate='',pendingPlan=null,pendingChatActions=[],chatHistory=[],editingEventId=null,saveQueue=Promise.resolve(),subscription=null,pendingConflict=null,recognition=null,lastTranslatedLang='',pendingEventMapUrl='',selectedBookingFile=null,bookingPendingForEvent=null;
 function demoTrips(){try{return JSON.parse(localStorage.getItem(DEFAULT_DEMO_KEY)||'[]');}catch{return [];}}
 function setDemoTrips(rows){localStorage.setItem(DEFAULT_DEMO_KEY,JSON.stringify(rows));}
@@ -87,14 +90,21 @@ function oauthReturnError(){
 async function init(){initCountryPicker();applyTheme();bindHandlers();
  if(DEMO){user={id:MY_UID,user_metadata:{full_name:'체험 사용자'}};$('logoutBtn').hidden=true;$('feedbackTop').hidden=false;$('authError').textContent='';await loadTrips();return;}
  client.auth.onAuthStateChange((event,session)=>{if(session?.user){try{sessionStorage.removeItem('tripkku-oauth-pending');}catch(_){} const changed=user?.id!==session.user.id;user=session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;if(changed)queueMicrotask(()=>loadTrips());}
-  else{user=null;trip=null;trips=[];isBetaAdmin=false;$('logoutBtn').hidden=true;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');}});
+  else{user=null;trip=null;trips=[];isBetaAdmin=false;$('logoutBtn').hidden=true;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;setLegacyAdminVisibility(false);showScreen('auth');}});
  const {data,error}=await client.auth.getSession();if(error)console.warn('TRIPKKU auth',error.message);
  if(data.session?.user){try{sessionStorage.removeItem('tripkku-oauth-pending');}catch(_){} user=data.session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;await loadTrips();}else{showScreen('auth');$('authError').textContent=oauthReturnError()||(error?'인증 확인 실패: '+error.message:'');}
 }
 async function login(provider='google'){try{const redirectTo=new URL('./',location.href).href;try{const invite=new URLSearchParams(location.search).get('invite');if(invite)sessionStorage.setItem('tripkku-next-pending-invite',invite);sessionStorage.setItem('tripkku-oauth-pending',String(Date.now()));}catch(_){} const {error}=await client.auth.signInWithOAuth({provider,options:{redirectTo}});if(error)throw error;}catch(e){$('authError').textContent='로그인 실패: '+e.message;}}
 async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 목록 동기화 중');showScreen('home');try{
  if(DEMO)trips=demoTrips();
- else{const {data,error}=await client.from('tripkku_trips').select('id,owner_id,invite_code,title,destination,country_code,start_date,end_date,data,revision,updated_at').order('updated_at',{ascending:false}).limit(50);if(error)throw error;trips=data||[];}
+ else{
+  // Only owned/joined trips appear on the ordinary home screen. Admin-only trips have their own read-only panel.
+  const {data:mine,error:memberError}=await client.from('tripkku_trip_members').select('trip_id').eq('user_id',user.id).limit(500);
+  if(memberError)throw memberError;
+  const ids=[...new Set((mine||[]).map(m=>m.trip_id).filter(Boolean))];
+  if(!ids.length)trips=[];
+  else{const {data,error}=await client.from('tripkku_trips').select('id,owner_id,invite_code,title,destination,country_code,start_date,end_date,data,revision,updated_at').in('id',ids).order('updated_at',{ascending:false}).limit(100);if(error)throw error;trips=data||[];}
+ }
  renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');await refreshBetaAdminRole();
  let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){} history.replaceState({},'',location.pathname);await joinTrip(inv);}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
@@ -114,10 +124,13 @@ async function createTripFromForm(e){e.preventDefault();if(!user)return toast('�
  else{const {data,error}=await client.rpc('tripkku_create_trip',{p_title:title,p_country:country,p_destination:destination,p_start:start,p_end:end,p_data:doc});if(error)throw error;id=data;await loadTrips();}
  await openTrip(id);toast('여행이 생성되었습니다. 일정 추천을 시작합니다.');await generatePlan(true);
  }catch(err){toast('여행 생성 실패: '+err.message);}finally{setBusy(btn,false,'✨ 여행 만들고 추천 일정 받기');}}
-async function joinTrip(raw){const code=String(raw||'').trim().toLowerCase();if(!/^[0-9a-f]{24}$/.test(code)){toast('24자리 초대 코드를 확인해 주세요.');return;}
- if(DEMO){toast('데모에서는 친구 초대가 지원되지 않습니다.');return;}
- try{const {data:id,error}=await client.rpc('tripkku_join_trip',{p_invite_code:code});if(error)throw error;toast('여행방에 참여했습니다!');await loadTrips();if(id)await openTrip(id);
- }catch(e){toast('초대 참여 실패: '+e.message);}}
+async function joinTrip(raw){const token=String(raw||'').trim().toLowerCase();
+ if(!/^[0-9a-f]{32}$/.test(token)){toast('초대 코드가 올바르지 않아요. 새 개인 초대 링크를 요청해 주세요.');return;}
+ if(DEMO){toast('체험 모드에서는 초대에 참여할 수 없어요.');return;}
+ try{const {data:id,error}=await client.rpc('tripkku_accept_invitation',{p_token:token});
+  if(error)throw error;toast('초대받은 여행에 참여했어요. 함께 수정할 수 있습니다.');await loadTrips();if(id)await openTrip(id);
+ }catch(e){toast('초대 참여 실패: '+e.message+' · 초대를 받은 계정의 로그인 이메일을 확인해 주세요.');}}
+
 async function openTrip(id){if(!user)return;status('여행 데이터 불러오는 중');if(subscription){await client.removeChannel(subscription);subscription=null;}
  try{if(DEMO){trip=demoTrips().find(t=>t.id===id);if(!trip)throw new Error('여행을 찾을 수 없습니다.');members=[{user_id:MY_UID,display_name:'나'}];privateFiles=[];personalExpenses=[];}
  else{const {data,error}=await client.from('tripkku_trips').select('*').eq('id',id).single();if(error)throw error;trip=data;
@@ -132,7 +145,11 @@ async function openTrip(id){if(!user)return;status('여행 데이터 불러오�
  localStorage.setItem('tripkku-next-last-trip',id);window.scrollTo({top:0,behavior:'auto'});status(DEMO?'체험 모드':'친구와 저장 연결됨 ✓');
  }catch(e){toast('여행 열기 실패: '+e.message);showScreen('home');}}
 async function refreshTripFromCloud(){if(!trip||DEMO)return;
- const {data,error}=await client.from('tripkku_trips').select('*').eq('id',trip.id).single();if(error||!data||data.revision<=revision)return;
+ const {data,error}=await client.from('tripkku_trips').select('*').eq('id',trip.id).single();
+ if(!data&&(error?.code==='PGRST116'||error?.code==='42501'||error?.status===403)){
+  toast('이 여행의 접근 권한이 해제되었습니다.');goHome();return;
+ }
+ if(error||!data||data.revision<=revision)return;
  trip=data;revision=data.revision;normalizeDoc(trip.data);renderAll();status('공동 데이터 갱신됨 ✓');}
 async function saveTrip(update,success='저장 완료'){if(!trip)throw new Error('활성 여행 없음');
  const task=async()=>{status(DEMO?'체험 내용 저장 중':'공동 저장 중…');
@@ -151,14 +168,50 @@ async function saveTrip(update,success='저장 완료'){if(!trip)throw new Error
 function renderIntro(){const c=currentCountry(),d=activeDoc(),lang=d.meta?.language||c.language;
  $('activeTripTitle').textContent=trip.title;$('activeTripSummary').textContent=trip.destination+' · '+fmtDate(trip.start_date)+' ~ '+fmtDate(trip.end_date)+' · '+tripDates().length+'일';
  $('activeCountry').textContent=countriesText();$('activeLanguage').textContent='번역: '+languageLabel(lang);$('activeCurrency').textContent='통화: '+[...new Set(itineraryCountries().map(code=>BY_COUNTRY[code].currency))].join(' · ');
- $('inviteTop').hidden=DEMO;}
+ $('inviteTop').hidden=!isTripOwner();}
 function chooseTab(tab){activeTab=tab;document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
- document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();}
+ document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();if(tab==='budget')void ensureBudgetFxRates();}
 function renderAll(){if(!trip)return;renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();}
 function goHome(){if(trip){trip=null;pendingPlan=null;}if(subscription){void client.removeChannel(subscription);subscription=null;}
  $('inviteTop').hidden=true;showScreen(user?'home':'auth');if(user)void loadTrips();window.scrollTo({top:0,behavior:'smooth'});}
-async function copyInvite(){if(!trip||DEMO)return;const link=location.origin+location.pathname+'?invite='+trip.invite_code;
- try{await navigator.clipboard.writeText(link);toast('친구 초대 링크를 복사했습니다.');}catch{prompt('친구에게 이 링크를 보내세요',link);}}
+function isTripOwner(){return Boolean(!DEMO&&user&&trip&&trip.owner_id===user.id);}
+async function copyTextSafe(value){
+ try{await navigator.clipboard.writeText(value);return true;}
+ catch(_){prompt('이 링크를 복사하세요',value);return false;}
+}
+async function copyInvite(){
+ if(!isTripOwner())return toast('여행방을 만든 사람만 친구를 초대할 수 있어요.');
+ $('inviteCreatedBox').hidden=true;$('inviteRecipientEmail').value='';$('inviteStatus').textContent='';
+ renderInviteMembers();$('inviteDialog').showModal();
+}
+function renderInviteMembers(){
+ const box=$('inviteMemberList');
+ box.innerHTML=members.length?members.map(m=>`<div class="invite-member-row"><div><strong>${esc(m.display_name||'여행자')} ${m.user_id===trip?.owner_id?'👑 (여행 만든 사람)':''}</strong><p class="tiny">${m.user_id===user?.id?'나 · ':''}수정 권한 있음</p></div>${isTripOwner()&&m.user_id!==trip.owner_id?`<button type="button" class="btn danger small" data-remove-member="${esc(m.user_id)}">참여 제외</button>`:''}</div>`).join(''):emptyMessage('초대한 친구가 아직 없어요.');
+}
+async function createEmailInvite(e){e.preventDefault();if(!isTripOwner())return;
+ const target=$('inviteRecipientEmail').value.trim().toLowerCase();
+ const byUid=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/.test(target);
+ if(!byUid&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)){toast('로그인 이메일 또는 공유받은 계정 ID를 입력하세요.');return;}
+ const btn=$('inviteCreateBtn');setBusy(btn,true);
+ try{const {data:code,error}=byUid?
+   await client.rpc('tripkku_create_invitation_by_uid',{p_trip_id:trip.id,p_invited_user:target}):
+   await client.rpc('tripkku_create_invitation',{p_trip_id:trip.id,p_email:target});
+   if(error)throw error;
+  if(!/^[0-9a-f]{32}$/.test(code||''))throw new Error('서버에서 유효한 초대 코드를 받지 못했어요.');
+  const link=location.origin+location.pathname+'?invite='+code;
+  $('inviteCreatedLink').value=link;$('inviteCreatedBox').hidden=false;
+  const copied=await copyTextSafe(link);$('inviteStatus').textContent=copied?`✅ ${target} 계정만 수락할 수 있는 초대 링크를 복사했어요 (7일 유효).`:`${target} 계정 전용 초대 링크를 만들었어요.`;
+ }catch(err){$('inviteStatus').textContent='초대 링크 생성 실패: '+err.message;}
+ finally{setBusy(btn,false,'🔗 전용 초대 링크 만들고 복사');}}
+async function removeTripMember(target){
+ if(!isTripOwner()||target===user.id)return;
+ const person=members.find(x=>x.user_id===target);
+ if(!person||!confirm((person.display_name||'친구')+'의 이 여행 접근·수정 권한을 없앨까요?'))return;
+ const {error}=await client.rpc('tripkku_remove_member',{p_trip_id:trip.id,p_member_id:target});
+ if(error)return toast('참여자 제외 실패: '+error.message);
+ members=members.filter(m=>m.user_id!==target);renderInviteMembers();toast('해당 참여자의 접근·수정 권한을 해제했습니다.');
+}
+
 async function aiCall(kind,payload={}){if(DEMO)throw new Error('체험 모드에서는 실시간 AI가 제공되지 않습니다. 로그인 후 이용해 주세요.');
  const {data,error}=await client.functions.invoke('tripkku-ai',{body:{kind,tripId:trip.id,...payload}});
  if(error){const detail=typeof data?.error==='string'?data.error:'Edge Function이 준비되지 않았습니다. tripkku-ai 배포를 확인하세요.';throw new Error(detail);}
@@ -191,6 +244,7 @@ function routeForDay(events){return routeForStops(events.filter(e=>e.place&&e.ki
 function renderSchedule(){const dates=tripDates();if(!dates.includes(activeDate))activeDate=dates[0];
  $('dayTabs').innerHTML=dates.map((date,i)=>{const row=activeDoc().days.find(d=>d.date===date),flag=row?.countryCode?countryInfo(row.countryCode).flag:'';return `<button data-day="${date}" class="${date===activeDate?'active':''}">${flag} ${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`;}).join('');
  $('dayTabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeDate=b.dataset.day;renderSchedule();renderTranslatorConfig();renderIntro();}));
+ renderOitaVariants();
  const day=activeDoc().days.find(d=>d.date===activeDate),events=[...(day?.events||[])].sort((a,b)=>a.start.localeCompare(b.start));
  const route=routeForDay(events);$('dayRoute').innerHTML=route?`<a href="${esc(route)}" target="_blank" rel="noopener noreferrer" class="btn small">🗺 오늘의 추천 동선 Google 지도에서 확인 ↗</a>`:'';
  $('timeline').innerHTML=events.length?events.map(e=>`<article class="event-card"><div class="event-time">${esc(e.start)}–${esc(e.end)}</div><div><div class="event-title">${esc(eventEmoji(e))} ${esc(e.title)}</div><p class="event-note">${esc(e.place||'')} ${e.place?' · ':''}${esc(e.note||'')}</p><div class="event-tools">${e.place||e.mapUrl?`<a href="${esc(displayMapUrl(e))}" target="_blank" rel="noopener noreferrer">📍 Google 지도 열기</a>`:''}<button data-edit-event="${esc(e.id)}">수정</button><button data-delete-event="${esc(e.id)}">삭제</button></div></div></article>`).join(''):emptyMessage('아직 일정이 없어요. AI 추천을 적용하거나 + 일정 추가를 눌러 주세요.');
@@ -240,7 +294,7 @@ function renderTodos(){const d=activeDoc(),total=d.todos.length,done=d.todos.fil
  $('todoList').querySelectorAll('[data-check-todo]').forEach(x=>x.addEventListener('change',()=>void saveTrip(d=>{const todo=d.todos.find(t=>t.id===x.dataset.checkTodo);if(todo)todo.done=x.checked;},'완료 상태를 저장했습니다.')));
  $('todoList').querySelectorAll('[data-edit-todo]').forEach(x=>x.addEventListener('click',()=>{const t=d.todos.find(t=>t.id===x.dataset.editTodo);if(!t)return;const name=prompt('할 일 수정',t.title);if(!name?.trim())return;void saveTrip(x=>{const found=x.todos.find(a=>a.id===t.id);if(found)found.title=name.trim().slice(0,160);},'할 일을 수정했습니다.');}));
  $('todoList').querySelectorAll('[data-remove-todo]').forEach(x=>x.addEventListener('click',()=>{if(!confirm('할 일을 삭제할까요?'))return;void saveTrip(d=>{d.todos=d.todos.filter(t=>t.id!==x.dataset.removeTodo);},'할 일을 삭제했습니다.');}));
- renderFiles();}
+ renderFiles();renderLegacyPersonalBox();}
 async function addTodo(e){e.preventDefault();const f=e.currentTarget,title=f.elements.title.value.trim();if(!title)return;
  await saveTrip(d=>d.todos.push({id:uuid(),title,done:false}),'할 일을 추가했습니다.');f.reset();}
 async function saveNotes(){const value=$('sharedNotes').value;
@@ -279,20 +333,45 @@ async function deletePrivateFile(id){const f=privateFiles.find(f=>f.id===id);if(
  if(error)return toast('파일은 삭제되었지만 목록 정리에 실패했습니다. 관리자에게 알려 주세요.');
  privateFiles=privateFiles.filter(x=>x.id!==id);renderFiles();toast('파일이 삭제됐습니다.');}
 function currencyOptions(){const home=itineraryCountries().map(code=>countryInfo(code).currency);return [...new Set([...home,'KRW',...MONEY])];}
-function renderBudget(){const d=activeDoc(),c=currentCountry(),home=c.currency,shared=d.expenses||[],personal=personalExpenses||[],count=Math.max(1,members.length),uid=user?.id;
+
+// Budget overview: cash I actually paid (shared I paid + my private items) vs equal-share final burden.
+// Never add different currencies directly. Exchange rates are daily reference rates, not actual card settlement rates.
+function budgetCurrencies(){const d=activeDoc();return [...new Set([...(d.expenses||[]),...(personalExpenses||[])].map(x=>x.currency).filter(Boolean))];}
+function budgetNumbers(currency){const d=activeDoc(),shared=(d.expenses||[]).filter(x=>x.currency===currency),personal=(personalExpenses||[]).filter(x=>x.currency===currency);
+ const count=Math.max(d.meta?.legacyOitaRoomId?2:1,members.length),paid=shared.filter(x=>legacyExpensePayer(x)===user?.id).reduce((n,x)=>n+Number(x.amount||0),0);
+ const total=shared.reduce((n,x)=>n+Number(x.amount||0),0),mine=personal.reduce((n,x)=>n+Number(x.amount||0),0);
+ return {cashPaid:paid+mine,finalBurden:mine+total/count,settlement:paid-total/count,paid,personal:mine,sharedTotal:total};}
+function updateBudgetKrwOverview(){const box=$('budgetKrwOverview');if(!box||!trip)return;
+ const currencies=budgetCurrencies(),missing=currencies.filter(c=>c!=='KRW'&&!(Number(budgetFxRates[c])>0));
+ const convert=(v,c)=>c==='KRW'?v:v/Number(budgetFxRates[c]);
+ const disclaimer='현재 기준 환율로 계산한 예상 원화입니다. 실제 카드 승인·결제 환율은 다를 수 있어요.';
+ if(missing.length){box.innerHTML=`<div class="card budget-overview"><h3>💳 내 여행 지출 한눈에</h3><p class="muted">${esc(budgetFxFetching?'외화 환율을 확인하는 중…':budgetFxError?'환율 조회 실패: '+budgetFxError:'환율 확인이 필요해요: '+missing.join(', '))}</p><p class="tiny">원화와 외화를 임의로 더하지 않으며 아래 통화별 합계는 계속 확인할 수 있어요.</p></div>`;return;}
+ const totals=currencies.reduce((out,c)=>{const x=budgetNumbers(c);out.cashPaid+=convert(x.cashPaid,c);out.finalBurden+=convert(x.finalBurden,c);out.settlement+=convert(x.settlement,c);return out;},{cashPaid:0,finalBurden:0,settlement:0});
+ const settlementText=totals.settlement>0?'돌려받을 예상 금액':totals.settlement<0?'보내야 할 예상 금액':'공동 정산 차액';
+ box.innerHTML=`<div class="budget-overview-head"><h3>💳 내 여행 지출 한눈에</h3><span class="tiny">${esc(budgetFxDate||'원화 기준')} · 환산</span></div><div class="summary-grid"><div class="summary-item budget-highlight"><small>내가 실제 결제한 총액</small><strong>${esc(money(Math.round(totals.cashPaid),'KRW'))}</strong></div><div class="summary-item"><small>내 최종 부담 예상액</small><strong>${esc(money(Math.round(totals.finalBurden),'KRW'))}</strong></div><div class="summary-item"><small>${esc(settlementText)}</small><strong>${esc(money(Math.round(Math.abs(totals.settlement)),'KRW'))}</strong></div></div><p class="tiny">${disclaimer}</p>`;
+}
+async function ensureBudgetFxRates(){if(!trip||DEMO||budgetFxFetching||Date.now()-budgetFxLast<3600000)return;
+ if(budgetCurrencies().every(c=>c==='KRW')){updateBudgetKrwOverview();return;}
+ budgetFxFetching=true;budgetFxLast=Date.now();updateBudgetKrwOverview();
+ try{const response=await fetch('https://api.frankfurter.dev/v1/latest?base=KRW',{method:'GET',cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);
+ const d=await response.json();if(!d||typeof d.rates!=='object')throw new Error('환율 응답 확인 필요');budgetFxRates={KRW:1,...d.rates};budgetFxDate=d.date||'';budgetFxError='';}
+ catch(e){budgetFxError=e.message||'네트워크 오류';}finally{budgetFxFetching=false;updateBudgetKrwOverview();}
+}
+function renderBudget(){const d=activeDoc(),c=currentCountry(),home=c.currency,shared=d.expenses||[],personal=personalExpenses||[],count=Math.max(d.meta?.legacyOitaRoomId?2:1,members.length),uid=user?.id;
  const payerOptions=members.length?members:[{user_id:uid,display_name:'나'}];
  $('expensePayer').innerHTML=payerOptions.map(m=>`<option value="${esc(m.user_id)}">${m.user_id===uid?'나':esc(m.display_name)}</option>`).join('');
  $('expenseCurrency').innerHTML=currencyOptions().map(code=>`<option value="${code}">${code}${code===home?' · 현지 통화':''}</option>`).join('');
  $('expenseCurrency').value=home;$('expenseDate').value=activeDate||trip.start_date;
  const currencies=[...new Set([...shared,...personal].map(x=>x.currency))];for(const code of itineraryCountries()){const currency=BY_COUNTRY[code].currency;if(!currencies.includes(currency))currencies.push(currency);}if(!currencies.includes(home))currencies.unshift(home);
  $('budgetSummary').innerHTML=currencies.map(currency=>{
-  const paid=shared.filter(x=>x.currency===currency&&x.payer===uid).reduce((a,x)=>a+Number(x.amount),0);
+  const paid=shared.filter(x=>x.currency===currency&&legacyExpensePayer(x)===uid).reduce((a,x)=>a+Number(x.amount),0);
   const total=shared.filter(x=>x.currency===currency).reduce((a,x)=>a+Number(x.amount),0);
   const mine=personal.filter(x=>x.currency===currency).reduce((a,x)=>a+Number(x.amount),0);
-  return `<div class="summary-item"><small>${currency} · 공동 지출</small><strong>${esc(money(total,currency))}</strong></div>
-  <div class="summary-item"><small>${currency} · 내 개인 지출</small><strong>${esc(money(mine,currency))}</strong></div>
-  <div class="summary-item"><small>${currency} · 내 공동 결제 차액 (${count}명 균등)</small><strong>${esc(money(paid-total/count,currency))}</strong></div>`;
+  return `<div class="summary-item"><small>${currency} · 내가 결제한 금액 (공동+개인)</small><strong>${esc(money(paid+mine,currency))}</strong></div>
+  <div class="summary-item"><small>${currency} · 내 최종 부담액 (${count}명 균등)</small><strong>${esc(money(mine+total/count,currency))}</strong></div>
+  <div class="summary-item"><small>${currency} · 공동 지출 총액</small><strong>${esc(money(total,currency))}</strong></div>`;
  }).join('');
+ updateBudgetKrwOverview();
  const items=[...shared.map(x=>({...x,scope:'shared'})),...personal.map(x=>({...x,scope:'personal'}))];
  $('expenseList').innerHTML=items.length?items.map(x=>`<div class="list-row"><div><strong>${x.scope==='shared'?'🤝':'👤'} ${esc(x.title)}</strong><small>${esc(x.category)} · ${esc(x.expense_date||x.date||'')} · ${x.scope==='shared'?'공동':'개인'}</small></div><div class="list-tools"><strong>${esc(money(Number(x.amount),x.currency))}</strong><button class="btn" data-edit-expense="${esc(x.id)}" data-scope="${x.scope}">수정</button><button class="btn" data-remove-expense="${esc(x.id)}" data-scope="${x.scope}">삭제</button></div></div>`).join(''):emptyMessage('아직 지출 기록이 없습니다.');
  $('expenseList').querySelectorAll('[data-remove-expense]').forEach(b=>b.addEventListener('click',()=>void removeExpense(b.dataset.removeExpense,b.dataset.scope)));
@@ -471,11 +550,41 @@ async function applyChatAction(index){const a=pendingChatActions[index];if(!a)re
 // Feedback: a signed-in user can submit/view own records; DB RLS grants all-record and status control to SQL-provisioned admins only.
 const feedbackStatusNames={new:'접수됨',reviewing:'검토 중',resolved:'처리 완료'};
 const feedbackCategoryNames={bug:'🐛 오류·불편',idea:'💡 개선·기능 제안',other:'💬 기타'};
+function setLegacyAdminVisibility(allowed){
+ $('adminLegacyPanel').hidden=!allowed;$('adminOitaImportPanel').hidden=!allowed;
+ if(!allowed){legacyRooms=[];$('oitaImportList').innerHTML='';}
+}
+
+// Administrator travel oversight: never renders editing controls and never calls tripkku_save_trip.
+// Data is protected by SQL RLS and the admin-only summary RPC, not by hidden DOM elements.
+async function loadAdminTripIndex(){if(!isBetaAdmin||DEMO||!user)return;
+ const list=$('adminTripList');if(!list)return;list.innerHTML='<p class="muted">다른 사용자의 여행을 불러오는 중…</p>';
+ const {data,error}=await client.rpc('tripkku_admin_trip_index');
+ if(error){adminTripIndex=[];list.innerHTML=emptyMessage('관리자 여행 목록을 읽을 수 없어요. 관리자 조회 SQL 적용 여부를 확인해 주세요. ('+esc(error.message)+')');return;}
+ adminTripIndex=(data||[]).filter(x=>x.owner_id!==user.id);renderAdminTripList();}
+function renderAdminTripList(){const list=$('adminTripList');if(!list)return;
+ list.innerHTML=adminTripIndex.length?adminTripIndex.map(t=>`<div class="trip-card"><div><strong>🧳 ${esc(t.owner_name||'사용자')}의 여행 · ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)}</small></div><button class="btn small" type="button" data-admin-view-trip="${esc(t.id)}">👁 읽기 전용 보기</button></div>`).join(''):emptyMessage('현재 다른 사용자의 여행이 없습니다.');}
+async function openAdminTripPreview(id){if(!user||!isBetaAdmin||DEMO)return;
+ const item=adminTripIndex.find(t=>t.id===id),box=$('adminTripPreview');if(!item||!box)return;
+ box.hidden=false;box.innerHTML='<p class="muted">여행 일정 불러오는 중…</p>';
+ const {data,error}=await client.from('tripkku_trips').select('id,owner_id,title,destination,start_date,end_date,data').eq('id',id).maybeSingle();
+ if(error||!data){box.innerHTML=emptyMessage('조회 권한이나 여행 데이터 확인이 필요합니다. '+esc(error?.message||''));return;}
+ if(data.owner_id===user.id){box.innerHTML=emptyMessage('본인 여행은 내 여행 목록에서 편집할 수 있어요.');return;}
+ const doc=data.data||{},days=Array.isArray(doc.days)?doc.days:[];
+ const dayHtml=days.map((d,i)=>{const events=Array.isArray(d.events)?[...d.events].sort((a,b)=>String(a.start||'').localeCompare(String(b.start||''))):[];
+  return `<div class="admin-day"><h4>📅 ${esc(d.date||'')} · ${i+1}일 차</h4>${events.length?events.map(e=>`<div class="admin-event"><span>${esc((e.start||'')+'~'+(e.end||''))}</span><strong>${esc(eventEmoji(e)+' '+(e.title||'일정'))}</strong><small>${esc(e.place||'')}${e.note?' · '+esc(String(e.note).slice(0,240)):''}</small></div>`).join(''):'<p class="tiny">등록된 일정 없음</p>'}</div>`;}).join('');
+ const expenses=Array.isArray(doc.expenses)?doc.expenses:[];
+ const totals=[...new Set(expenses.map(e=>e.currency).filter(Boolean))].map(currency=>`${currency} ${money(expenses.filter(e=>e.currency===currency).reduce((sum,e)=>sum+Number(e.amount||0),0),currency)}`).join(' · ');
+ box.innerHTML=`<div class="admin-preview-header"><div><h3>👁 ${esc(item.owner_name||'사용자')}의 여행 · ${esc(data.title)}</h3><p class="muted">${esc(data.destination)} · ${esc(data.start_date)} ~ ${esc(data.end_date)}</p></div><span class="tag">읽기 전용</span></div><p class="tiny">관리자 조회 화면에서는 일정·메모·예산을 변경할 수 없습니다. 개인 예약 PDF·QR과 개인 지출은 표시하지 않습니다.</p><h4>일정</h4>${dayHtml||'<p class="tiny">일정 없음</p>'}<h4>공동 예산</h4><p>${esc(totals||'등록된 지출 없음')}</p><h4>공용 메모</h4><p class="admin-shared-note">${esc(String(doc.notes||'없음').slice(0,3000))}</p>`;
+ box.scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function refreshBetaAdminRole(){
- if(DEMO||!user){isBetaAdmin=false;$('adminFeedbackBtn').hidden=true;return;}
+ if(DEMO||!user){isBetaAdmin=false;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;setLegacyAdminVisibility(false);return;}
  const {data,error}=await client.from('tripkku_beta_admins').select('user_id').eq('user_id',user.id).maybeSingle();
- isBetaAdmin=!error&&!!data;$('adminFeedbackBtn').hidden=!isBetaAdmin;
- if(error)console.warn('TRIPKKU feedback setup not complete:',error.message);
+ isBetaAdmin=!error&&!!data;$('adminFeedbackBtn').hidden=!isBetaAdmin;$('adminTripPanel').hidden=!isBetaAdmin;
+ setLegacyAdminVisibility(isBetaAdmin);
+ if(error)console.warn('TRIPKKU admin role could not be verified:',error.message);
+ if(isBetaAdmin)await loadLegacyRooms();
 }
 function feedbackFormTrips(){const select=$('feedbackTripSelect');const selected=select.value;
  select.innerHTML='<option value="">전체 서비스</option>'+trips.map(t=>`<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
@@ -484,7 +593,8 @@ function feedbackFormTrips(){const select=$('feedbackTripSelect');const selected
 async function openFeedback(admin=false){
  if(!user)return toast('피드백은 로그인 후 사용할 수 있습니다.');
  feedbackReturnScreen=trip?'trip':'home';showScreen('feedback');feedbackFormTrips();
- $('feedbackAdminPanel').hidden=!isBetaAdmin;
+ $('feedbackAdminPanel').hidden=!isBetaAdmin;$('adminTripPanel').hidden=!isBetaAdmin;
+ if(isBetaAdmin)await loadAdminTripIndex();
  $('feedbackNotice').textContent=DEMO?'체험 모드에서는 실제 피드백을 제출할 수 없습니다. Google 계정으로 로그인해 주세요.':'작성한 의견은 관리자에게만 전달됩니다.';
  if(DEMO){$('myFeedbackList').innerHTML=emptyMessage('데모 모드에서는 피드백 저장이 제공되지 않습니다.');return;}
  await refreshFeedback();
@@ -529,13 +639,197 @@ async function updateAdminFeedback(id){if(!isBetaAdmin||DEMO)return;
   if(error)throw error;if(!data?.length)throw new Error('관리자 권한을 확인해 주세요.');toast('처리 상태와 답변이 저장됐습니다.');await refreshFeedback();
  }catch(err){toast('관리자 저장 실패: '+err.message);}finally{setBusy(btn,false,'상태·답변 저장');}
 }
+// Admin-only legacy navigation and COPY into a new NEXT travel plan.
+// Admin flag comes solely from Supabase RLS-verified tripkku_beta_admins (not localStorage or account email).
+async function loadLegacyRooms(){
+ if(DEMO||!user||!isBetaAdmin)return;
+ const list=$('oitaImportList');list.innerHTML='<p class="tiny">오이타 여행방을 불러오는 중…</p>';
+ const {data,error}=await client.from('oita_rooms').select('id,owner_id,data,revision,updated_at').order('updated_at',{ascending:false}).limit(20);
+ if(error){legacyRooms=[];list.innerHTML=emptyMessage('오이타 여행방을 조회하지 못했어요. 기존 오이타 여행에 사용하던 같은 로그인 계정인지 확인해 주세요. ('+error.message+')');return;}
+ legacyRooms=data||[];
+ if(!legacyRooms.length){list.innerHTML=emptyMessage('접근할 수 있는 기존 오이타 여행방이 없습니다. 이전 오이타 앱과 같은 Supabase 계정으로 로그인해 주세요.');return;}
+ list.innerHTML=legacyRooms.map(r=>{
+  const existing=trips.find(t=>t.data?.meta?.legacyOitaRoomId===r.id);
+  const title=r.data?.title||'우리 오이타 여행';
+  const last=r.updated_at?new Date(r.updated_at).toLocaleDateString('ko-KR'):'';
+  return `<div class="legacy-import-row"><div><b>🌸 ${esc(title)}</b><small>오이타 · ${last} 저장 · 원본 유지</small></div>${existing?
+   `<button class="btn small" type="button" data-open-oita-trip="${esc(existing.id)}">이미 가져온 여행 열기</button>`:
+   `<button class="btn primary small" type="button" data-import-oita="${esc(r.id)}">이 여행을 NEXT로 복사</button>`}</div>`;
+ }).join('');
+}
+async function oldRoomMembers(id){
+ const {data,error}=await client.from('oita_room_members').select('user_id').eq('room_id',id).limit(5);
+ if(error){console.warn('Legacy room member lookup limited by RLS:',error.message);return [];}
+ return data||[];
+}
+async function importOitaRoom(sourceId){
+ if(!isBetaAdmin||DEMO||!user)return toast('관리자 계정만 오이타 여행을 가져올 수 있습니다.');
+ const already=trips.find(x=>x.data?.meta?.legacyOitaRoomId===sourceId);
+ if(already){toast('이미 가져온 여행을 엽니다.');return openTrip(already.id);}
+ if(!confirm('기존 오이타 여행방을 NEXT에 새 여행 하나로 복사할까요? 원본 일정·정산·메모는 변경되지 않습니다.'))return;
+ const btn=$(`[data-import-oita="${sourceId}"]`);setBusy(btn,true);
+ const privateOpt=$('oitaCopyPrivate').checked;let createdId=null;
+ $('oitaImportStatus').textContent='📥 실제 오이타 데이터 읽는 중…';
+ try{
+  const {data:source,error}=await client.from('oita_rooms').select('id,owner_id,data,revision,updated_at').eq('id',sourceId).single();
+  if(error||!source)throw new Error('기존 오이타 여행방 읽기 실패: '+(error?.message||'방을 찾지 못했습니다.'));
+  const imported=convertOitaRoom(source,OITA_DEFAULTS,await oldRoomMembers(sourceId));
+  const serialized=JSON.stringify(imported.doc);
+  if(serialized.length>320000)throw new Error('오이타 여행 데이터 크기가 NEXT의 저장 제한을 초과합니다. 개인 자료를 분리한 후 다시 시도해 주세요.');
+  $('oitaImportStatus').textContent='🧳 새 여행 생성 및 일정·2일차 4안 복사 중…';
+  const large=serialized.length>75000;
+  const {data:id,error:createError}=await client.rpc('tripkku_create_trip',{
+   p_title:imported.title,p_country:'JP',p_destination:imported.destination,p_start:imported.startDate,p_end:imported.endDate,
+   p_data:large?newDoc(imported.doc.meta):imported.doc
+  });
+  if(createError||!id)throw new Error('NEXT 여행 생성 실패: '+(createError?.message||'서버 응답 없음'));
+  createdId=id;
+  if(large){
+   const {error:saveError}=await client.rpc('tripkku_save_trip',{p_id:id,p_data:imported.doc,p_revision:0});
+   if(saveError)throw new Error('여행은 생성됐으나 일정 복사가 완료되지 않았습니다. '+saveError.message);
+  }
+  await loadTrips();await openTrip(id);
+  activeDate='2026-10-31';renderSchedule();
+  const {counts}=imported;
+  let message=`✅ 오이타 새 여행 생성: 3일 일정 · 2일차 4안 · 할 일 ${counts.todos}개 · 공용 지출 ${counts.expenses}건 · 장소 ${counts.places}곳 · 릴스 ${counts.reels}개`;
+  if(privateOpt){const result=await copyMyLegacyPersonalData(true);message+=` · 내 개인자료: ${result||'확인 필요'}`;}
+  $('oitaImportStatus').textContent=message;toast('오이타 여행을 NEXT로 가져왔습니다. 기존 오이타 앱은 그대로예요.');
+ }catch(e){
+  console.error('Oita import failed',e);
+  const note=createdId?`생성된 여행 ID: ${createdId}. 목록에 보이는 여행을 확인하세요. 다시 가져오기를 누르면 중복될 수 있습니다. `:'';
+  $('oitaImportStatus').textContent='가져오기 오류: '+note+e.message;
+  toast('오이타 가져오기 오류: '+e.message);
+ }finally{setBusy(btn,false,'이 여행을 NEXT로 복사');}
+}
+function renderOitaVariants(){
+ const box=$('oitaVariantBar'),meta=activeDoc().meta||{};
+ if(!meta.legacyOitaRoomId||activeDate!=='2026-11-01'||!meta.legacyOitaVariants){box.hidden=true;return;}
+ box.hidden=false;
+ const active=meta.legacyOitaMode||'main';
+ const labels={main:'1안 · 기본',backup:'2안 · 우천',third:'3안 · 온천마을',fourth:'4안 · 관광 확대'};
+ box.innerHTML=`<strong>🌸 오이타 · 11월 1일 일정 선택 (원본은 그대로)</strong><div class="legacy-variant-buttons">${Object.entries(labels).map(([key,label])=>
+  `<button type="button" data-oita-variant="${key}" class="${active===key?'selected':''}" aria-pressed="${active===key}">${esc(label)}</button>`).join('')}</div>`;
+}
+async function switchOitaVariant(next){
+ const meta=activeDoc().meta||{};if(!meta.legacyOitaRoomId||!['main','backup','third','fourth'].includes(next)||next===meta.legacyOitaMode)return;
+ if(!meta.legacyOitaVariants?.[next])return toast('해당 2일차 일정안이 없습니다.');
+ if(!confirm('2일차 일정을 선택한 안으로 바꿀까요? 현재 안에서 NEXT로 수정한 내용도 별도로 보관됩니다.'))return;
+ await saveTrip(d=>{
+  const current=d.days.find(x=>x.date==='2026-11-01');
+  const variants=d.meta.legacyOitaVariants;
+  if(!current||!variants?.[next])throw new Error('오이타 2일차 일정이 없습니다.');
+  const old=d.meta.legacyOitaMode||'main';
+  if(variants[old])variants[old]={title:current.title,events:clone(current.events)};
+  current.title=variants[next].title;current.events=clone(variants[next].events);
+  d.meta.legacyOitaMode=next;
+ },'오이타 2일차 '+({main:'1안',backup:'2안',third:'3안',fourth:'4안'})[next]+'으로 전환했습니다.');
+}
+function renderLegacyPersonalBox(){
+ $('legacyPrivateBox').hidden=DEMO||!activeDoc().meta?.legacyOitaRoomId;
+ $('legacyPrivateStatus').textContent='';
+}
+const OLD_PRIVATE_BUCKET='tripkku-private-files';
+const NEW_PRIVATE_BUCKET='tripkku-next-files';
+const OLD_FILE_TYPES={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',heic:'image/heic',heif:'image/heif'};
+function oldFileDisplayName(key){
+ if(!/^[0-9a-f-]{36}--[A-Za-z0-9_-]+$/.test(key))return '';
+ try{const raw=key.slice(38).replace(/-/g,'+').replace(/_/g,'/');const padded=raw+'='.repeat((4-raw.length%4)%4);const bytes=Uint8Array.from(atob(padded),c=>c.charCodeAt(0));return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{return '';}
+}
+async function stableLegacyUuid(text){
+ const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)));
+ hash[6]=(hash[6]&15)|64;hash[8]=(hash[8]&63)|128;
+ return [...hash.subarray(0,16)].map(x=>x.toString(16).padStart(2,'0')).join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+}
+async function legacyPersonalExpensesToNext(source,newTripId){
+ const meta=convertOitaRoom(source,OITA_DEFAULTS,await oldRoomMembers(source.id));
+ const own=source.owner_id===user.id?'a':'b';let added=0,skipped=0;
+ for(const e of meta.privateExpenses.filter(x=>x.originalPayer===own)){
+  const id=await stableLegacyUuid(`${user.id}/${newTripId}/${source.id}/${e.id}`);
+  const {data:exists,error:findError}=await client.from('tripkku_private_expenses').select('id').eq('id',id).maybeSingle();
+  if(findError)throw findError;if(exists){skipped++;continue;}
+  const {error}=await client.from('tripkku_private_expenses').insert({id,trip_id:newTripId,user_id:user.id,title:e.title,amount:e.amount,currency:e.currency,category:e.category,expense_date:e.date});
+  if(error)throw error;added++;
+ }
+ return {added,skipped};
+}
+async function listOldFiles(scope){
+ const out=[];
+ for(let offset=0;offset<=500;offset+=100){
+  const {data,error}=await client.storage.from(OLD_PRIVATE_BUCKET).list(scope,{limit:100,offset});
+  if(error)throw error;
+  out.push(...(data||[]).filter(x=>x.id));
+  if((data||[]).length<100)return out;
+ }
+ throw new Error('오이타 개인 파일이 500개를 초과합니다. 관리자에게 알려 주세요.');
+}
+async function migratePrivateFiles(source,newTripId){
+ const scope=`${user.id}/${source.id}`;
+ const found=await listOldFiles(scope);let copied=0,skipped=0,failed=0;
+ for(const item of found){
+  const displayName=oldFileDisplayName(item.name);
+  const ext=displayName.split('.').pop().toLowerCase();
+  if(!displayName||!OLD_FILE_TYPES[ext]){skipped++;continue;}
+  const deterministic=await stableLegacyUuid(`${user.id}/${newTripId}/${source.id}/${item.name}`);
+  const target=`${user.id}/${newTripId}/oita-${deterministic}.${ext}`;
+  const {data:existing,error:findError}=await client.from('tripkku_private_files').select('id').eq('path',target).maybeSingle();
+  if(findError)throw findError;if(existing){skipped++;continue;}
+  let uploaded=false;
+  try{
+   const {data:blob,error:downloadError}=await client.storage.from(OLD_PRIVATE_BUCKET).download(`${scope}/${item.name}`);
+   if(downloadError||!blob)throw downloadError||Error('다운로드 실패');
+   if(blob.size<1||blob.size>15728640){skipped++;continue;}
+   const {error:uploadError}=await client.storage.from(NEW_PRIVATE_BUCKET).upload(target,blob,{contentType:OLD_FILE_TYPES[ext],upsert:false});
+   if(uploadError)throw uploadError;uploaded=true;
+   const {error:dbError}=await client.from('tripkku_private_files').insert({trip_id:newTripId,user_id:user.id,path:target,display_name:displayName.slice(0,160),mime_type:OLD_FILE_TYPES[ext],size_bytes:blob.size});
+   if(dbError)throw dbError;
+   copied++;
+  }catch(e){console.warn('Private Oita file migration failed',displayName,e.message);failed++;if(uploaded)await client.storage.from(NEW_PRIVATE_BUCKET).remove([target]);}
+ }
+ return {copied,skipped,failed};
+}
+async function copyMyLegacyPersonalData(silent=false){
+ if(DEMO||!trip||!user||!activeDoc().meta?.legacyOitaRoomId)return '';
+ if(!silent&&!confirm('기존 오이타 여행에서 이 로그인 계정 소유의 개인 지출·예약 PDF·QR을 NEXT로 복사할까요? 원본 파일은 삭제하지 않습니다.'))return '';
+ const btn=$('copyOldPrivate');setBusy(btn,true);
+ const notice=$('legacyPrivateStatus');notice.textContent='개인자료 복사를 시작합니다…';
+ try{
+  const sourceId=activeDoc().meta.legacyOitaRoomId;
+  const {data:source,error}=await client.from('oita_rooms').select('id,owner_id,data').eq('id',sourceId).single();
+  if(error||!source)throw new Error('원본 여행방을 조회할 수 없습니다. 원본과 같은 계정으로 로그인했는지 확인하세요.');
+  const exp=await legacyPersonalExpensesToNext(source,trip.id);
+  let files={copied:0,skipped:0,failed:0},fileError='';
+  try{files=await migratePrivateFiles(source,trip.id);}catch(e){fileError=e.message;console.warn('Old file copy failed:',e.message);}
+  const {data:added}=await client.from('tripkku_private_expenses').select('*').eq('trip_id',trip.id).order('created_at',{ascending:false});
+  const {data:attached}=await client.from('tripkku_private_files').select('*').eq('trip_id',trip.id).order('created_at',{ascending:false});
+  personalExpenses=added||[];privateFiles=attached||[];renderFiles();renderBudget();
+  const status=`개인지출 ${exp.added}건 · 개인파일 ${files.copied}개 복사 · 이미 복사/지원하지 않는 파일 ${files.skipped}개${files.failed?' · 실패 '+files.failed+'개':''}${fileError?' · 파일 복사 확인 필요: '+fileError:''}`;
+  notice.textContent=status;if(!silent)toast(status);return status;
+ }catch(e){notice.textContent='개인자료 복사 실패: '+e.message;console.error(e);if(!silent)toast(notice.textContent);return '';}
+ finally{setBusy(btn,false,'📎 오이타 내 개인자료 가져오기');}
+}
+function legacyExpensePayer(entry){
+ if(entry.payer!=='legacy-oita-friend')return entry.payer;
+ const oldOwner=activeDoc().meta?.legacyOitaOwnerId;
+ return members.find(x=>x.user_id!==oldOwner)?.user_id||entry.payer;
+}
+
 function bindHandlers(){
  $('goHome').addEventListener('click',goHome);$('backHome').addEventListener('click',goHome);
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();});
- $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');});
+ $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;setLegacyAdminVisibility(false);showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());
+ $('copyMyInviteId').addEventListener('click',async()=>{if(!user||DEMO)return toast('로그인 후 사용할 수 있어요.');await copyTextSafe(user.id);toast('내 계정 ID를 복사했어요. 이 ID만으로는 여행을 볼 수 없습니다.');});
+ $('inviteDialogClose').addEventListener('click',()=>$('inviteDialog').close());$('inviteEmailForm').addEventListener('submit',e=>void createEmailInvite(e));
+ $('inviteLinkCopyBtn').addEventListener('click',()=>void copyTextSafe($('inviteCreatedLink').value));
+ $('inviteMemberList').addEventListener('click',e=>{const b=e.target.closest('[data-remove-member]');if(b)void removeTripMember(b.dataset.removeMember);});
+ $('adminTripRefresh').addEventListener('click',()=>void loadAdminTripIndex());
+ $('adminTripList').addEventListener('click',e=>{const b=e.target.closest('[data-admin-view-trip]');if(b)void openAdminTripPreview(b.dataset.adminViewTrip);});
+ $('oitaImportRefresh').addEventListener('click',()=>void loadLegacyRooms());
+ $('oitaImportList').addEventListener('click',e=>{const btn=e.target.closest('[data-import-oita]');if(btn)void importOitaRoom(btn.dataset.importOita);const existing=e.target.closest('[data-open-oita-trip]');if(existing)void openTrip(existing.dataset.openOitaTrip);});
+ $('oitaVariantBar').addEventListener('click',e=>{const btn=e.target.closest('[data-oita-variant]');if(btn)void switchOitaVariant(btn.dataset.oitaVariant);});
+ $('copyOldPrivate').addEventListener('click',()=>void copyMyLegacyPersonalData());
  $('tripList').addEventListener('click',e=>{const b=e.target.closest('[data-open-trip]');if(b)void openTrip(b.dataset.openTrip);});
  document.querySelectorAll('#mainNav button').forEach(b=>b.addEventListener('click',()=>{chooseTab(b.dataset.tab);window.scrollTo({top:0,behavior:'smooth'});}));
  $('regeneratePlan').addEventListener('click',()=>void generatePlan());$('addEvent').addEventListener('click',()=>openEventDialog());
@@ -568,5 +862,7 @@ function bindHandlers(){
  $('feedbackFilter').addEventListener('change',renderFeedback);
  $('feedbackAdminList').addEventListener('click',e=>{const b=e.target.closest('[data-fb-save]');if(b)void updateAdminFeedback(b.dataset.fbSave);});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&trip&&!DEMO)void refreshTripFromCloud();});
+ window.addEventListener('focus',()=>{if(trip&&!DEMO)void refreshTripFromCloud();});
+ setInterval(()=>{if(trip&&!DEMO&&!document.hidden)void refreshTripFromCloud();},120000);
 }
 void init();
