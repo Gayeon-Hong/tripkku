@@ -1,1 +1,22 @@
-{"name":"TRIPKKU · AI 여행 플래너","short_name":"TRIPKKU","description":"여행 일정, AI 추천 경로, 번역, 예산, 메모","id":"/tripkku/next/","start_url":"./","display":"standalone","background_color":"#f7f5f0","theme_color":"#285c4b","icons":[{"src":"./assets/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./assets/icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "name": "TRIPKKU NEXT Beta · AI 여행 플래너",
+  "short_name": "Tripkku NEXT",
+  "description": "여행 일정, AI 추천 경로, 번역, 예산, 메모",
+  "id": "/tripkku/next/",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#285c4b",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
