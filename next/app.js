@@ -17,6 +17,10 @@ const userName=()=>user?.user_metadata?.full_name||user?.user_metadata?.name||'�
 const status=s=>{$('syncBadge').textContent=s;};
 function toast(message){const el=$('toast');el.textContent=String(message);el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),3300);}
 function mapUrl(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place||trip?.destination||'');}
+const isGoogleMapLink=url=>{try{const u=new URL(url);return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(u.hostname)||u.hostname.endsWith('.google.com')&&u.pathname.startsWith('/maps'));}catch{return false;}};
+const displayMapUrl=(item)=>isGoogleMapLink(item?.mapUrl)?item.mapUrl:mapUrl(item?.name||item?.place||'');
+const eventEmoji=(e)=>e.emoji||({food:'🍜',move:'🚆',flight:'✈️',hotel:'🏨',visit:'📍',other:'✨'})[e.kind]||'📍';
+const compactCountry=(code)=>countryInfo(code)?.name||code;
 function directionsUrl(start,end){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(start)+'&destination='+encodeURIComponent(end);}
 function safeUrl(url){try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
 function showScreen(screen){for(const name of ['auth','home','trip','feedback'])$(name+'Screen').hidden=name!==screen;}
@@ -27,14 +31,14 @@ function daysBetween(start,end){if(!dateRE.test(start)||!dateRE.test(end))return
 function fmtDate(s){if(!s)return '';const d=new Date(s+'T00:00:00Z');return Number.isFinite(+d)?new Intl.DateTimeFormat('ko-KR',{timeZone:'UTC',month:'short',day:'numeric',weekday:'short'}).format(d):s;}
 function money(n,c){try{return new Intl.NumberFormat('ko-KR',{style:'currency',currency:c,maximumFractionDigits:['KRW','JPY','VND','IDR'].includes(c)?0:2}).format(n);}catch{return Number(n).toLocaleString('ko-KR')+' '+c;}}
 const emptyMessage=(message)=>`<div class="empty-state">${esc(message)}</div>`;
-function currentCountry(){return countryInfo(trip?.country_code||trip?.data?.meta?.countryCode||'JP');}
+function currentCountry(){const day=activeDoc().days?.find(d=>d.date===activeDate);return countryInfo(day?.countryCode||trip?.country_code||trip?.data?.meta?.countryCode||'JP');}
 function tripDates(){return daysBetween(trip?.start_date||'',trip?.end_date||'');}
 function activeDoc(){return trip?.data||{};}
-function normalizeDoc(d){d.meta??={};d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
+function normalizeDoc(d){d.meta??={};d.meta.countries??=[d.meta.countryCode||'JP'];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(d.meta.countryCode||'JP');d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
 let feedbackReturnScreen='home',isBetaAdmin=false,feedbackEntries=[];
-let user=null, trips=[],trip=null,revision=0,members=[],personalExpenses=[],privateFiles=[],activeTab='schedule',activeDate='',pendingPlan=null,pendingChatActions=[],chatHistory=[],editingEventId=null,saveQueue=Promise.resolve(),subscription=null,pendingConflict=null,recognition=null,lastTranslatedLang='';
+let user=null, trips=[],trip=null,revision=0,members=[],personalExpenses=[],privateFiles=[],activeTab='schedule',activeDate='',pendingPlan=null,pendingChatActions=[],chatHistory=[],editingEventId=null,saveQueue=Promise.resolve(),subscription=null,pendingConflict=null,recognition=null,lastTranslatedLang='',pendingEventMapUrl='',selectedBookingFile=null,bookingPendingForEvent=null;
 function demoTrips(){try{return JSON.parse(localStorage.getItem(DEFAULT_DEMO_KEY)||'[]');}catch{return [];}}
 function setDemoTrips(rows){localStorage.setItem(DEFAULT_DEMO_KEY,JSON.stringify(rows));}
 function setBusy(el,busy,label){if(!el)return;el.disabled=busy;if(label)el.textContent=busy?'처리 중…':label;}
@@ -43,7 +47,7 @@ function updateLocaleHint(){const input=$('newDestination').value.trim();const s
  if(!selected&&guess){$('newCountry').value=guess;$('newCountry').dataset.autoSuggested='yes';}
  if($('newCountry').dataset.autoSuggested==='yes'&&selected&&selected!==guess&&guess){/* never overwrite a manual selection */}
  const code=$('newCountry').value,info=BY_COUNTRY[code];
- $('localeHint').textContent=info?`${info.flag} ${info.name} · ${languageLabel(info.language)} 번역 · ${info.currency} 현지 통화 · 번역 언어는 여행 생성 후 변경 가능`:'도시를 입력하면 국가를 추천합니다. 확인이 필요하면 직접 국가를 선택해 주세요.';
+ $('localeHint').textContent=info?`${info.flag} ${info.name} · ${languageLabel(info.language)} 번역 · ${info.currency} · 여러 국가를 함께 입력하면 일정·언어·통화에 추가됩니다.`:'도시를 입력하면 국가를 추천합니다. 다른 나라가 있으면 쉼표로 함께 적어 주세요.';
 }
 async function suggestCountryFromAI(){if(DEMO||!user||$('newCountry').value||$('newDestination').value.trim().length<2)return;
  const city=$('newDestination').value.trim();$('localeHint').textContent='🌐 여행 국가를 확인하는 중…';
@@ -60,25 +64,39 @@ function initCountryPicker(){const opts=COUNTRIES.map(c=>`<option value="${c.cod
  $('tripStart').value=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  $('tripEnd').value=[end.getFullYear(),String(end.getMonth()+1).padStart(2,'0'),String(end.getDate()).padStart(2,'0')].join('-');
 }
+const COUNTRY_ALIASES={Italy:'IT',France:'FR',Germany:'DE',Switzerland:'CH',Austria:'AT',Spain:'ES',UK:'GB',England:'GB',Japan:'JP',Korea:'KR',USA:'US',Netherlands:'NL',Belgium:'BE',Portugal:'PT',Czechia:'CZ'};
+function parseExtraCountries(raw,primary){const inputs=String(raw||'').split(/[,\n、;]+/).map(s=>s.trim()).filter(Boolean);const result=[primary],unknown=[];
+ for(const name of inputs){const lc=name.toLowerCase(),found=COUNTRIES.find(c=>c.name===name||c.code.toLowerCase()===lc||countryAliasMatch(name,c.code));if(found&&!result.includes(found.code))result.push(found.code);else if(!found)unknown.push(name);}
+ return {countries:result,unknown};}
+function countryAliasMatch(raw,code){return Object.entries(COUNTRY_ALIASES).some(([key,id])=>id===code&&key.toLowerCase()===raw.toLowerCase());}
+function itineraryCountries(){return (activeDoc().meta?.countries||[trip?.country_code||'JP']).filter(c=>BY_COUNTRY[c]);}
+function countriesText(){return itineraryCountries().map(c=>countryInfo(c).flag+' '+countryInfo(c).name).join(' · ');}
 const MOODS=[['happy','😊'],['love','🥰'],['sleepy','😴'],['angry','😡']];
 function applyTheme(){const night=localStorage.getItem('tripkku-next-night')==='yes';document.body.classList.toggle('night',night);
  const mood=MOODS.find(x=>x[0]===localStorage.getItem('tripkku-next-mood'))||MOODS[0];
  $('themeToggle').textContent=night?'☀':'☾';$('moodToggle').textContent=mood[1];
- document.querySelectorAll('.hero-earth,.trip-earth').forEach(img=>img.src=`./assets/earth-icon-${night?'dark':'light'}-${mood[0]}-192.png`);}
+ document.querySelectorAll('.hero-earth,.trip-earth').forEach(img=>img.src=`../assets/earth-icon-${night?'dark':'light'}-${mood[0]}-192.png`);}
 
+function oauthReturnError(){
+ const params=new URLSearchParams(location.search), hash=new URLSearchParams(location.hash.slice(1));
+ const error=params.get('error_description')||hash.get('error_description')||params.get('error')||hash.get('error');
+ if(error){if(/Unable to exchange external code/i.test(error))return '구글 로그인 인증코드 교환 실패: Supabase Google Provider의 Client ID / Client Secret과 Google Cloud OAuth callback URI를 확인해 주세요. 인증 상세 원인은 Auth Logs를 확인해 주세요.';return '로그인 오류: '+error.slice(0,160);}
+ try{const t=Number(sessionStorage.getItem('tripkku-oauth-pending')||0);if(t&&Date.now()-t<15*60*1000)return 'Google 로그인 후 인증 세션이 없습니다. Supabase Auth Redirect URLs에 /tripkku/next/를 추가하고 브라우저의 사이트 데이터 허용 여부를 확인해 주세요.';}catch(_){}
+ return '';
+}
 async function init(){initCountryPicker();applyTheme();bindHandlers();
  if(DEMO){user={id:MY_UID,user_metadata:{full_name:'체험 사용자'}};$('logoutBtn').hidden=true;$('feedbackTop').hidden=false;$('authError').textContent='';await loadTrips();return;}
- client.auth.onAuthStateChange((event,session)=>{if(session?.user){const changed=user?.id!==session.user.id;user=session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;if(changed)queueMicrotask(()=>loadTrips());}
+ client.auth.onAuthStateChange((event,session)=>{if(session?.user){try{sessionStorage.removeItem('tripkku-oauth-pending');}catch(_){} const changed=user?.id!==session.user.id;user=session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;if(changed)queueMicrotask(()=>loadTrips());}
   else{user=null;trip=null;trips=[];isBetaAdmin=false;$('logoutBtn').hidden=true;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');}});
  const {data,error}=await client.auth.getSession();if(error)console.warn('TRIPKKU auth',error.message);
- if(data.session?.user){user=data.session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;await loadTrips();}else showScreen('auth');
+ if(data.session?.user){try{sessionStorage.removeItem('tripkku-oauth-pending');}catch(_){} user=data.session.user;$('logoutBtn').hidden=false;$('feedbackTop').hidden=false;await loadTrips();}else{showScreen('auth');$('authError').textContent=oauthReturnError()||(error?'인증 확인 실패: '+error.message:'');}
 }
-async function login(){try{const redirectTo=location.origin+location.pathname+(location.search||'');const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo}});if(error)throw error;}catch(e){$('authError').textContent='로그인 실패: '+e.message;}}
+async function login(provider='google'){try{const redirectTo=new URL('./',location.href).href;try{const invite=new URLSearchParams(location.search).get('invite');if(invite)sessionStorage.setItem('tripkku-next-pending-invite',invite);sessionStorage.setItem('tripkku-oauth-pending',String(Date.now()));}catch(_){} const {error}=await client.auth.signInWithOAuth({provider,options:{redirectTo}});if(error)throw error;}catch(e){$('authError').textContent='로그인 실패: '+e.message;}}
 async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 목록 동기화 중');showScreen('home');try{
  if(DEMO)trips=demoTrips();
  else{const {data,error}=await client.from('tripkku_trips').select('id,owner_id,invite_code,title,destination,country_code,start_date,end_date,data,revision,updated_at').order('updated_at',{ascending:false}).limit(50);if(error)throw error;trips=data||[];}
  renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');await refreshBetaAdminRole();
- const inv=new URLSearchParams(location.search).get('invite');if(inv&&!DEMO){history.replaceState({},'',location.pathname);await joinTrip(inv);}
+ let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){} history.replaceState({},'',location.pathname);await joinTrip(inv);}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }
 function renderTripList(){$('tripList').innerHTML=trips.length?trips.map(t=>{const c=countryInfo(t.country_code);return `<div class="trip-card"><div><strong>${c.flag} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small></div><button class="btn small" data-open-trip="${esc(t.id)}">열기</button></div>`;}).join(''):emptyMessage('아직 여행이 없어요. 왼쪽에서 첫 여행을 만들어 보세요.');}
@@ -87,7 +105,8 @@ async function createTripFromForm(e){e.preventDefault();if(!user)return toast('�
  const start=String(d.get('start')||''),end=String(d.get('end')||''),dates=daysBetween(start,end);
  if(destination.length<2||!BY_COUNTRY[country])return toast('여행지와 국가를 확인해 주세요.');
  if(!dates.length)return toast('여행 기간은 1~14일 사이로 설정해 주세요.');
- const meta={countryCode:country,destination,startDate:start,endDate:end,travelers:Number(d.get('travelers'))||2,style:String(d.get('style')),pace:String(d.get('pace')),
+ const other=parseExtraCountries(d.get('additionalCountries'),country);if(other.unknown.length)return toast('국가 이름을 확인해 주세요: '+other.unknown.join(', '));
+ const meta={countryCode:country,countries:other.countries,travelRoute:String(d.get('travelRoute')||'').slice(0,350),destination,startDate:start,endDate:end,travelers:Number(d.get('travelers'))||2,style:String(d.get('style')),pace:String(d.get('pace')),
  budget:String(d.get('budget')||'').slice(0,60),mustVisit:String(d.get('mustVisit')||'').slice(0,900),constraints:String(d.get('constraints')||'').slice(0,1100),language:countryInfo(country).language};
  const title=destination+' '+dates.length+'일 여행',doc=newDoc(meta),btn=$('newTripSubmit');setBusy(btn,true);
  try{let id;
@@ -109,7 +128,7 @@ async function openTrip(id){if(!user)return;status('여행 데이터 불러오�
   subscription=client.channel('tripkku-next-'+id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tripkku_trips'},evt=>{
    if(evt.new?.id===trip?.id&&evt.new.revision>revision)void refreshTripFromCloud();}).subscribe();}
  if(!trip)throw new Error('여행을 찾을 수 없습니다.');normalizeDoc(trip.data);revision=trip.revision||0;
- activeDate=tripDates()[0]||'';activeTab='schedule';pendingPlan=null;pendingChatActions=[];chatHistory=[];showScreen('trip');renderAll();chooseTab('schedule');
+ activeDate=tripDates()[0]||'';window.tripkkuSetTravelCurrency?.(countryInfo(trip.country_code)?.currency||'USD');activeTab='schedule';pendingPlan=null;pendingChatActions=[];chatHistory=[];selectedBookingFile=null;bookingPendingForEvent=null;showScreen('trip');renderAll();chooseTab('schedule');
  localStorage.setItem('tripkku-next-last-trip',id);window.scrollTo({top:0,behavior:'auto'});status(DEMO?'체험 모드':'친구와 저장 연결됨 ✓');
  }catch(e){toast('여행 열기 실패: '+e.message);showScreen('home');}}
 async function refreshTripFromCloud(){if(!trip||DEMO)return;
@@ -131,7 +150,7 @@ async function saveTrip(update,success='저장 완료'){if(!trip)throw new Error
  const p=saveQueue.then(task);saveQueue=p.catch(e=>{status('저장 오류');toast('저장 실패: '+e.message);console.error(e);});return p;}
 function renderIntro(){const c=currentCountry(),d=activeDoc(),lang=d.meta?.language||c.language;
  $('activeTripTitle').textContent=trip.title;$('activeTripSummary').textContent=trip.destination+' · '+fmtDate(trip.start_date)+' ~ '+fmtDate(trip.end_date)+' · '+tripDates().length+'일';
- $('activeCountry').textContent=c.flag+' '+c.name;$('activeLanguage').textContent='번역: '+languageLabel(lang);$('activeCurrency').textContent='예산: '+c.currency;
+ $('activeCountry').textContent=countriesText();$('activeLanguage').textContent='번역: '+languageLabel(lang);$('activeCurrency').textContent='통화: '+[...new Set(itineraryCountries().map(code=>BY_COUNTRY[code].currency))].join(' · ');
  $('inviteTop').hidden=DEMO;}
 function chooseTab(tab){activeTab=tab;document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();}
@@ -152,42 +171,51 @@ async function generatePlan(afterCreate=false){if(!trip)return;const btn=$('rege
  }catch(e){toast('AI 추천 오류: '+e.message);if(afterCreate)toast('여행은 저장됐습니다. AI 추천은 나중에 다시 실행할 수 있어요.');}
  finally{setBusy(btn,false,'✨ AI 동선 다시 추천');}}
 function renderPlanPreview(){const box=$('planPreview');if(!pendingPlan){box.hidden=true;return;}box.hidden=false;
- box.innerHTML=`<h3>✨ AI 추천 경로 미리보기</h3><p class="muted">${esc(pendingPlan.summary||'일정 추천')}</p><div class="draft-grid">${(pendingPlan.days||[]).map(x=>`<div><strong>${esc(fmtDate(x.date))} · ${esc(x.title)}</strong>${x.events.map(e=>`<small>${esc(e.start)} ${esc(e.title)}</small>`).join('<br>')}</div>`).join('')}</div>
-  <p class="tiny">${esc((pendingPlan.tips||[]).join(' · '))}</p><div class="draft-actions"><button class="btn primary" id="applyPlan">이 일정 적용</button><button class="btn" id="dismissPlan">나중에 적용</button></div>`;
+ const planned=(pendingPlan.days||[]).map(x=>{const es=Array.isArray(x.events)?x.events:[];
+ const waypoints=es.filter(e=>e.place&&e.kind!=='move').map(e=>e.place);const route=routeForStops(waypoints);
+ return `<article class="plan-day"><div class="plan-day-head"><strong>🗓 ${esc(fmtDate(x.date))} · ${esc(x.title)}</strong>${route?`<a target="_blank" rel="noopener noreferrer" href="${esc(route)}">🗺 Google 지도 경로 ↗</a>`:''}</div><div class="plan-day-events">${es.map(e=>`<div class="plan-stop"><span class="plan-time">${esc(e.start)}</span><span class="plan-emoji">${esc(eventEmoji(e))}</span><div><b>${esc(e.title)}</b><p>${esc(e.note||'간단한 방문 추천')}</p>${e.place?`<a target="_blank" rel="noopener noreferrer" href="${esc(mapUrl(e.place))}">📍 ${esc(e.place)} · 지도 보기 ↗</a>`:''}</div></div>`).join('')}</div></article>`;}).join('');
+ box.innerHTML=`<h3>✨ AI 추천 동선 · 미리보기</h3><p class="muted">${esc(pendingPlan.summary||'일정 추천')}</p><div class="plan-day-list">${planned}</div><p class="tiny">${esc((pendingPlan.tips||[]).join(' · '))}</p><div class="draft-actions"><button class="btn primary" id="applyPlan">이 일정 적용</button><button class="btn" id="dismissPlan">나중에 적용</button></div>`;
  $('applyPlan').addEventListener('click',()=>void applyPlan());$('dismissPlan').addEventListener('click',()=>{pendingPlan=null;renderPlanPreview();});}
-async function applyPlan(){if(!pendingPlan)return;if(activeDoc().days.some(d=>d.events?.length)&&!confirm('기존 일정이 AI 추천 일정으로 대체됩니다. 계속할까요?'))return;
- const days=clone(pendingPlan.days).map(d=>({...d,events:d.events.map(e=>({id:uuid(),...e}))}));await saveTrip(d=>{d.days=days;},'AI 추천 일정을 적용했습니다.');pendingPlan=null;renderPlanPreview();}
-function routeForDay(events){const stops=[...new Set(events.filter(e=>e.place&&e.kind!=='move').map(e=>e.place+' '+trip.country_code))].slice(0,5);
- if(stops.length<2)return '';
- const origin=encodeURIComponent(stops[0]),destination=encodeURIComponent(stops.at(-1));
- return 'https://www.google.com/maps/dir/?api=1&origin='+origin+'&destination='+destination+(stops.length>2?'&waypoints='+stops.slice(1,-1).map(encodeURIComponent).join('%7C'):'');}
+async function applyPlan(){if(!pendingPlan)return;
+ const old=activeDoc().days||[];const oldRegular=old.some(d=>d.events?.some(e=>!e.bookingId));
+ if(oldRegular&&!confirm('기존 일반 일정을 AI 추천으로 교체할까요? 항공·열차 등 예약 일정은 유지됩니다.'))return;
+ const days=clone(pendingPlan.days).map(d=>{const fixed=old.find(x=>x.date===d.date)?.events?.filter(e=>e.bookingId)||[];
+  const recommendations=d.events.filter(e=>!fixed.some(b=>e.start<b.end&&e.end>b.start));
+  return {...d,events:[...fixed,...recommendations.map(e=>({id:uuid(),...e}))].sort((a,b)=>a.start.localeCompare(b.start))};});
+ const skipped=(pendingPlan.days||[]).reduce((a,d)=>a+d.events.length,0)-days.reduce((a,d)=>a+d.events.length,0)+old.reduce((a,d)=>a+(d.events?.filter(e=>e.bookingId).length||0),0);
+ await saveTrip(d=>{d.days=days;},skipped>0?`예약 시간과 겹치는 추천 ${skipped}개를 제외하고 적용했습니다.`:'AI 추천 일정을 적용했습니다.');pendingPlan=null;renderPlanPreview();}
+function routeForStops(rawStops){const stops=[...new Set(rawStops.filter(Boolean).map(x=>String(x).trim()))].slice(0,5);
+ if(stops.length<2)return stops.length===1?mapUrl(stops[0]):'';
+ return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(stops[0])+'&destination='+encodeURIComponent(stops.at(-1))+(stops.length>2?'&waypoints='+stops.slice(1,-1).map(encodeURIComponent).join('%7C'):'');}
+function routeForDay(events){return routeForStops(events.filter(e=>e.place&&e.kind!=='move').map(e=>e.place));}
 function renderSchedule(){const dates=tripDates();if(!dates.includes(activeDate))activeDate=dates[0];
- $('dayTabs').innerHTML=dates.map((date,i)=>`<button data-day="${date}" class="${date===activeDate?'active':''}">${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`).join('');
- $('dayTabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeDate=b.dataset.day;renderSchedule();}));
+ $('dayTabs').innerHTML=dates.map((date,i)=>{const row=activeDoc().days.find(d=>d.date===date),flag=row?.countryCode?countryInfo(row.countryCode).flag:'';return `<button data-day="${date}" class="${date===activeDate?'active':''}">${flag} ${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`;}).join('');
+ $('dayTabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeDate=b.dataset.day;renderSchedule();renderTranslatorConfig();renderIntro();}));
  const day=activeDoc().days.find(d=>d.date===activeDate),events=[...(day?.events||[])].sort((a,b)=>a.start.localeCompare(b.start));
  const route=routeForDay(events);$('dayRoute').innerHTML=route?`<a href="${esc(route)}" target="_blank" rel="noopener noreferrer" class="btn small">🗺 오늘의 추천 동선 Google 지도에서 확인 ↗</a>`:'';
- $('timeline').innerHTML=events.length?events.map(e=>`<article class="event-card"><div class="event-time">${esc(e.start)}–${esc(e.end)}</div><div><div class="event-title">${esc(e.title)}</div><p class="event-note">${esc(e.place||'')} ${e.place?' · ':''}${esc(e.note||'')}</p><div class="event-tools">${e.place?`<a href="${esc(mapUrl(e.place+' '+trip.destination))}" target="_blank" rel="noopener noreferrer">📍 지도 보기</a>`:''}<button data-edit-event="${esc(e.id)}">수정</button><button data-delete-event="${esc(e.id)}">삭제</button></div></div></article>`).join(''):emptyMessage('아직 일정이 없어요. AI 추천을 적용하거나 + 일정 추가를 눌러 주세요.');
+ $('timeline').innerHTML=events.length?events.map(e=>`<article class="event-card"><div class="event-time">${esc(e.start)}–${esc(e.end)}</div><div><div class="event-title">${esc(eventEmoji(e))} ${esc(e.title)}</div><p class="event-note">${esc(e.place||'')} ${e.place?' · ':''}${esc(e.note||'')}</p><div class="event-tools">${e.place||e.mapUrl?`<a href="${esc(displayMapUrl(e))}" target="_blank" rel="noopener noreferrer">📍 Google 지도 열기</a>`:''}<button data-edit-event="${esc(e.id)}">수정</button><button data-delete-event="${esc(e.id)}">삭제</button></div></div></article>`).join(''):emptyMessage('아직 일정이 없어요. AI 추천을 적용하거나 + 일정 추가를 눌러 주세요.');
  $('timeline').querySelectorAll('[data-edit-event]').forEach(b=>b.addEventListener('click',()=>openEventDialog(b.dataset.editEvent)));
  $('timeline').querySelectorAll('[data-delete-event]').forEach(b=>b.addEventListener('click',()=>void deleteEvent(b.dataset.deleteEvent)));
  renderPlanPreview();}
 function findEvent(id){for(const day of activeDoc().days){const event=day.events.find(e=>e.id===id);if(event)return {...event,date:day.date};}return null;}
-function openEventDialog(eventId=null,placeName=''){if(!trip)return;editingEventId=eventId;const existing=eventId?findEvent(eventId):null;
+function openEventDialog(eventId=null,placeName='',placeUrl=''){if(!trip)return;editingEventId=eventId;pendingEventMapUrl=isGoogleMapLink(placeUrl)?placeUrl:'';const existing=eventId?findEvent(eventId):null;
  $('eventDialogTitle').textContent=existing?'일정 수정':'일정 추가';$('eventDate').innerHTML=tripDates().map(date=>`<option value="${date}">${esc(fmtDate(date))}</option>`).join('');
  const f=$('eventForm');f.elements.date.value=existing?.date||activeDate;f.elements.start.value=existing?.start||'10:00';f.elements.end.value=existing?.end||'11:00';
  f.elements.title.value=existing?.title||placeName;f.elements.place.value=existing?.place||placeName;f.elements.note.value=existing?.note||'';
  $('eventDialog').showModal();}
 function conflictsFor(candidate,oldId){return(activeDoc().days.find(d=>d.date===candidate.date)?.events||[]).filter(e=>e.id!==oldId&&candidate.start<e.end&&candidate.end>e.start);}
 function eventFromForm(f){return {id:editingEventId||uuid(),date:f.elements.date.value,start:f.elements.start.value,end:f.elements.end.value,
- title:f.elements.title.value.trim(),place:f.elements.place.value.trim(),note:f.elements.note.value.trim(),kind:'visit'};}
-async function submitEvent(e){e.preventDefault();const entry=eventFromForm(e.currentTarget);if(!tripDates().includes(entry.date)||!timeRE.test(entry.start)||!timeRE.test(entry.end)||entry.start>=entry.end||!entry.title)return toast('날짜와 시작·종료 시간을 확인해 주세요.');
+ title:f.elements.title.value.trim(),place:f.elements.place.value.trim(),note:f.elements.note.value.trim(),kind:editingEventId?findEvent(editingEventId)?.kind||'visit':'visit',mapUrl:editingEventId?findEvent(editingEventId)?.mapUrl||'':pendingEventMapUrl};}
+async function submitEvent(e){e.preventDefault();const entry=eventFromForm(e.currentTarget);if(bookingPendingForEvent){entry.bookingId=bookingPendingForEvent.id;entry.kind=bookingPendingForEvent.kind==='항공'?'flight':'move';entry.emoji=({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[bookingPendingForEvent.kind]||'🧾';}if(!tripDates().includes(entry.date)||!timeRE.test(entry.start)||!timeRE.test(entry.end)||entry.start>=entry.end||!entry.title)return toast('날짜와 시작·종료 시간을 확인해 주세요.');
  const conflicts=conflictsFor(entry,editingEventId);$('eventDialog').close();
- if(conflicts.length){pendingConflict={candidate:entry,oldId:editingEventId,conflicts};$('conflictDetails').textContent=conflicts.map(x=>`${x.start}~${x.end} · ${x.title}`).join('\n');$('conflictDialog').showModal();return;}
- await saveEvent(entry,editingEventId,[]);}
-async function saveEvent(entry,oldId,removeIds=[]){await saveTrip(doc=>{
+ if(conflicts.length){pendingConflict={candidate:entry,oldId:editingEventId,conflicts,booking:bookingPendingForEvent};$('conflictDetails').textContent=conflicts.map(x=>`${x.start}~${x.end} · ${x.title}`).join('\n');$('conflictDialog').showModal();return;}
+ await saveEvent(entry,editingEventId,[],bookingPendingForEvent);}
+async function saveEvent(entry,oldId,removeIds=[],bookingEntry=null){await saveTrip(doc=>{
+  if(bookingEntry&&!doc.bookings.some(x=>x.id===bookingEntry.id))doc.bookings.push(bookingEntry);
   for(const day of doc.days)day.events=day.events.filter(e=>e.id!==oldId&&!removeIds.includes(e.id));
   let target=doc.days.find(d=>d.date===entry.date);if(!target){target={date:entry.date,title:'자유 일정',events:[]};doc.days.push(target);}
   const {date,...payload}=entry;target.events.push(payload);target.events.sort((a,b)=>a.start.localeCompare(b.start));
- },'일정을 저장했습니다.');activeDate=entry.date;renderSchedule();}
+ },bookingEntry?'예약과 일정을 저장했습니다.':'일정을 저장했습니다.');bookingPendingForEvent=null;activeDate=entry.date;renderSchedule();}
 async function deleteEvent(id){const old=findEvent(id);if(!old||!confirm(`'${old.title}' 일정을 삭제할까요?`))return;
  await saveTrip(d=>{for(const day of d.days)day.events=day.events.filter(e=>e.id!==id);},'일정을 삭제했습니다.');}
 function timeMinutes(s){const [h,m]=s.split(':').map(Number);return h*60+m;}
@@ -198,14 +226,14 @@ function suggestSlot(entry,oldId){const duration=timeMinutes(entry.end)-timeMinu
  for(const e of items){const s=timeMinutes(e.start),en=timeMinutes(e.end);if(start+duration<=s)break;if(start<en)start=en;}
  if(start+duration>23*60)return null;return {...entry,start:minutesTime(start),end:minutesTime(start+duration)};}
 async function conflictAction(kind){const p=pendingConflict;if(!p)return;$('conflictDialog').close();pendingConflict=null;
- if(kind==='cancel')return;
+ if(kind==='cancel'){bookingPendingForEvent=null;return;}
  if(kind==='adjust'){
   const next=suggestSlot(p.candidate,p.oldId);editingEventId=p.oldId;openEventDialog(p.oldId);
-  const f=$('eventForm');f.elements.date.value=p.candidate.date;f.elements.title.value=p.candidate.title;f.elements.place.value=p.candidate.place;f.elements.note.value=p.candidate.note;
+  const f=$('eventForm');f.elements.date.value=p.candidate.date;f.elements.title.value=p.candidate.title;f.elements.place.value=p.candidate.place;f.elements.note.value=p.candidate.note;bookingPendingForEvent=p.booking||null;
   f.elements.start.value=next?.start||p.candidate.start;f.elements.end.value=next?.end||p.candidate.end;
   toast(next?`비어 있는 ${next.start}부터로 조정했어요. 확인 후 저장하세요.`:'오늘은 빈 시간이 부족해요. 시간을 직접 선택해 주세요.');return;
  }
- if(kind==='replace')await saveEvent(p.candidate,p.oldId,p.conflicts.map(e=>e.id));}
+ if(kind==='replace')await saveEvent(p.candidate,p.oldId,p.conflicts.map(e=>e.id),p.booking||null);}
 function renderTodos(){const d=activeDoc(),total=d.todos.length,done=d.todos.filter(t=>t.done).length;
  $('todoProgress').textContent=`${done}/${total} 완료`;$('sharedNotes').value=d.notes||'';
  $('todoList').innerHTML=total?d.todos.map(t=>`<div class="list-row"><label class="todo-line"><input type="checkbox" data-check-todo="${esc(t.id)}" ${t.done?'checked':''}><span class="${t.done?'done':''}">${esc(t.title)}</span></label><div class="list-tools"><button class="btn" data-edit-todo="${esc(t.id)}">수정</button><button class="btn" data-remove-todo="${esc(t.id)}">삭제</button></div></div>`).join(''):emptyMessage('추가한 할 일이 없습니다.');
@@ -250,13 +278,13 @@ async function deletePrivateFile(id){const f=privateFiles.find(f=>f.id===id);if(
  const {error}=await client.from('tripkku_private_files').delete().eq('id',id);
  if(error)return toast('파일은 삭제되었지만 목록 정리에 실패했습니다. 관리자에게 알려 주세요.');
  privateFiles=privateFiles.filter(x=>x.id!==id);renderFiles();toast('파일이 삭제됐습니다.');}
-function currencyOptions(){const home=currentCountry().currency;return [...new Set([home,'KRW',...MONEY])];}
+function currencyOptions(){const home=itineraryCountries().map(code=>countryInfo(code).currency);return [...new Set([...home,'KRW',...MONEY])];}
 function renderBudget(){const d=activeDoc(),c=currentCountry(),home=c.currency,shared=d.expenses||[],personal=personalExpenses||[],count=Math.max(1,members.length),uid=user?.id;
  const payerOptions=members.length?members:[{user_id:uid,display_name:'나'}];
  $('expensePayer').innerHTML=payerOptions.map(m=>`<option value="${esc(m.user_id)}">${m.user_id===uid?'나':esc(m.display_name)}</option>`).join('');
  $('expenseCurrency').innerHTML=currencyOptions().map(code=>`<option value="${code}">${code}${code===home?' · 현지 통화':''}</option>`).join('');
  $('expenseCurrency').value=home;$('expenseDate').value=activeDate||trip.start_date;
- const currencies=[...new Set([...shared,...personal].map(x=>x.currency))];if(!currencies.includes(home))currencies.unshift(home);
+ const currencies=[...new Set([...shared,...personal].map(x=>x.currency))];for(const code of itineraryCountries()){const currency=BY_COUNTRY[code].currency;if(!currencies.includes(currency))currencies.push(currency);}if(!currencies.includes(home))currencies.unshift(home);
  $('budgetSummary').innerHTML=currencies.map(currency=>{
   const paid=shared.filter(x=>x.currency===currency&&x.payer===uid).reduce((a,x)=>a+Number(x.amount),0);
   const total=shared.filter(x=>x.currency===currency).reduce((a,x)=>a+Number(x.amount),0);
@@ -292,28 +320,88 @@ async function removeExpense(id,scope){if(!confirm('이 지출 기록을 삭제�
  if(scope==='shared')await saveTrip(d=>{d.expenses=d.expenses.filter(x=>x.id!==id);},'공동 지출을 삭제했습니다.');
  else if(DEMO){personalExpenses=personalExpenses.filter(x=>x.id!==id);renderBudget();}
  else{const {error}=await client.from('tripkku_private_expenses').delete().eq('id',id);if(error)return toast(error.message);personalExpenses=personalExpenses.filter(x=>x.id!==id);renderBudget();toast('개인 지출을 삭제했습니다.');}}
-function renderPlaces(){const d=activeDoc();$('placeList').innerHTML=d.savedPlaces.length?d.savedPlaces.map(p=>`<div class="list-row"><div><strong>❤️ <a target="_blank" rel="noopener noreferrer" href="${esc(mapUrl(p.name+' '+trip.destination))}">${esc(p.name)}</a></strong><small>이름을 누르면 Google 지도 검색</small></div><div class="list-tools"><button class="btn" data-place-add="${esc(p.id)}">일정 추가</button><button class="btn" data-place-remove="${esc(p.id)}">삭제</button></div></div>`).join(''):emptyMessage('아직 찜한 장소가 없습니다.');
- $('placeList').querySelectorAll('[data-place-add]').forEach(b=>b.addEventListener('click',()=>{const p=d.savedPlaces.find(p=>p.id===b.dataset.placeAdd);if(p)openEventDialog(null,p.name);}));
+function decodeMapName(url){try{const u=new URL(url);if(!isGoogleMapLink(url))return '';
+ const parts=u.pathname.split('/').filter(Boolean);const ix=parts.indexOf('place');if(ix>=0&&parts[ix+1])return decodeURIComponent(parts[ix+1].replace(/\+/g,' ')).slice(0,160);
+ const q=u.searchParams.get('query')||u.searchParams.get('q')||u.searchParams.get('destination');if(q&&q.length>=2)return q.slice(0,160);
+ const path=parts.filter(p=>!['maps','search','dir','place'].includes(p)).find(p=>/[가-힣]|[A-Za-z]{3}/.test(p));return path&&!/^[a-zA-Z0-9_-]{12,}$/.test(path)?decodeURIComponent(path.replace(/\+/g,' ')).slice(0,160):'';
+ }catch{return '';}}
+async function getPlaceCandidate(raw,source='map',hint=''){
+ const value=String(raw||'').trim();if(!/^https?:\/\//i.test(value))return {name:value.slice(0,160),mapUrl:mapUrl(value)};
+ const url=safeUrl(value);if(!url)throw new Error('올바른 링크를 입력해 주세요.');
+ if(source==='map'&&!isGoogleMapLink(url))throw new Error('Google 지도 링크만 장소란에 입력해 주세요.');
+ const decoded=source==='map'?decodeMapName(url):'';
+ if(decoded)return {name:decoded,mapUrl:url,sourceUrl:url};
+ const data=await aiCall('resolve-link',{url,source,hint});
+ return {name:String(data.name||'').trim().slice(0,160),mapUrl:isGoogleMapLink(data.mapUrl)?data.mapUrl:(source==='map'?url:mapUrl(data.name||hint)),sourceUrl:url,confidence:data.confidence||'unknown'};
+}
+function renderPlaces(){const d=activeDoc();$('placeList').innerHTML=d.savedPlaces.length?d.savedPlaces.map(p=>`<div class="list-row"><div><strong>❤️ <a target="_blank" rel="noopener noreferrer" href="${esc(displayMapUrl(p))}">${esc(p.name)}</a></strong><small>${esc(p.countryCode?compactCountry(p.countryCode):'')} · 이름을 누르면 Google 지도</small></div><div class="list-tools"><button class="btn" data-place-add="${esc(p.id)}">＋ 일정 추가</button><button class="btn" data-place-remove="${esc(p.id)}">삭제</button></div></div>`).join(''):emptyMessage('아직 찜한 장소가 없습니다.');
+ $('placeList').querySelectorAll('[data-place-add]').forEach(b=>b.addEventListener('click',()=>{const p=d.savedPlaces.find(p=>p.id===b.dataset.placeAdd);if(p)openEventDialog(null,p.name,displayMapUrl(p));}));
  $('placeList').querySelectorAll('[data-place-remove]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('저장 장소를 삭제할까요?'))return;void saveTrip(d=>d.savedPlaces=d.savedPlaces.filter(p=>p.id!==b.dataset.placeRemove));}));
- $('reelList').innerHTML=d.reels.length?d.reels.map(x=>`<div class="list-row"><div><strong>📷 <a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a></strong><small>${esc(x.url)}</small></div><button class="btn" data-remove-reel="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 저장한 영상 링크가 없습니다.');
+ $('reelList').innerHTML=d.reels.length?d.reels.map(x=>`<div class="list-row"><div><strong>📷 <a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a></strong><small>${esc(x.placeName?'❤️ '+x.placeName+' · ':'')}${esc(x.url)}</small></div><button class="btn" data-remove-reel="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 저장한 영상 링크가 없습니다.');
  $('reelList').querySelectorAll('[data-remove-reel]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('영상 링크를 삭제할까요?'))return;void saveTrip(d=>d.reels=d.reels.filter(x=>x.id!==b.dataset.removeReel));}));}
-async function addPlace(e){e.preventDefault();const f=e.currentTarget,name=f.elements.name.value.trim();if(name.length<2)return;
- if(activeDoc().savedPlaces.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast('이미 저장한 장소입니다.');
- await saveTrip(d=>d.savedPlaces.push({id:uuid(),name}),'장소를 저장했습니다.');f.reset();}
-async function addReel(e){e.preventDefault();const f=e.currentTarget,url=safeUrl(f.elements.url.value.trim()),title=f.elements.title.value.trim();
- if(!url||!title)return toast('올바른 영상 주소와 이름을 입력하세요.');await saveTrip(d=>d.reels.push({id:uuid(),url,title}),'영상 링크를 저장했습니다.');f.reset();}
-function renderBookings(){const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} · ${esc(x.note||'')}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
- $('bookingDate').value=activeDate||trip.start_date;$('bookingList').querySelectorAll('[data-booking-delete]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('예약 메모를 삭제할까요?'))return;void saveTrip(d=>d.bookings=d.bookings.filter(x=>x.id!==b.dataset.bookingDelete));}));}
-async function addBooking(e){e.preventDefault();const f=e.currentTarget,d=new FormData(f),entry={id:uuid(),kind:String(d.get('kind')),title:String(d.get('title')).trim().slice(0,120),date:String(d.get('date')),time:String(d.get('time')),note:String(d.get('note')).slice(0,300)};
- if(!entry.title)return;await saveTrip(d=>d.bookings.push(entry),'예약 메모를 저장했습니다.');f.reset();}
+async function addPlace(e){e.preventDefault();const f=e.currentTarget,raw=f.elements.name.value.trim();if(raw.length<2)return;const btn=f.querySelector('button[type=submit]');setBusy(btn,true);
+ try{const got=await getPlaceCandidate(raw,'map');let name=got.name;
+  if(!name||got.confidence==='low'||got.confidence==='unknown'&&/^https?:/i.test(raw))name=prompt('지도에서 확인한 정확한 장소 이름을 입력해 주세요.',name||'')?.trim();
+  if(!name)return toast('장소를 저장하지 않았습니다.');
+  if(activeDoc().savedPlaces.some(x=>x.name.toLowerCase()===name.toLowerCase())){toast('이미 저장한 장소입니다.');if($('placeOpenSchedule').checked){chooseTab('schedule');openEventDialog(null,name,got.mapUrl);}return;}
+  await saveTrip(d=>d.savedPlaces.push({id:uuid(),name,mapUrl:got.mapUrl,sourceUrl:got.sourceUrl||'',countryCode:trip.country_code}),'❤️ 저장 장소에 추가했습니다.');f.reset();$('placeStatus').textContent=`저장 완료: ${name} · Google 지도로 열거나 일정을 추가할 수 있습니다.`;if($('placeOpenSchedule').checked){chooseTab('schedule');openEventDialog(null,name,got.mapUrl);}
+ }catch(err){$('placeStatus').textContent='링크 자동 분석 실패: '+err.message;toast('장소 이름을 입력해 다시 시도하세요.');}finally{setBusy(btn,false,'＋ 장소 저장');}}
+async function addReel(e){e.preventDefault();const f=e.currentTarget,url=safeUrl(f.elements.url.value.trim()),title=f.elements.title.value.trim(),given=f.elements.place.value.trim();
+ if(!url||!['instagram.com','www.instagram.com','tiktok.com','www.tiktok.com','youtube.com','www.youtube.com','m.youtube.com','youtu.be','threads.net','www.threads.net'].includes(new URL(url).hostname))return toast('인스타그램·틱톡·유튜브 등 허용된 영상 링크를 입력하세요.');const btn=f.querySelector('button[type=submit]');setBusy(btn,true);$('reelStatus').textContent='장소 후보를 확인하고 있어요…';
+ try{let placeName=given;let inferredTitle=title;let confidence='manual';
+  if(!placeName){try{const found=await getPlaceCandidate(url,'reel',title);placeName=found.name;inferredTitle=inferredTitle||found.title||'';confidence=found.confidence||'unknown';}catch(err){console.warn('Reel metadata unavailable:',err.message);}}
+  if(placeName&&confidence!=='high'&&confidence!=='manual')placeName=prompt('영상 속 장소가 맞는지 확인하고 이름을 수정해 주세요.',placeName)?.trim()||'';
+  if(!placeName)placeName=prompt('릴스에서 장소를 자동 확인하지 못했어요. 장소 이름을 입력하면 함께 저장됩니다. (건너뛰려면 취소)')?.trim()||'';
+  if(!inferredTitle)inferredTitle=placeName||'저장한 여행 영상';
+  const exists=activeDoc().reels.some(x=>x.url===url);if(exists)return toast('이미 저장한 영상입니다.');
+  await saveTrip(d=>{d.reels.push({id:uuid(),url,title:inferredTitle,placeName});if(placeName&&!d.savedPlaces.some(x=>x.name.toLowerCase()===placeName.toLowerCase()))d.savedPlaces.push({id:uuid(),name:placeName,mapUrl:mapUrl(placeName),sourceUrl:url,countryCode:trip.country_code});},placeName?'영상과 ❤️ 저장 장소를 추가했습니다.':'영상만 저장했습니다.');
+  $('reelStatus').textContent=placeName?`❤️ ${placeName} → 저장 장소에 등록됨. 이제 일정에 추가할 수 있어요.`:'장소를 찾지 못해 영상만 저장했어요. 나중에 장소 이름을 등록해 주세요.';f.reset();if(placeName&&$('reelOpenSchedule').checked){chooseTab('schedule');openEventDialog(null,placeName,mapUrl(placeName));}
+ }catch(err){$('reelStatus').textContent='등록 오류: '+err.message;}finally{setBusy(btn,false,'🔎 영상 저장 · 장소 찾기');}}
+function renderBookings(){const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[x.kind]||'🧾')} ${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} → ${esc(x.arrivalDate||x.date||'')} ${esc(x.arrivalTime||'')} · ${esc(x.origin||'')} ${x.destination?'→ '+esc(x.destination):''}</small><small>${esc(x.note||'')}${x.fileId?' · 📎 비공개 예약서 보관됨':''}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
+ $('bookingDate').value=activeDate||trip.start_date;$('bookingArrivalDate').value=activeDate||trip.start_date;
+ $('bookingList').querySelectorAll('[data-booking-delete]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('예약 정보를 삭제할까요? 해당 일정도 함께 삭제할까요?'))return;void saveTrip(d=>{d.bookings=d.bookings.filter(x=>x.id!==b.dataset.bookingDelete);for(const day of d.days)day.events=day.events.filter(x=>x.bookingId!==b.dataset.bookingDelete);},'예약과 연결된 일정을 삭제했습니다.');}));}
+function selectedBookingFilename(){return selectedBookingFile?`${selectedBookingFile.name} · ${(selectedBookingFile.size/1048576).toFixed(1)}MB`:'파일 미선택 · 분석은 4MB 이하';}
+function bookingFileChanged(e){selectedBookingFile=e.target.files?.[0]||null;$('bookingFileLabel').textContent=selectedBookingFilename();$('bookingAnalyzeStatus').textContent=selectedBookingFile?'AI 추출 버튼을 누르면 문서가 Gemini에 전송됩니다.':'파일을 선택해 주세요.';}
+async function toBase64(file){const buf=await file.arrayBuffer();let binary='';const a=new Uint8Array(buf);for(let i=0;i<a.length;i+=32768)binary+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(binary);}
+async function analyzeBooking(){if(!selectedBookingFile)return toast('예약 사진 또는 PDF를 먼저 선택해 주세요.');
+ const file=selectedBookingFile,types=['application/pdf','image/jpeg','image/png','image/webp','image/heic','image/heif'];let mime=file.type||({'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','webp':'image/webp','heic':'image/heic','heif':'image/heif'})[file.name.split('.').at(-1).toLowerCase()];
+ if(!types.includes(mime)||file.size>4*1024*1024||file.size<1)return toast('분석은 PDF/JPG/PNG/WEBP/HEIC/HEIF 4MB 이하만 지원합니다.');
+ if(!confirm('예약 이미지·PDF를 Gemini AI에 전송하여 교통편 정보만 추출할까요? 예약번호 등 민감한 내용이 포함될 수 있습니다.'))return;
+ const btn=$('bookingAnalyze');setBusy(btn,true);$('bookingAnalyzeStatus').textContent='🔎 예약 문서에서 출발·도착 정보를 읽는 중…';
+ try{const base64=await toBase64(file);const data=await aiCall('extract-booking',{fileBase64:base64,mimeType:mime});
+  const f=$('bookingForm');for(const key of ['kind','title','date','time','arrivalDate','arrivalTime','origin','destination','note'])if(data[key]&&f.elements[key])f.elements[key].value=data[key];
+  $('bookingAnalyzeStatus').textContent=`추출 완료 · ${data.confidence==='low'?'정확도가 낮으니 반드시 확인하세요.':'날짜·현지 시각을 확인하고 저장하세요.'} 개인정보나 예약번호는 입력칸에 옮기지 않았습니다.`;
+ }catch(err){$('bookingAnalyzeStatus').textContent='추출 실패: '+err.message+' · 직접 입력해 주세요.';}finally{setBusy(btn,false,'✨ 선택 파일 분석');}}
+async function saveBookingFile(file){if(DEMO||!file||!user)return null;const ext=file.name.split('.').at(-1).toLowerCase();const mimes={'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png','webp':'image/webp','heic':'image/heic','heif':'image/heif'};
+ if(!mimes[ext]||file.size>15728640)return null;
+ const path=`${user.id}/${trip.id}/${uuid()}.${ext}`;const {error:up}=await client.storage.from('tripkku-next-files').upload(path,file,{contentType:mimes[ext],upsert:false});if(up)throw up;
+ const {data,error}=await client.from('tripkku_private_files').insert({trip_id:trip.id,user_id:user.id,path,display_name:file.name.slice(0,160),mime_type:mimes[ext],size_bytes:file.size}).select('*').single();if(error){await client.storage.from('tripkku-next-files').remove([path]);throw error;}
+ privateFiles.unshift(data);renderFiles();return data.id;}
+async function addBooking(e){e.preventDefault();const f=e.currentTarget,d=new FormData(f);const entry={id:uuid(),kind:String(d.get('kind')),title:String(d.get('title')||'').trim().slice(0,120),date:String(d.get('date')),time:String(d.get('time')),arrivalDate:String(d.get('arrivalDate')),arrivalTime:String(d.get('arrivalTime')),origin:String(d.get('origin')||'').trim().slice(0,160),destination:String(d.get('destination')||'').trim().slice(0,160),note:String(d.get('note')||'').slice(0,300)};
+ if(!entry.title||!dateRE.test(entry.date)||!dateRE.test(entry.arrivalDate)||!timeRE.test(entry.time)||!timeRE.test(entry.arrivalTime)||entry.arrivalDate<entry.date)return toast('예약 날짜와 출발·도착 시각을 확인해 주세요.');
+ if(entry.arrivalDate===entry.date&&entry.arrivalTime<=entry.time)return toast('같은 날짜라면 도착 시각은 출발보다 늦어야 합니다. 시차 또는 날짜를 다시 확인해 주세요.');
+ const button=f.querySelector('button[type=submit]');setBusy(button,true);
+ try{if(selectedBookingFile&&$('bookingKeepFile').checked){try{entry.fileId=await saveBookingFile(selectedBookingFile);}catch(err){toast('예약 원본 파일 업로드 실패: '+err.message+' · 예약 정보는 계속 저장합니다.');}}
+ const auto=$('bookingAutoSchedule').checked,within=tripDates().includes(entry.date);
+ if(!auto||!within){await saveTrip(x=>x.bookings.push(entry),within?'예약을 저장했습니다.':'여행 기간 밖 예약으로 기록만 저장했어요.');f.reset();selectedBookingFile=null;$('bookingFileLabel').textContent=selectedBookingFilename();return;}
+ const isMultiDay=entry.arrivalDate!==entry.date;const end=isMultiDay?'23:59':entry.arrivalTime;
+ const note=[entry.origin&&entry.destination?`${entry.origin} → ${entry.destination}`:'',isMultiDay?`도착 ${entry.arrivalDate} ${entry.arrivalTime} (현지 시간)`:'',entry.note].filter(Boolean).join(' · ');
+ const candidate={id:uuid(),date:entry.date,start:entry.time,end,title:entry.title,place:entry.origin||entry.destination||'',note,kind:entry.kind==='항공'?'flight':'move',bookingId:entry.id,emoji:({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[entry.kind]||'🧾'};
+ const overlaps=conflictsFor(candidate,null);if(overlaps.length){pendingConflict={candidate,oldId:null,conflicts:overlaps,booking:entry};$('conflictDetails').textContent=overlaps.map(x=>`${x.start}~${x.end} · ${x.title}`).join('\n');$('conflictDialog').showModal();}
+ else await saveEvent(candidate,null,[],entry);
+ if(!overlaps){f.reset();selectedBookingFile=null;$('bookingFileLabel').textContent=selectedBookingFilename();}
+ }catch(err){toast('예약 저장 실패: '+err.message);}finally{setBusy(button,false,'＋ 예약 및 일정 저장');}}
+
 function localeForLanguage(code){return LANGUAGES[code]?.[1]||'en-US';}
-function renderTranslatorConfig(){if(!trip)return;const c=currentCountry();const d=activeDoc();const chosen=d.meta?.language||c.language;
+function renderTranslatorConfig(){if(!trip)return;const c=currentCountry();const d=activeDoc(); const chosen=d.meta?.translatorOverride?d.meta.language:c.language;
  const box=$('localLanguage'),before=box.value;
- box.innerHTML=[...new Set([...c.languages,...Object.keys(LANGUAGES)])].map(l=>`<option value="${esc(l)}">${esc(languageLabel(l))}${c.languages.includes(l)?' · 현지':''}</option>`).join('');
+ const visits=itineraryCountries().flatMap(code=>countryInfo(code).languages);
+ const choices=[...new Set([...visits,...Object.keys(LANGUAGES)])];
+ box.innerHTML=choices.map(l=>`<option value="${esc(l)}">${esc(languageLabel(l))}${visits.includes(l)?' · 방문 국가':''}</option>`).join('');
  box.value=LANGUAGES[chosen]?chosen:c.language;
- $('translationTitle').textContent=`${c.flag} 한국어 ↔ ${languageLabel(box.value)} 바로 번역`;
- $('translateCountryHint').textContent=`${c.name} 여행 기준 · 기본 현지 통화 ${c.currency} · 영어·지역별 언어로 변경 가능`;
- $('translateExternal').href=translateExternalUrl();$('papagoExternal').hidden=!['ja','en','zh-CN','zh-TW','vi','th'].includes(box.value);
+ $('translationTitle').textContent=`🌏 한국어 ↔ ${languageLabel(box.value)} 바로 번역`;
+ $('translateCountryHint').textContent=`방문 국가: ${countriesText()} · 필요하면 번역 언어를 변경하세요.`;
+ $('translateExternal').href=translateExternalUrl();updateTranslationSwapLabel();$('papagoExternal').hidden=!['ja','en','zh-CN','zh-TW','vi','th'].includes(box.value);
 }
 function translateExternalUrl(){const lang=$('localLanguage').value||currentCountry().language,dir=$('translationDirection').value,text=$('translateInput').value||'';
  return 'https://translate.google.com/?sl='+encodeURIComponent(dir==='to-local'?'ko':dir==='to-ko'?lang:'auto')+'&tl='+encodeURIComponent(dir==='to-ko'?'ko':lang)+'&text='+encodeURIComponent(text.slice(0,600))+'&op=translate';}
@@ -339,9 +427,21 @@ function startSpeech(){const Speech=window.SpeechRecognition||window.webkitSpeec
  recognition.onerror=()=>setTranslateStatus('음성 인식이 되지 않았습니다. 아이폰 키보드 받아쓰기를 이용해 주세요.');
  recognition.onend=()=>{recognition=null;$('translateMic').textContent='🎙 말하기';};
  try{recognition.start();$('translateMic').textContent='■ 녹음 중지';setTranslateStatus('말씀해 주세요.');}catch(e){recognition=null;setTranslateStatus('마이크 권한과 브라우저 지원 여부를 확인해 주세요.');}}
-function swapTranslate(){const x=$('translationDirection');x.value=x.value==='to-ko'?'to-local':'to-ko';
- const before=$('translateInput').value,after=$('translateOutput').value;if(after){$('translateInput').value=after;$('translateOutput').value=before;}
- $('translateExternal').href=translateExternalUrl();}
+function updateTranslationSwapLabel(){
+ const select=$('translationDirection'),button=$('translateSwitch');if(!select||!button)return;
+ const current=select.value;
+ const guide=current==='to-ko'?'\u21c4 '+languageLabel($('localLanguage').value)+' \u2192 \ud55c\uad6d\uc5b4':current==='to-local'?'\u21c4 \ud55c\uad6d\uc5b4 \u2192 '+languageLabel($('localLanguage').value):'\u21c4 \ubc88\uc5ed \ubc29\ud5a5 \ubc14\uafb8\uae30';
+ button.textContent=guide;button.setAttribute('aria-label','\ubc88\uc5ed \ubc29\ud5a5 \ubc14\uafb8\uae30: '+guide);
+}
+function swapTranslate(){
+ const direction=$('translationDirection'),before=$('translateInput').value,after=$('translateOutput').value;
+ if(after&&lastTranslatedLang){direction.value=lastTranslatedLang==='ko'?'to-local':'to-ko';}
+ else if(direction.value==='auto'){direction.value=/[\uac00-\ud7a3]/.test(before)?'to-ko':'to-local';}
+ else{direction.value=direction.value==='to-ko'?'to-local':'to-ko';}
+ if(after){$('translateInput').value=after;$('translateOutput').value=before;}else{$('translateOutput').value='';}
+ lastTranslatedLang='';$('translateExternal').href=translateExternalUrl();updateTranslationSwapLabel();
+ setTranslateStatus('\ubc88\uc5ed \ubc29\ud5a5\uc744 \ubc14\uafb8\uc5c8\uc5b4\uc694. \ubc88\uc5ed\ud558\uae30\ub97c \ub20c\ub7ec \ub2e4\uc2dc \ud655\uc778\ud574 \uc8fc\uc138\uc694.');
+}
 function renderChat(){if(!trip)return;
  $('chatMessages').innerHTML=chatHistory.length?chatHistory.map(m=>`<p class="${m.role==='user'?'chat-user':'chat-bot'}">${esc(m.text)}</p>`).join(''):
  '<p class="chat-bot">여행·맛집·교통·일상 질문까지 편하게 물어보세요. 일정 변경은 확인 후에만 적용됩니다.</p>';
@@ -433,7 +533,7 @@ function bindHandlers(){
  $('goHome').addEventListener('click',goHome);$('backHome').addEventListener('click',goHome);
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();});
- $('loginBtn').addEventListener('click',()=>void login());$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');});
+ $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());
  $('tripList').addEventListener('click',e=>{const b=e.target.closest('[data-open-trip]');if(b)void openTrip(b.dataset.openTrip);});
@@ -448,11 +548,11 @@ function bindHandlers(){
  $('fileUpload').addEventListener('change',e=>void uploadPrivateFiles(e));
  $('expenseForm').addEventListener('submit',e=>void addExpense(e));
  $('placeForm').addEventListener('submit',e=>void addPlace(e));$('reelForm').addEventListener('submit',e=>void addReel(e));
- $('bookingForm').addEventListener('submit',e=>void addBooking(e));
+ $('bookingForm').addEventListener('submit',e=>void addBooking(e));$('bookingUpload').addEventListener('change',bookingFileChanged);$('bookingAnalyze').addEventListener('click',()=>void analyzeBooking());
  $('localLanguage').addEventListener('change',()=>{
-  const lang=$('localLanguage').value;void saveTrip(d=>{d.meta.language=lang;},languageLabel(lang)+' 번역 언어로 변경했습니다.');
+  const lang=$('localLanguage').value;void saveTrip(d=>{d.meta.language=lang;d.meta.translatorOverride=true;},languageLabel(lang)+' 번역 언어로 변경했습니다.');
  });
- $('translationDirection').addEventListener('change',()=>{$('translateExternal').href=translateExternalUrl();});
+ $('translationDirection').addEventListener('change',()=>{$('translateExternal').href=translateExternalUrl();updateTranslationSwapLabel();});
  $('translateRun').addEventListener('click',()=>void translateText());$('translateMic').addEventListener('click',startSpeech);
  $('translateSourceSpeak').addEventListener('click',()=>speak($('translateInput').value,$('translationDirection').value==='to-ko'?$('localLanguage').value:'ko'));
  $('translateSpeak').addEventListener('click',()=>speak($('translateOutput').value,lastTranslatedLang||$('localLanguage').value));
