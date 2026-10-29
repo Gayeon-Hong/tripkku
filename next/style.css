@@ -97,3 +97,26 @@ body.night .legacy-variant-buttons button.selected{background:#39594a;color:#e6f
 .budget-overview-head h3{margin:0 0 9px}.budget-overview .summary-grid{margin-bottom:5px}.budget-highlight{border:2px solid #65a580;background:var(--soft)}
 body.night .budget-highlight{border-color:#78bd95}.budget-overview>.tiny{color:var(--muted)}
 @media(max-width:600px){.admin-event{grid-template-columns:75px minmax(0,1fr)}.admin-preview-header{align-items:start}.admin-trips .trip-card{flex-wrap:wrap}}
+
+/* NEXT Home: owner may delete own trip; invitee can leave without deleting the plan. */
+.trip-card-info{flex:1;min-width:0;overflow-wrap:anywhere}
+.trip-card-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:none;flex-wrap:wrap}
+.trip-card-actions .btn{min-width:52px}
+body.night .trip-card-actions .btn.danger{background:#493034;color:#ffd8d5;border-color:#b86f72}
+@media(max-width:480px){.trip-card{align-items:flex-start;flex-wrap:wrap}.trip-card-actions{margin-left:auto}.trip-card-actions .btn{min-width:56px}}
+
+/* v3: archived trips are a personal view, not a deletion */
+.hidden-trip-panel{padding:14px 15px;min-width:0}
+.hidden-trip-panel summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none;font-size:14px;font-weight:850;color:var(--ink)}
+.hidden-trip-panel summary::after{content:'⌄';margin-left:auto;opacity:.7}
+.hidden-trip-panel[open] summary::after{content:'⌃'}
+.hidden-trip-panel summary::-webkit-details-marker{display:none}
+.hidden-trip-panel .trip-list{margin-top:12px}
+.hidden-trip-panel .tiny{margin:9px 0;color:var(--muted);line-height:1.5}
+.hidden-trip-panel .empty-state{padding:22px 12px}
+.invite-panel label{display:block;font-size:12px;margin:12px 0 8px;font-weight:750}
+.invite-panel label input{display:block;width:100%;margin-top:6px}
+.invite-panel .horizontal input{min-width:120px}
+.invite-dialog .horizontal button{white-space:normal;font-size:12px}
+body.night .hidden-trip-panel summary{color:var(--ink)}
+@media(max-width:540px){.hidden-trip-panel .trip-card-actions{width:100%;justify-content:flex-end}.invite-panel .horizontal{flex-wrap:wrap}}

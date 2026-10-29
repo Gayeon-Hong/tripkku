@@ -41,6 +41,10 @@ function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
 let feedbackReturnScreen='home',isBetaAdmin=false,feedbackEntries=[],legacyRooms=[],adminTripIndex=[];
 let budgetFxRates={KRW:1},budgetFxDate='',budgetFxLast=0,budgetFxFetching=false,budgetFxError='';
+let tripActionBusy=false;
+let hiddenTripIds=new Set();
+let pendingInviteJoining=false;
+const DEMO_HIDDEN_KEY='tripkku-next-hidden-demo-v1';
 let user=null, trips=[],trip=null,revision=0,members=[],personalExpenses=[],privateFiles=[],activeTab='schedule',activeDate='',pendingPlan=null,pendingChatActions=[],chatHistory=[],editingEventId=null,saveQueue=Promise.resolve(),subscription=null,pendingConflict=null,recognition=null,lastTranslatedLang='',pendingEventMapUrl='',selectedBookingFile=null,bookingPendingForEvent=null;
 function demoTrips(){try{return JSON.parse(localStorage.getItem(DEFAULT_DEMO_KEY)||'[]');}catch{return [];}}
 function setDemoTrips(rows){localStorage.setItem(DEFAULT_DEMO_KEY,JSON.stringify(rows));}
@@ -96,7 +100,7 @@ async function init(){initCountryPicker();applyTheme();bindHandlers();
 }
 async function login(provider='google'){try{const redirectTo=new URL('./',location.href).href;try{const invite=new URLSearchParams(location.search).get('invite');if(invite)sessionStorage.setItem('tripkku-next-pending-invite',invite);sessionStorage.setItem('tripkku-oauth-pending',String(Date.now()));}catch(_){} const {error}=await client.auth.signInWithOAuth({provider,options:{redirectTo}});if(error)throw error;}catch(e){$('authError').textContent='로그인 실패: '+e.message;}}
 async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 목록 동기화 중');showScreen('home');try{
- if(DEMO)trips=demoTrips();
+ if(DEMO){trips=demoTrips();try{hiddenTripIds=new Set(JSON.parse(localStorage.getItem(DEMO_HIDDEN_KEY)||'[]'));}catch{hiddenTripIds=new Set();}}
  else{
   // Only owned/joined trips appear on the ordinary home screen. Admin-only trips have their own read-only panel.
   const {data:mine,error:memberError}=await client.from('tripkku_trip_members').select('trip_id').eq('user_id',user.id).limit(500);
@@ -104,12 +108,70 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
   const ids=[...new Set((mine||[]).map(m=>m.trip_id).filter(Boolean))];
   if(!ids.length)trips=[];
   else{const {data,error}=await client.from('tripkku_trips').select('id,owner_id,invite_code,title,destination,country_code,start_date,end_date,data,revision,updated_at').in('id',ids).order('updated_at',{ascending:false}).limit(100);if(error)throw error;trips=data||[];}
+  if(ids.length){
+   const {data:rows,error:prefError}=await client.from('tripkku_trip_preferences').select('trip_id').eq('user_id',user.id).in('trip_id',ids).limit(500);
+   if(prefError){console.warn('숨긴 여행 정보 조회 실패: SQL 09 적용 필요',prefError);hiddenTripIds=new Set();}
+   else hiddenTripIds=new Set((rows||[]).map(row=>row.trip_id));
+  }else hiddenTripIds=new Set();
  }
  renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');await refreshBetaAdminRole();
- let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){} history.replaceState({},'',location.pathname);await joinTrip(inv);}
+ let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO&&!pendingInviteJoining){pendingInviteJoining=true;try{try{sessionStorage.setItem('tripkku-next-pending-invite',inv);}catch(_){}history.replaceState({},'',location.pathname);await joinTrip(inv);}finally{pendingInviteJoining=false;}}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }
-function renderTripList(){$('tripList').innerHTML=trips.length?trips.map(t=>{const c=countryInfo(t.country_code);return `<div class="trip-card"><div><strong>${c.flag} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small></div><button class="btn small" data-open-trip="${esc(t.id)}">열기</button></div>`;}).join(''):emptyMessage('아직 여행이 없어요. 왼쪽에서 첫 여행을 만들어 보세요.');}
+function renderTripCard(t,hidden=false){
+ const c=countryInfo(t.country_code),mine=t.owner_id===user?.id;
+ const actions=hidden?`<button class="btn small" type="button" data-unhide-trip="${esc(t.id)}">↩ 다시 표시</button>${mine?`<button class="btn danger small" type="button" data-delete-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 영구 삭제">영구 삭제</button>`:`<button class="btn danger small" type="button" data-leave-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 나가기">나가기</button>`}`:`<button class="btn small" type="button" data-open-trip="${esc(t.id)}">열기</button>${mine?`<button class="btn small" type="button" data-share-trip="${esc(t.id)}">🔗 초대</button>`:''}<button class="btn small" type="button" data-hide-trip="${esc(t.id)}">🙈 숨기기</button>`;
+ return `<div class="trip-card"><div class="trip-card-info"><strong>${c.flag} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
+}
+function renderTripList(){
+ const visible=trips.filter(t=>!hiddenTripIds.has(t.id)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
+ $('tripList').innerHTML=visible.length?visible.map(t=>renderTripCard(t)).join(''):emptyMessage(trips.length?'모든 여행을 숨겼어요. 아래 숨긴 여행 목록에서 다시 표시할 수 있어요.':'아직 여행이 없어요. 왼쪽에서 첫 여행을 만들어 보세요.');
+ $('hiddenTripCount').textContent=String(hidden.length);
+ $('hiddenTripList').innerHTML=hidden.length?hidden.map(t=>renderTripCard(t,true)).join(''):emptyMessage('숨겨 둔 여행이 없어요.');
+}
+async function setTripHidden(id,hide,button){
+ if(!user||!trips.some(t=>t.id===id))return;
+ setBusy(button,true);const snapshot=new Set(hiddenTripIds);
+ try{
+  if(DEMO){hide?hiddenTripIds.add(id):hiddenTripIds.delete(id);localStorage.setItem(DEMO_HIDDEN_KEY,JSON.stringify([...hiddenTripIds]));}
+  else if(hide){const {error}=await client.from('tripkku_trip_preferences').upsert({trip_id:id,user_id:user.id},{onConflict:'user_id,trip_id'});if(error)throw error;hiddenTripIds.add(id);}
+  else{const {error}=await client.from('tripkku_trip_preferences').delete().eq('trip_id',id).eq('user_id',user.id);if(error)throw error;hiddenTripIds.delete(id);}
+  renderTripList();toast(hide?'여행을 숨겼어요. 원본은 그대로예요.':'여행을 다시 목록에 표시했어요.');
+ }catch(e){hiddenTripIds=snapshot;toast('숨기기/복원 실패: '+e.message+' · Supabase SQL 09 적용을 확인해 주세요.');}
+ finally{if(button?.isConnected)setBusy(button,false);}
+}
+function confirmTripRemoval(t,owner){
+ if(owner){
+  if(!confirm(`'${t.title}' 여행을 정말 삭제할까요?\n\n모든 참여자의 일정·공용 기록·개인 예약파일/지출이 영구 삭제되고 복구할 수 없습니다.`))return false;
+  const typed=prompt('삭제를 확인하려면 아래 여행 제목을 그대로 입력하세요.\n\n'+t.title,'');
+  if(typed===null)return false;
+  if(typed.trim()!==t.title.trim()){toast('여행 제목이 일치하지 않아 삭제하지 않았어요.');return false;}
+  return true;
+ }
+ return confirm(`'${t.title}' 여행에서 나갈까요?\n\n여행 원본과 친구들의 일정은 유지됩니다. 내 접근 권한과 이 여행의 개인 예약파일·개인지출은 삭제됩니다.`);
+}
+async function removeTripFromHome(id,action,button){
+ const t=trips.find(x=>x.id===id);if(!t||tripActionBusy)return;
+ const isOwner=t.owner_id===user?.id;
+ if((action==='delete')!==isOwner){toast('내가 만든 여행만 삭제할 수 있어요.');return;}
+ if(!confirmTripRemoval(t,isOwner))return;
+ tripActionBusy=true;setBusy(button,true,isOwner?'삭제':'나가기');status(isOwner?'여행을 삭제하는 중…':'여행에서 나가는 중…');
+ try{
+  if(DEMO){if(!isOwner)throw new Error('체험 모드에서는 여행 나가기를 지원하지 않아요.');setDemoTrips(demoTrips().filter(x=>x.id!==id));}
+  else{
+   const body={action,tripId:id};if(isOwner)body.confirmTitle=t.title;
+   const {data,error}=await client.functions.invoke('tripkku-trip-actions',{body});
+   if(error){const detail=await error.context?.json?.().catch(()=>null);throw new Error(detail?.message||error.message||'서버 작업 실패');}
+   if(!data?.ok)throw new Error(data?.message||'여행 처리에 실패했습니다.');
+  }
+  hiddenTripIds.delete(id);
+  if(DEMO)localStorage.setItem(DEMO_HIDDEN_KEY,JSON.stringify([...hiddenTripIds]));
+  if(trip?.id===id){trip=null;if(subscription){void client.removeChannel(subscription);subscription=null;}}
+  await loadTrips();toast(isOwner?'여행을 삭제했습니다.':'여행에서 나왔습니다.');
+ }catch(e){toast((isOwner?'삭제':'나가기')+' 실패: '+e.message);status('작업 실패 · 다시 시도해 주세요.');}
+ finally{tripActionBusy=false;if(button?.isConnected)setBusy(button,false,isOwner?'삭제':'나가기');}
+}
+
 async function createTripFromForm(e){e.preventDefault();if(!user)return toast('먼저 로그인해 주세요.');const f=e.currentTarget;const d=new FormData(f);
  const destination=String(d.get('destination')||'').trim(),country=String(d.get('country')||'');
  const start=String(d.get('start')||''),end=String(d.get('end')||''),dates=daysBetween(start,end);
@@ -124,12 +186,24 @@ async function createTripFromForm(e){e.preventDefault();if(!user)return toast('�
  else{const {data,error}=await client.rpc('tripkku_create_trip',{p_title:title,p_country:country,p_destination:destination,p_start:start,p_end:end,p_data:doc});if(error)throw error;id=data;await loadTrips();}
  await openTrip(id);toast('여행이 생성되었습니다. 일정 추천을 시작합니다.');await generatePlan(true);
  }catch(err){toast('여행 생성 실패: '+err.message);}finally{setBusy(btn,false,'✨ 여행 만들고 추천 일정 받기');}}
-async function joinTrip(raw){const token=String(raw||'').trim().toLowerCase();
- if(!/^[0-9a-f]{32}$/.test(token)){toast('초대 코드가 올바르지 않아요. 새 개인 초대 링크를 요청해 주세요.');return;}
- if(DEMO){toast('체험 모드에서는 초대에 참여할 수 없어요.');return;}
- try{const {data:id,error}=await client.rpc('tripkku_accept_invitation',{p_token:token});
-  if(error)throw error;toast('초대받은 여행에 참여했어요. 함께 수정할 수 있습니다.');await loadTrips();if(id)await openTrip(id);
- }catch(e){toast('초대 참여 실패: '+e.message+' · 초대를 받은 계정의 로그인 이메일을 확인해 주세요.');}}
+function inviteTokenFromInput(raw){
+ const value=String(raw||'').trim();
+ try{const url=new URL(value);return String(url.searchParams.get('invite')||'').toLowerCase();}
+ catch{return value.toLowerCase();}
+}
+async function joinTrip(raw){
+ const token=inviteTokenFromInput(raw);
+ if(!/^[0-9a-f]{32}$/.test(token)){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){}toast('초대 링크 또는 32자리 초대 코드를 확인해 주세요.');return false;}
+ if(DEMO){toast('체험 모드에서는 초대에 참여할 수 없어요.');return false;}
+ const nickname=String($('joinNickname')?.value||'').trim().slice(0,30);
+ try{
+  const {data:id,error}=await client.rpc('tripkku_accept_share_link',{p_token:token,p_name:nickname||null});
+  if(error)throw error;
+  try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){}
+  toast('🎉 초대받은 여행에 참여했어요!');await loadTrips();if(id)await openTrip(id);
+  return true;
+ }catch(e){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){}toast('초대 참여 실패: '+e.message+' · 새 링크를 요청하거나 카카오 로그인을 확인해 주세요.');return false;}
+}
 
 async function openTrip(id){if(!user)return;status('여행 데이터 불러오는 중');if(subscription){await client.removeChannel(subscription);subscription=null;}
  try{if(DEMO){trip=demoTrips().find(t=>t.id===id);if(!trip)throw new Error('여행을 찾을 수 없습니다.');members=[{user_id:MY_UID,display_name:'나'}];privateFiles=[];personalExpenses=[];}
@@ -180,29 +254,31 @@ async function copyTextSafe(value){
  catch(_){prompt('이 링크를 복사하세요',value);return false;}
 }
 async function copyInvite(){
- if(!isTripOwner())return toast('여행방을 만든 사람만 친구를 초대할 수 있어요.');
- $('inviteCreatedBox').hidden=true;$('inviteRecipientEmail').value='';$('inviteStatus').textContent='';
+ if(!isTripOwner())return toast('여행을 만든 사람만 초대할 수 있어요.');
+ $('inviteCreatedBox').hidden=true;$('inviteStatus').textContent='초대 링크 준비 중…';
  renderInviteMembers();$('inviteDialog').showModal();
+ await createShareInvite(null,false);
 }
 function renderInviteMembers(){
  const box=$('inviteMemberList');
- box.innerHTML=members.length?members.map(m=>`<div class="invite-member-row"><div><strong>${esc(m.display_name||'여행자')} ${m.user_id===trip?.owner_id?'👑 (여행 만든 사람)':''}</strong><p class="tiny">${m.user_id===user?.id?'나 · ':''}수정 권한 있음</p></div>${isTripOwner()&&m.user_id!==trip.owner_id?`<button type="button" class="btn danger small" data-remove-member="${esc(m.user_id)}">참여 제외</button>`:''}</div>`).join(''):emptyMessage('초대한 친구가 아직 없어요.');
+ box.innerHTML=members.length?members.map(m=>`<div class="invite-member-row"><div><strong>${esc(m.display_name||'여행자')} ${m.user_id===trip?.owner_id?'👑 (여행 만든 사람)':''}</strong><p class="tiny">${m.user_id===user?.id?'나 · ':''}공동 수정 가능</p></div>${isTripOwner()&&m.user_id!==trip.owner_id?`<button type="button" class="btn danger small" data-remove-member="${esc(m.user_id)}">참여 제외</button>`:''}</div>`).join(''):emptyMessage('아직 참여한 친구가 없어요.');
 }
-async function createEmailInvite(e){e.preventDefault();if(!isTripOwner())return;
- const target=$('inviteRecipientEmail').value.trim().toLowerCase();
- const byUid=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/.test(target);
- if(!byUid&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)){toast('로그인 이메일 또는 공유받은 계정 ID를 입력하세요.');return;}
- const btn=$('inviteCreateBtn');setBusy(btn,true);
- try{const {data:code,error}=byUid?
-   await client.rpc('tripkku_create_invitation_by_uid',{p_trip_id:trip.id,p_invited_user:target}):
-   await client.rpc('tripkku_create_invitation',{p_trip_id:trip.id,p_email:target});
-   if(error)throw error;
-  if(!/^[0-9a-f]{32}$/.test(code||''))throw new Error('서버에서 유효한 초대 코드를 받지 못했어요.');
-  const link=location.origin+location.pathname+'?invite='+code;
-  $('inviteCreatedLink').value=link;$('inviteCreatedBox').hidden=false;
-  const copied=await copyTextSafe(link);$('inviteStatus').textContent=copied?`✅ ${target} 계정만 수락할 수 있는 초대 링크를 복사했어요 (7일 유효).`:`${target} 계정 전용 초대 링크를 만들었어요.`;
- }catch(err){$('inviteStatus').textContent='초대 링크 생성 실패: '+err.message;}
- finally{setBusy(btn,false,'🔗 전용 초대 링크 만들고 복사');}}
+async function createShareInvite(event,rotate=false){
+ event?.preventDefault();if(!isTripOwner())return;
+ if(rotate&&!confirm('이전 초대 링크를 무효화하고 새 링크를 만들까요? 이미 참여한 친구는 계속 이용할 수 있어요.'))return;
+ const btn=rotate?$('inviteRotateBtn'):$('inviteCreateBtn');setBusy(btn,true);
+ try{
+  if(DEMO)throw new Error('실제 로그인 후 사용할 수 있습니다.');
+  const {data:token,error}=await client.rpc('tripkku_create_share_link',{p_trip_id:trip.id,p_rotate:rotate});
+  if(error)throw error;
+  if(!/^[0-9a-f]{32}$/.test(token||''))throw new Error('초대 코드 생성에 실패했습니다.');
+  const link=new URL('./',location.href);link.searchParams.set('invite',token);
+  $('inviteCreatedLink').value=link.href;$('inviteCreatedBox').hidden=false;
+  const copied=await copyTextSafe(link.href);
+  $('inviteStatus').textContent=(copied?'✅ 링크가 복사됐어요. 카카오톡으로 보내주세요.':'🔗 링크를 길게 눌러 복사해 주세요.')+' · 30일 유효';
+ }catch(e){$('inviteStatus').textContent='초대 링크 생성 실패: '+e.message+' · SQL 09 적용을 확인해 주세요.';}
+ finally{if(btn?.isConnected)setBusy(btn,false);}
+}
 async function removeTripMember(target){
  if(!isTripOwner()||target===user.id)return;
  const person=members.find(x=>x.user_id===target);
@@ -820,8 +896,7 @@ function bindHandlers(){
  $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;setLegacyAdminVisibility(false);showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());
- $('copyMyInviteId').addEventListener('click',async()=>{if(!user||DEMO)return toast('로그인 후 사용할 수 있어요.');await copyTextSafe(user.id);toast('내 계정 ID를 복사했어요. 이 ID만으로는 여행을 볼 수 없습니다.');});
- $('inviteDialogClose').addEventListener('click',()=>$('inviteDialog').close());$('inviteEmailForm').addEventListener('submit',e=>void createEmailInvite(e));
+ $('inviteDialogClose').addEventListener('click',()=>$('inviteDialog').close());$('inviteShareForm').addEventListener('submit',e=>void createShareInvite(e,false));$('inviteRotateBtn').addEventListener('click',()=>void createShareInvite(null,true));
  $('inviteLinkCopyBtn').addEventListener('click',()=>void copyTextSafe($('inviteCreatedLink').value));
  $('inviteMemberList').addEventListener('click',e=>{const b=e.target.closest('[data-remove-member]');if(b)void removeTripMember(b.dataset.removeMember);});
  $('adminTripRefresh').addEventListener('click',()=>void loadAdminTripIndex());
@@ -830,7 +905,17 @@ function bindHandlers(){
  $('oitaImportList').addEventListener('click',e=>{const btn=e.target.closest('[data-import-oita]');if(btn)void importOitaRoom(btn.dataset.importOita);const existing=e.target.closest('[data-open-oita-trip]');if(existing)void openTrip(existing.dataset.openOitaTrip);});
  $('oitaVariantBar').addEventListener('click',e=>{const btn=e.target.closest('[data-oita-variant]');if(btn)void switchOitaVariant(btn.dataset.oitaVariant);});
  $('copyOldPrivate').addEventListener('click',()=>void copyMyLegacyPersonalData());
- $('tripList').addEventListener('click',e=>{const b=e.target.closest('[data-open-trip]');if(b)void openTrip(b.dataset.openTrip);});
+ const homeListAction=e=>{
+  const target=e.target.closest('button');if(!target)return;
+  if(target.dataset.shareTrip){void (async()=>{await openTrip(target.dataset.shareTrip);if(isTripOwner())await copyInvite();})();return;}
+  if(target.dataset.hideTrip){void setTripHidden(target.dataset.hideTrip,true,target);return;}
+  if(target.dataset.unhideTrip){void setTripHidden(target.dataset.unhideTrip,false,target);return;}
+  if(target.dataset.deleteTrip){void removeTripFromHome(target.dataset.deleteTrip,'delete',target);return;}
+  if(target.dataset.leaveTrip){void removeTripFromHome(target.dataset.leaveTrip,'leave',target);return;}
+  if(target.dataset.openTrip)void openTrip(target.dataset.openTrip);
+ };
+ $('tripList').addEventListener('click',homeListAction);
+ $('hiddenTripList').addEventListener('click',homeListAction);
  document.querySelectorAll('#mainNav button').forEach(b=>b.addEventListener('click',()=>{chooseTab(b.dataset.tab);window.scrollTo({top:0,behavior:'smooth'});}));
  $('regeneratePlan').addEventListener('click',()=>void generatePlan());$('addEvent').addEventListener('click',()=>openEventDialog());
  $('eventForm').addEventListener('submit',e=>void submitEvent(e));
