@@ -1474,9 +1474,9 @@
     
     // 모바일 세로에 맞춰 방 전체가 한눈에 들어오는 황금 위치
     if (initialAspect < 1) {
-      camera.position.set(15, 17, 19);
+      camera.position.set(10, 11, 13); // 모바일에서 캐릭터와 소파가 큼직하게 중앙에 오도록 줌인
     } else {
-      camera.position.set(12, 13, 16);
+      camera.position.set(9, 10, 12);
     }
     camera.lookAt(0, 1.2, 0);
 
@@ -1512,13 +1512,13 @@
     // 재질
     const currentTheme = CONFIG.THEMES.CREAM_NAVY;
     const materials = {
-      floor: new THREE.MeshStandardMaterial({ color: currentTheme.floor, roughness: 0.5 }),
-      wallBase: new THREE.MeshStandardMaterial({ color: currentTheme.wall, roughness: 0.6 }),
-      wallAccentNavy: new THREE.MeshStandardMaterial({ color: currentTheme.accentNavy, roughness: 0.4 }),
-      sofaNavy: new THREE.MeshStandardMaterial({ color: currentTheme.sofaNavy, roughness: 0.6 }),
-      goldChip: new THREE.MeshStandardMaterial({ color: 0xf5c042, metalness: 0.85, roughness: 0.2 }),
-      glass: new THREE.MeshPhysicalMaterial({ color: 0xd0e4ff, transparent: true, opacity: 0.7, roughness: 0.1 }),
-      woodDark: new THREE.MeshStandardMaterial({ color: 0x2b221a, roughness: 0.6 })
+      floor: new THREE.MeshStandardMaterial({ color: 0xc9b59e, roughness: 0.4, metalness: 0.05 }), // 따뜻한 라이트 오크
+      wallBase: new THREE.MeshStandardMaterial({ color: 0xf3eee6, roughness: 0.6 }),             // 포근한 크림 아이보리
+      wallAccentNavy: new THREE.MeshStandardMaterial({ color: 0x111e38, roughness: 0.35 }),       // 미드나잇 네이비
+      sofaNavy: new THREE.MeshStandardMaterial({ color: 0x16274a, roughness: 0.5 }),             // 네이비 가죽 소파
+      goldChip: new THREE.MeshStandardMaterial({ color: 0xf5bf38, metalness: 0.9, roughness: 0.15 }),
+      glass: new THREE.MeshPhysicalMaterial({ color: 0xc8e0fc, transparent: true, opacity: 0.75, roughness: 0.05 }),
+      woodDark: new THREE.MeshStandardMaterial({ color: 0x241d18, roughness: 0.5 })
     };
 
     // 3D 방 건축 (바닥 및 벽체)
