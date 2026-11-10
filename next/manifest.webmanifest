@@ -1,7 +1,7 @@
 {
-  "name": "TRIPKKU NEXT Beta · AI 여행 플래너",
-  "short_name": "Tripkku NEXT",
-  "description": "여행 일정, AI 추천 경로, 번역, 예산, 메모",
+  "name": "트립꾸 TRIPKKU · 함께 꾸미는 여행 플래너",
+  "short_name": "트립꾸",
+  "description": "어디로 떠나든: AI 동선 추천, 친구와 일정·예산·메모 공유, 국가별 번역",
   "id": "/tripkku/next/",
   "start_url": "./",
   "display": "standalone",
