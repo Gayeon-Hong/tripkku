@@ -350,7 +350,9 @@ function startAiStages(doneLabel){
  return ()=>{clearInterval(id);if(btn?.isConnected)btn.textContent=doneLabel;};
 }
 function withTimeout(promise,ms,message){
- return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(message)),ms))]);
+ let timer;
+ const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);});
+ return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
 }
 async function generatePlan(afterCreate=false){if(!trip)return;const btn=$('regeneratePlan');setBusy(btn,true);
  const stopStages=startAiStages('✨ AI 동선 다시 추천');
