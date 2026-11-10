@@ -120,3 +120,45 @@ body.night .trip-card-actions .btn.danger{background:#493034;color:#ffd8d5;borde
 .invite-dialog .horizontal button{white-space:normal;font-size:12px}
 body.night .hidden-trip-panel summary{color:var(--ink)}
 @media(max-width:540px){.hidden-trip-panel .trip-card-actions{width:100%;justify-content:flex-end}.invite-panel .horizontal{flex-wrap:wrap}}
+
+/* ─────────────────────────────────────────────────────────────
+   v3 UI polish — 카드·타임라인·버튼을 조금 더 조용하고 세련되게.
+   기존 클래스 이름은 그대로 두고 겉모양만 다듬는다.
+   ───────────────────────────────────────────────────────────── */
+:root{--shadow-sm:0 1px 2px #24331f0a,0 6px 18px #24331f0d;--shadow-md:0 12px 32px #1f2f2614}
+.card{border-radius:16px;box-shadow:var(--shadow-sm);transition:box-shadow .18s ease,border-color .18s ease}
+.card:hover{box-shadow:var(--shadow-md)}
+.btn{transition:transform .12s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease,color .16s ease}
+.btn:hover:not(:disabled){box-shadow:0 4px 12px #21301f14;border-color:#c3d3c6}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#2f6d57,#245342);border-color:#245342;box-shadow:0 6px 16px #24544333}
+.btn.primary:hover:not(:disabled){box-shadow:0 10px 24px #2454433d}
+.btn.danger:hover:not(:disabled){background:#ffe7e3;border-color:#e0b3ae}
+.trip-card{background:linear-gradient(180deg,#fffdfa,#fbfaf6);transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.trip-card:hover{border-color:#bcd2c2;box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.trip-card strong{letter-spacing:-.015em}
+.trip-intro{background:linear-gradient(135deg,#fffdfa,#f4f1e8);border-radius:18px}
+.timeline:before{background:linear-gradient(180deg,#d6e7dc,#8fb69f)}
+.event-card{box-shadow:0 1px 0 #24331f08;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.event-card:hover{border-color:#c3d7c8;box-shadow:var(--shadow-sm);transform:translateX(2px)}
+.event-card:before{background:linear-gradient(160deg,#5aa27c,#3a7a5c);box-shadow:0 0 0 3px var(--bg)}
+.event-title{letter-spacing:-.012em}
+.event-tools a,.event-tools button{transition:background .15s ease,color .15s ease}
+.event-tools a:hover,.event-tools button:hover{background:#dcece1}
+.day-tabs button{transition:border-color .16s ease,background .16s ease,color .16s ease}
+.day-tabs button:hover{border-color:#b9cdbf}
+.sidebar nav button{transition:background .15s ease,color .15s ease}
+.sidebar nav button:hover{background:#f1f6f1}
+.summary-item{border-radius:14px;transition:border-color .16s ease,box-shadow .16s ease}
+.summary-item:hover{border-color:#c9dbcf;box-shadow:var(--shadow-sm)}
+.summary-item strong{font-variant-numeric:tabular-nums}
+.tag{letter-spacing:.01em}
+.toast{border-radius:14px;font-weight:700;box-shadow:0 14px 34px #0e241a4d;animation:tk-rise .18s ease}
+@keyframes tk-rise{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+dialog{border-radius:18px;box-shadow:0 24px 70px #142b2055}
+.modal-content{padding:22px}
+body.night .trip-intro{background:linear-gradient(135deg,#253129,#1d2722)}
+body.night .trip-card{background:linear-gradient(180deg,#26332c,#222d27)}
+body.night .event-tools a:hover,body.night .event-tools button:hover{background:#3a5145}
+body.night .sidebar nav button:hover{background:#2e3f36}
+@media(prefers-reduced-motion:reduce){.card,.btn,.trip-card,.event-card,.toast,.day-tabs button,.summary-item{transition:none;animation:none}}
