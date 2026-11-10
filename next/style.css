@@ -162,3 +162,9 @@ body.night .trip-card{background:linear-gradient(180deg,#26332c,#222d27)}
 body.night .event-tools a:hover,body.night .event-tools button:hover{background:#3a5145}
 body.night .sidebar nav button:hover{background:#2e3f36}
 @media(prefers-reduced-motion:reduce){.card,.btn,.trip-card,.event-card,.toast,.day-tabs button,.summary-item{transition:none;animation:none}}
+
+/* 여행 카드: 제목이 길어도 열기/초대/숨기기 버튼이 찌그러지지 않게 */
+.trip-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.trip-card strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.trip-card-actions .btn{flex:0 0 auto}
+@media(max-width:600px){.trip-card{grid-template-columns:1fr}.trip-card-actions{justify-content:flex-start;margin-top:7px}}
