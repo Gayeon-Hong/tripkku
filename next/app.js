@@ -390,16 +390,47 @@ function routeForStops(rawStops){const stops=[...new Set(rawStops.filter(Boolean
  if(stops.length<2)return stops.length===1?mapUrl(stops[0]):'';
  return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(stops[0])+'&destination='+encodeURIComponent(stops.at(-1))+(stops.length>2?'&waypoints='+stops.slice(1,-1).map(encodeURIComponent).join('%7C'):'');}
 function routeForDay(events){return routeForStops(events.filter(e=>e.place&&e.kind!=='move').map(e=>e.place));}
+function activeDayEvents(day){
+ if(!day)return [];
+ if(Array.isArray(day.plans)&&day.plans.length>0){
+  const idx=Math.min(Math.max(0,Number(day.activePlan)||0),day.plans.length-1);
+  return day.plans[idx]?.events||day.plans[0]?.events||day.events||[];
+ }
+ return day.events||[];
+}
+
 function renderSchedule(){const dates=tripDates();if(!dates.includes(activeDate))activeDate=dates[0];
  $('dayTabs').innerHTML=dates.map((date,i)=>{const row=activeDoc().days.find(d=>d.date===date);const dayCode=inferDayCountryCode(row,tripCountryCode());const flagHtml=renderCountryFlag(dayCode,countryInfo(dayCode).flag);return `<button data-day="${date}" class="${date===activeDate?'active':''}">${flagHtml} ${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`;}).join('');
  $('dayTabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeDate=b.dataset.day;renderSchedule();renderTranslatorConfig();renderIntro();}));
- const day=activeDoc().days.find(d=>d.date===activeDate),events=[...(day?.events||[])].sort((a,b)=>a.start.localeCompare(b.start));
+ const day=activeDoc().days.find(d=>d.date===activeDate);
+ const planArea=$('planPickerArea');
+ if(planArea){
+  if(day&&Array.isArray(day.plans)&&day.plans.length>1){
+   const currentIdx=Math.min(Math.max(0,Number(day.activePlan)||0),day.plans.length-1);
+   planArea.innerHTML=`<div class="plan-picker" id="planPicker" aria-label="${esc(day.title||'')} 일정 선택"><div class="plan-buttons" role="group" aria-label="일정 안 선택">${day.plans.map((p,idx)=>`<button class="plan-button ${idx===currentIdx?'active':''}" type="button" data-plan-idx="${idx}" aria-pressed="${idx===currentIdx}"><b>${esc(p.title)}</b><small>${esc(p.hint||'')}</small></button>`).join('')}</div>${day.plans[currentIdx]?.hint?`<p class="plan-hint">💡 ${esc(day.plans[currentIdx].hint)}</p>`:''}</div>`;
+   planArea.querySelectorAll('[data-plan-idx]').forEach(b=>b.addEventListener('click',()=>{
+    const idx=Number(b.dataset.planIdx);if(day.activePlan===idx)return;
+    void saveTrip(d=>{
+     const targetDay=d.days.find(x=>x.date===activeDate);
+     if(targetDay){
+      targetDay.activePlan=idx;
+      if(Array.isArray(targetDay.plans)&&targetDay.plans[idx]?.events){
+       targetDay.events=clone(targetDay.plans[idx].events);
+      }
+     }
+    },`${idx+1}안 일정으로 전환했습니다.`);
+   }));
+  }else{
+   planArea.innerHTML='';
+  }
+ }
+ const events=[...(activeDayEvents(day)||[])].sort((a,b)=>a.start.localeCompare(b.start));
  const route=routeForDay(events);$('dayRoute').innerHTML=route?`<a href="${esc(route)}" target="_blank" rel="noopener noreferrer" class="btn small">🗺 오늘의 추천 동선 Google 지도에서 확인 ↗</a>`:'';
  $('timeline').innerHTML=events.length?events.map(e=>`<article class="event-card"><div class="event-time">${esc(e.start)}–${esc(e.end)}</div><div><div class="event-title">${esc(eventEmoji(e))} ${esc(e.title)}</div><p class="event-note">${esc(e.place||'')} ${e.place?' · ':''}${esc(e.note||'')}</p><div class="event-tools">${e.place||e.mapUrl?`<a href="${esc(displayMapUrl(e))}" target="_blank" rel="noopener noreferrer">📍 Google 지도 열기</a>`:''}<button data-edit-event="${esc(e.id)}">수정</button><button data-delete-event="${esc(e.id)}">삭제</button></div></div></article>`).join(''):emptyMessage('아직 일정이 없어요. AI 추천을 적용하거나 + 일정 추가를 눌러 주세요.');
  $('timeline').querySelectorAll('[data-edit-event]').forEach(b=>b.addEventListener('click',()=>openEventDialog(b.dataset.editEvent)));
  $('timeline').querySelectorAll('[data-delete-event]').forEach(b=>b.addEventListener('click',()=>void deleteEvent(b.dataset.deleteEvent)));
  renderPlanPreview();}
-function findEvent(id){for(const day of activeDoc().days){const event=day.events.find(e=>e.id===id);if(event)return {...event,date:day.date};}return null;}
+function findEvent(id){for(const day of activeDoc().days){const list=activeDayEvents(day);const event=list.find(e=>e.id===id);if(event)return {...event,date:day.date};}return null;}
 function openEventDialog(eventId=null,placeName='',placeUrl=''){if(!trip)return;editingEventId=eventId;pendingEventMapUrl=isGoogleMapLink(placeUrl)?placeUrl:'';const existing=eventId?findEvent(eventId):null;
  $('eventDialogTitle').textContent=existing?'일정 수정':'일정 추가';$('eventDate').innerHTML=tripDates().map(date=>`<option value="${date}">${esc(fmtDate(date))}</option>`).join('');
  const f=$('eventForm');f.elements.date.value=existing?.date||activeDate;f.elements.start.value=existing?.start||'10:00';f.elements.end.value=existing?.end||'11:00';
@@ -414,9 +445,26 @@ async function submitEvent(e){e.preventDefault();const entry=eventFromForm(e.cur
  await saveEvent(entry,editingEventId,[],bookingPendingForEvent);}
 async function saveEvent(entry,oldId,removeIds=[],bookingEntry=null){await saveTrip(doc=>{
   if(bookingEntry&&!doc.bookings.some(x=>x.id===bookingEntry.id))doc.bookings.push(bookingEntry);
-  for(const day of doc.days)day.events=day.events.filter(e=>e.id!==oldId&&!removeIds.includes(e.id));
+  for(const day of doc.days){
+   const filterFn=e=>e.id!==oldId&&!removeIds.includes(e.id);
+   day.events=(day.events||[]).filter(filterFn);
+   if(Array.isArray(day.plans)){
+    for(const p of day.plans)p.events=(p.events||[]).filter(filterFn);
+   }
+  }
   let target=doc.days.find(d=>d.date===entry.date);if(!target){target={date:entry.date,title:'자유 일정',events:[]};doc.days.push(target);}
-  const {date,...payload}=entry;target.events.push(payload);target.events.sort((a,b)=>a.start.localeCompare(b.start));
+  const {date,...payload}=entry;
+  if(Array.isArray(target.plans)&&target.plans.length>0){
+   const idx=Math.min(Math.max(0,Number(target.activePlan)||0),target.plans.length-1);
+   const activeP=target.plans[idx]||target.plans[0];
+   activeP.events=(activeP.events||[]).filter(e=>e.id!==payload.id);
+   activeP.events.push(payload);
+   activeP.events.sort((a,b)=>a.start.localeCompare(b.start));
+   target.events=clone(activeP.events);
+  }else{
+   target.events.push(payload);
+   target.events.sort((a,b)=>a.start.localeCompare(b.start));
+  }
  },bookingEntry?'예약과 일정을 저장했습니다.':'일정을 저장했습니다.');bookingPendingForEvent=null;activeDate=entry.date;renderSchedule();}
 async function deleteEvent(id){
  const old=findEvent(id);if(!old)return;
@@ -425,7 +473,14 @@ async function deleteEvent(id){
  if(btn?.disabled)return;                       // 두 번 눌러 두 번 저장되는 일을 막는다
  if(btn)btn.disabled=true;
  try{
-  await saveTrip(d=>{for(const day of d.days)day.events=day.events.filter(e=>e.id!==id);},'일정을 삭제했습니다.');
+  await saveTrip(d=>{
+   for(const day of d.days){
+    day.events=(day.events||[]).filter(e=>e.id!==id);
+    if(Array.isArray(day.plans)){
+     for(const p of day.plans)p.events=(p.events||[]).filter(e=>e.id!==id);
+    }
+   }
+  },'일정을 삭제했습니다.');
   renderSchedule();                             // 동기화로 새로 그려졌어도 지운 항목이 남지 않게 다시 그린다
  }catch(e){
   toast('일정 삭제 실패: '+e.message);
