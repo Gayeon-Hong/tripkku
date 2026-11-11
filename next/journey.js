@@ -307,7 +307,7 @@ function flightEnds(e,doc){const b=e.bookingId&&(doc.bookings||[]).find(x=>x.id=
  if(b?.origin&&b?.destination)return [codeCity(cleanCity(b.origin)),codeCity(cleanCity(b.destination))];
  const r=parseRoute(e.title);return [r.from,r.to||cleanCity(e.place||'')];}
 function retime(tl){const fast=tl.mode==='trip';let acc=0;
- for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2)+(s.flag?1.1:0):s.plane?(fast?3.2:4.2):s.jump?(fast?2:2.8):(fast?.6:1.4)*(1+Math.min(1.6,(s.px||0)/900));s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
+ for(const s of tl.segs){s.dur=s.type==='end'?5:s.type==='dwell'?(fast?1.9:3.4)+(s.flag?1.3:0):s.plane?(fast?4.6:5.6):s.jump?(fast?2.8:3.6):(fast?.95:2.1)*(1+Math.min(1.6,(s.px||0)/900));s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
 export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a.getTrip?.()||{};
  const dates=(doc.days||[]).map(d=>d.date).filter(Boolean).sort();
  const want=mode==='trip'?dates:[a.getActiveDate?.()||dates[0]];
@@ -415,6 +415,8 @@ export function sunTimes(lat,lon,date,offset){const d=new Date(date+'T12:00:00Z'
  if(c>1)return {rise:12,set:12};if(c<-1)return {rise:-2,set:26}; // 극야 · 백야
  const ha=Math.acos(c)/R,loc=m=>((m/60+offset)%24+24)%24;return {rise:loc(720-4*(lon+ha)-eq),set:loc(720-4*(lon-ha)-eq)};}
 // 머무는 동안의 카메라 연출: 볼거리는 건물 쪽으로 다가가 옆으로 돌며 훑고 → 물러나 기념사진, 식사는 식탁으로 천천히 다가가기, 신나는 곳은 살짝 흔들며 돌기
+// 산타 썰매는 가끔만: 장소마다 정해진 무작위 값으로 약 30%에서만 날아간다(같은 영상은 항상 같게)
+const santaToday=(i,t)=>{let h=2166136261;for(const c of i+'|'+t){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%100)<30;};
 const XMAS_KEYS=new Set(['tree','santa','stall','snowman','gluhwein','xferris','xpyramid']);
 const smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v);};
 function camMoveAt(act,p){const io=smooth(Math.min(p/.14,(1-p)/.12)); // 들어오고 나갈 때는 기본 구도로
@@ -475,7 +477,7 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
   stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state===2};}),
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
   party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood,lay:seg.type==='dwell'?{kind:stop.react.act,w:clamp(Math.min(p/.16,(1-p)/.1),0,1),selfie:stop.react.act==='pose'&&p>.37&&p<.72}:null},
-  camMove:seg.type==='dwell'?camMoveAt(stop.react.act,p):null,xmas:seg.type==='dwell'&&XMAS_KEYS.has(stop.react.key)?Math.max(.001,p):0,
+  camMove:seg.type==='dwell'?camMoveAt(stop.react.act,p):null,xmas:seg.type==='dwell'&&XMAS_KEYS.has(stop.react.key)&&santaToday(cur,stop.title)?Math.max(.001,p):0,
   vehicle:mid?{kind:seg.plane?'plane':S[seg.to].ground||'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
   sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h,(moving&&p<.5?S[seg.from]:S[seg.to]||stop).sun||stop.sun),weather:tl.weather?.[stop.date]||''};})(),
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
