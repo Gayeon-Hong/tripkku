@@ -168,3 +168,28 @@ body.night .sidebar nav button:hover{background:#2e3f36}
 .trip-card strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .trip-card-actions .btn{flex:0 0 auto}
 @media(max-width:600px){.trip-card{grid-template-columns:1fr}.trip-card-actions{justify-content:flex-start;margin-top:7px}}
+
+/* 날짜별 일정 대안 선택기 (1안 / 2안 반응형 스위처) */
+.plan-picker-area{margin:8px 0 12px}
+.plan-picker{margin:0 0 10px}
+.plan-buttons{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.plan-button{border:1px solid #cfded4;background:#fffdfa;border-radius:12px;text-align:left;padding:10px 13px;color:#2c4c3d;min-height:56px;display:flex;flex-direction:column;justify-content:center;gap:3px;cursor:pointer;transition:border-color .15s ease,background .15s ease,box-shadow .15s ease}
+.plan-button:hover{border-color:#8db79f;background:#f4f8f4}
+.plan-button b{font-size:13px;font-weight:800;letter-spacing:-.015em}
+.plan-button small{font-size:11px;color:#617a6d;line-height:1.4}
+.plan-button.active{border:2px solid #2f6d57;background:#eaf3ee;color:#184a39;box-shadow:0 2px 8px #2f6d5722}
+.plan-button.active small{color:#285744;font-weight:600}
+.plan-hint{font-size:11.5px;color:#63796d;line-height:1.55;margin:7px 2px 0;padding:6px 10px;background:#f3f7f4;border-radius:8px;border-left:3px solid #3a7a5c}
+body.night .plan-button{background:#233027;border-color:#384d40;color:#cbe2d3}
+body.night .plan-button:hover{background:#2a3a30;border-color:#4a6555}
+body.night .plan-button small{color:#8ea998}
+body.night .plan-button.active{background:#1d4334;border-color:#5aa27c;color:#e8f7ee}
+body.night .plan-button.active small{color:#b6dec7}
+body.night .plan-hint{background:#1e2b23;color:#a8c4b2;border-left-color:#5aa27c}
+@media(max-width:600px){
+ .plan-buttons{grid-template-columns:1fr;gap:6px}
+ .plan-button{min-height:52px;padding:9px 11px}
+ .plan-button b{font-size:12.5px}
+ .plan-button small{font-size:10.5px}
+}
+
