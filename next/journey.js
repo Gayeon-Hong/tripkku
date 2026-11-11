@@ -349,12 +349,15 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  S.forEach((s,i)=>{if(s.via!=='maybe')return;const far=s.ll&&s.fromLL&&kmApart(s.fromLL,s.ll)>600;s.via=far?'plane':'walk';if(!far){s.fromLL=null;s.react={key:'train',act:'wave',say:'도착!'};}
   const g=tl.segs.find(x=>x.type==='move'&&x.to===i);if(g){g.plane=far;g.jump=far;}});
  const home=S.find(s=>s.via==='plane'&&s.fromLL)?.fromLL||null;for(const s of S)if(s.home&&home)s.ll=home;
+ for(const s of S)s.tzCountry=s.home?'':s.country||'';
  for(const s of S)if(home&&s.ll&&kmApart(home,s.ll)<80){s.costume='';s.country='';}
  // 나라가 바뀌어 처음 도착한 곳에서는 국기를 한 번 띄운다
  let prevCountry='';for(const s of S){s.flag=s.country&&s.country!==prevCountry?s.country:'';if(s.flag)flagImage(s.flag);prevCountry=s.country||'';}
  for(const g of tl.segs)if(g.type==='dwell')g.flag=!!S[g.i].flag; // 집 근처(출발 공항 포함)에서는 평소 옷
  tl.map=S.some(s=>s.ll);
  if(tl.map){for(let i=1;i<S.length;i++)if(!S[i].ll)S[i].ll=S[i-1].ll;for(let i=S.length-2;i>=0;i--)if(!S[i].ll)S[i].ll=S[i+1].ll;for(const s of S)Object.assign(s,merc(s.ll[0],s.ll[1]));}
+ // 장소·날짜마다 해 뜨고 지는 시각
+ for(const s of S)if(s.ll&&s.date)s.sun=sunTimes(s.ll[0],s.ll[1],s.date,tzOffset(s.tzCountry,s.date,s.ll[1]));
  else{const step=300/(256*2**14);S.forEach((s,i)=>{s.mx=.5+Math.sin(i*1.15+.5)*step*.6;s.my=.5-i*step;});} // 좌표를 하나도 못 찾으면 지도 없이 줄지어 세운다
  // 가까운 이웃이 화면에 들어오는 선에서 최대한 클로즈업
  S.forEach((s,i)=>{let z=Z_CLOSE;for(const j of [i-1,i+1]){const o=S[j];if(!o)continue;const d=apart(s,o);if(d<1e-9)continue;const f=Math.log2(380/(d*256));if(f>=Z_NEAR)z=Math.min(z,f);}s.z=s.home?Z_NEAR:clamp(z,Z_NEAR,Z_CLOSE);});
@@ -373,7 +376,24 @@ export async function fetchWeather(tl){tl.weather={};if(!tl.map)return;const tod
   ask('https://archive-api.open-meteo.com/v1/archive',old);ask('https://api.open-meteo.com/v1/forecast',near);}
  await Promise.race([Promise.all(jobs),new Promise(r=>setTimeout(r,6000))]);}
 // 시각 → 밤(0~1)·노을(0~1)
-function skyAt(h){h=((h%24)+24)%24;const night=h<5||h>=20?1:h<7?1-(h-5)/2:h>=17.5?(h-17.5)/2.5:0,dusk=Math.max(0,1-Math.abs(h-18)/1.4)*.9+Math.max(0,1-Math.abs(h-6.2)/1)*.5;return {night,dusk:Math.min(1,dusk)};}
+// 해 뜨고 지는 시각(그 장소의 현지 시각, 대략): NOAA 근사식 + 나라 표준시
+const TZ={KR:'Asia/Seoul',JP:'Asia/Tokyo',CN:'Asia/Shanghai',TW:'Asia/Taipei',HK:'Asia/Hong_Kong',TH:'Asia/Bangkok',VN:'Asia/Ho_Chi_Minh',SG:'Asia/Singapore',MY:'Asia/Kuala_Lumpur',ID:'Asia/Jakarta',PH:'Asia/Manila',IN:'Asia/Kolkata',AE:'Asia/Dubai',TR:'Europe/Istanbul',
+ GB:'Europe/London',IE:'Europe/Dublin',PT:'Europe/Lisbon',FR:'Europe/Paris',DE:'Europe/Berlin',CZ:'Europe/Prague',PL:'Europe/Warsaw',AT:'Europe/Vienna',CH:'Europe/Zurich',IT:'Europe/Rome',ES:'Europe/Madrid',NL:'Europe/Amsterdam',BE:'Europe/Brussels',HU:'Europe/Budapest',HR:'Europe/Zagreb',GR:'Europe/Athens',FI:'Europe/Helsinki',SE:'Europe/Stockholm',NO:'Europe/Oslo',DK:'Europe/Copenhagen',
+ US:'America/New_York',CA:'America/Toronto',MX:'America/Mexico_City',AU:'Australia/Sydney',NZ:'Pacific/Auckland',EG:'Africa/Cairo'};
+function tzOffset(country,date,lon){const z=country?TZ[country]:Intl.DateTimeFormat().resolvedOptions().timeZone;
+ if(z)try{const d=new Date(date+'T12:00:00Z'),p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:z,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).map(x=>[x.type,x.value]));
+  return (Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-d.getTime())/36e5;}catch{}
+ return Math.round(lon/15);} // 모르는 나라(미국 서부 등)는 경도로 대충
+export function sunTimes(lat,lon,date,offset){const d=new Date(date+'T12:00:00Z');if(isNaN(d))return null;
+ const N=Math.floor((d-Date.UTC(d.getUTCFullYear(),0,1))/864e5)+1,g=2*PI/365*(N-1),R=PI/180;
+ const eq=229.18*(.000075+.001868*Math.cos(g)-.032077*Math.sin(g)-.014615*Math.cos(2*g)-.040849*Math.sin(2*g));
+ const dec=.006918-.399912*Math.cos(g)+.070257*Math.sin(g)-.006758*Math.cos(2*g)+.000907*Math.sin(2*g)-.002697*Math.cos(3*g)+.00148*Math.sin(3*g);
+ const c=Math.cos(90.833*R)/(Math.cos(lat*R)*Math.cos(dec))-Math.tan(lat*R)*Math.tan(dec);
+ if(c>1)return {rise:12,set:12};if(c<-1)return {rise:-2,set:26}; // 극야 · 백야
+ const ha=Math.acos(c)/R,loc=m=>((m/60+offset)%24+24)%24;return {rise:loc(720-4*(lon+ha)-eq),set:loc(720-4*(lon-ha)-eq)};}
+function skyAt(h,sun){h=((h%24)+24)%24;const r=sun?.rise??6.5,st=sun?.set??18;
+ const night=h<r-.75||h>st+.75?1:h<r+.5?(r+.5-h)/1.25:h>st-.5?(h-(st-.5))/1.25:0,
+  dusk=Math.max(0,1-Math.abs(h-st)/1.2)*.9+Math.max(0,1-Math.abs(h-r)/1)*.5;return {night:clamp(night,0,1),dusk:Math.min(1,dusk)};}
 
 /* ---------- 지도 타일과 카메라 ---------- */
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -423,7 +443,7 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
   party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood},
   vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
-  sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h),weather:tl.weather?.[stop.date]||''};})(),
+  sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h,(moving&&p<.5?S[seg.from]:S[seg.to]||stop).sun||stop.sun),weather:tl.weather?.[stop.date]||''};})(),
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
 
 /* ---------- 국기: 나라가 바뀌어 도착하면 한 번 크게 띄운다 ---------- */
