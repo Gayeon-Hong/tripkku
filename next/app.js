@@ -174,7 +174,7 @@ function renderTripList(){
  void renderHomeFx();const name=userName();$('homeGreeting').textContent=(name&&name!=='나'?name+'님, ':'')+'어디로 떠나볼까요?';renderHomeLive();
 }
 // 홈 환율 계산기: 현지 금액을 넣으면 바로 원화로. 통화는 지금 위치 → 여행 중인 여행 → 가장 최근 여행 순으로 고르고, 직접 바꿀 수도 있다.
-const homeFx={rates:new Map(),manual:false};
+const homeFx={rates:new Map(),manual:false,rev:(()=>{try{return localStorage.getItem('tripkku-fx-rev')==='1';}catch{return false;}})()}; // rev: 원화를 넣으면 현지 돈으로
 function homeFxDefault(){const live=window.tripkkuLive;if(live?.cur&&MONEY.includes(live.cur)&&live.cur!=='KRW')return live.cur;
  const today=localToday(),shown=trips.filter(t=>!hiddenTripIds.has(t.id)),opened=openedMap();
  const pick=shown.find(t=>t.start_date<=today&&today<=t.end_date)||shown.sort((a,b)=>(Number(opened[b.id])||0)-(Number(opened[a.id])||0))[0];
@@ -187,9 +187,13 @@ async function renderHomeFx(){const sel=$('fxCurrency'),out=$('fxResult');if(!se
  if(!sel.options.length)sel.innerHTML=MONEY.filter(c=>c!=='KRW').map(c=>`<option>${c}</option>`).join('');
  if(!homeFx.manual)sel.value=homeFxDefault();
  const code=sel.value,amount=Number(String($('fxAmount').value).replace(/,/g,''));
- if(!$('fxAmount').value.trim()){out.textContent='= ? 원';return;}
+ const rev=homeFx.rev,box=sel.closest('.home-fx');box?.classList.toggle('rev',rev);$('fxWon').hidden=!rev;
+ $('fxAmount').placeholder=rev?'원화 금액':'금액';$('fxAmount').setAttribute('aria-label',rev?'원화 금액':'현지 통화 금액');
+ $('fxSwap').setAttribute('aria-label',rev?'현지 통화로 입력하기로 바꾸기':'원화로 입력하기로 바꾸기');
+ if(!$('fxAmount').value.trim()){out.textContent=rev?'= ? '+code:'= ? 원';return;}
  if(!Number.isFinite(amount)||amount<0){out.textContent='숫자만 입력해 주세요';return;}
- try{const rate=await homeFxRate(code);if(sel.value!==code)return;out.textContent='≈ '+Math.round(amount/rate).toLocaleString('ko-KR')+'원';}
+ try{const rate=await homeFxRate(code);if(sel.value!==code||homeFx.rev!==rev)return;
+  out.textContent=rev?'≈ '+(amount*rate).toLocaleString('ko-KR',{maximumFractionDigits:amount*rate>=100?0:2})+' '+code:'≈ '+Math.round(amount/rate).toLocaleString('ko-KR')+'원';}
  catch{out.textContent='환율을 불러오지 못했어요';}}
 // 홈 인사 카드: 위치를 켰으면 지금 있는 곳·날씨·환율을, 아니면 켜는 버튼을 보여 준다(위치는 이 기기에서만 쓰고 저장하지 않는다).
 function renderHomeLive(){const el=$('homeLive'),live=window.tripkkuLive;if(!el)return;
@@ -957,6 +961,10 @@ function bindHandlers(){
  $('openNewTrip').addEventListener('click',()=>{$('newTripDialog').showModal();});
  $('homeLive').addEventListener('click',()=>{if(!window.tripkkuLive?.country)document.querySelector('.tripkku-live-toggle')?.click();});
  $('fxAmount').addEventListener('input',()=>void renderHomeFx());$('fxCurrency').addEventListener('change',()=>{homeFx.manual=true;void renderHomeFx();});
+ $('fxSwap').addEventListener('click',async()=>{const inp=$('fxAmount'),v=Number(String(inp.value).replace(/,/g,''));homeFx.rev=!homeFx.rev;try{localStorage.setItem('tripkku-fx-rev',homeFx.rev?'1':'0');}catch{}
+  // 방금 계산한 결과를 새 입력값으로 넘겨 바로 반대로 볼 수 있게
+  if(inp.value.trim()&&Number.isFinite(v)){try{const r=await homeFxRate($('fxCurrency').value);inp.value=String(homeFx.rev?Math.round(v/r):+(v*r).toFixed(2));}catch{}}
+  void renderHomeFx();});
  document.addEventListener('tripkku-live',()=>{if(!$('homeScreen').hidden)renderTripList();else renderHomeLive();});
  $('hiddenTripList').addEventListener('click',homeListAction);
  document.querySelectorAll('#mainNav button').forEach(b=>b.addEventListener('click',()=>{chooseTab(b.dataset.tab);window.scrollTo({top:0,behavior:'smooth'});}));

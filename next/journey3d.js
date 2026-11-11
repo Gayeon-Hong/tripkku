@@ -53,6 +53,9 @@ export function buildAvatar(av,kind=''){
  root.add(mesh(G.capsule(23,22),cloth,0,50,0));
  if(C)for(const m of C.parts)root.add(m);else root.add(rot(mesh(G.torus(17,7),cloth,0,71,-3),PI/2+.25));
  const arms=[-1,1].map(s=>{const g=group(mesh(G.capsule(7,20),sleeve,0,-14,0),mesh(G.sphere(7.5),skin,0,-29,0));if(C?.wide)g.add(scl(mesh(G.capsule(9,10),sleeve,0,-17,0),1,1,1.7));g.position.set(s*25,64,0);root.add(g);return g;});
+ // 오른손 소품: 먹을 때 포크(끝에 한 입), 사진 찍을 때 카메라 — poseAvatar 가 행동에 맞춰 켠다.
+ const fork=group(mesh(G.box(2.4,22,2.4),'#c9cfd9',0,-40,2),...[-2.6,0,2.6].map(x=>mesh(G.box(1,8,1),'#c9cfd9',x,-54,2)),mesh(G.sphere(4.6),'#f2a07a',0,-58,3));fork.visible=false;arms[1].add(fork);
+ const camera=group(mesh(G.box(30,18,10),'#2a2f3c',-22,-33,6),rot(mesh(G.cyl(6,6,8,16),'#5a6070',-22,-33,13),PI/2),mesh(G.box(6,4,4),'#ff5a6e',-32,-22,6));camera.visible=false;arms[1].add(camera);
  // 머리: 동그라미에서 볼 너비·얼굴 길이·턱선을 조금씩 조절한다.
  const head=new THREE.Group();head.position.set(0,108,0);root.add(head);
  const jaw=av.jaw||0,hg=G.sphere(40,40,28),pos=hg.attributes.position;
@@ -97,15 +100,20 @@ export function buildAvatar(av,kind=''){
  else if(av.acc==='ribbon'&&!C?.hat)head.add(rot(mesh(G.cone(8,15,14),'#ff7fa1',19,37,10),0,0,-PI/2),rot(mesh(G.cone(8,15,14),'#ff7fa1',35,37,10),0,0,PI/2),mesh(G.sphere(4.5),'#e85a84',27,37,10));
  // 키: 아이·아기는 몸을 작게, 머리는 상대적으로 크게
  const k=av.size==='baby'?.62:av.size==='kid'?.8:1,hk=av.size==='baby'?1.2:av.size==='kid'?1.08:1;head.scale.multiplyScalar(hk);root.scale.setScalar(k);
- root.userData={legs,arms,head,eyes,mouthSmile,mouthOpen,mouthO,tag:(108+44*hk)*k+18+(C?.hat?16*k:0)};
+ root.userData={legs,arms,head,eyes,mouthSmile,mouthOpen,mouthO,fork,camera,tag:(108+44*hk)*k+18+(C?.hat?16*k:0)};
  return root;}
 
 /** state: {walking, act: ''|cheer|pose|wave|eat|relax|sleep, mood(표정, 없으면 행동에 맞춰 고름), t, seed} */
-export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.act||'',sw=o.walking?Math.sin(t*11+sd):0;
+export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.act||'',sw=o.walking?Math.sin(t*11+sd):0,sit=!!o.sit&&!o.walking;
  c.position.y=(act==='cheer'?Math.abs(Math.sin(t*7+sd))*20:o.walking?Math.abs(sw)*4:0)*c.scale.y;
- u.legs[0].rotation.x=sw*.75;u.legs[1].rotation.x=-sw*.75;
+ u.legs[0].rotation.x=sit?-1.45:sw*.75;u.legs[1].rotation.x=sit?-1.45:-sw*.75;if(sit)c.position.y=0;
+ if(u.fork)u.fork.visible=act==='eat';if(u.camera)u.camera.visible=act==='photo';
  [-1,1].forEach((s,i)=>{const a=u.arms[i];let up=.18,fwd=s*sw*-.65;
-  if(act==='cheer')up=2.6+Math.sin(t*7+sd+s)*.2;else if(act==='pose')up=2.4;else if(act==='wave'&&s===1)up=2.4+Math.sin(t*10+sd)*.35;else if(act==='eat'&&s===1){up=.3;fwd=-1.9+Math.sin(t*6+sd)*.22;}
+  if(act==='cheer')up=2.6+Math.sin(t*7+sd+s)*.2;else if(act==='pose')up=2.4;else if(act==='wave'&&s===1)up=2.4+Math.sin(t*10+sd)*.35;else if(act==='eat'&&s===1){const bite=(Math.sin(t*3.2+sd)+1)/2;up=.22;fwd=-.9-bite*1.25;} // 포크를 접시 → 입으로
+  else if(act==='eat'){up=.25;fwd=-.55;}
+  else if(act==='photo'){up=s===1?.05:.35;fwd=-1.55;}               // 카메라를 눈앞에
+  else if(act==='point'&&s===1){up=.15;fwd=-2.3+Math.sin(t*2+sd)*.08;} // 저기 봐!
+  else if(act==='look'&&s===1){up=.5;fwd=-2.55;}                        // 손 그늘 만들고 올려다보기
   a.rotation.set(fwd,0,s*up);});
  // 표정: normal(가끔 깜빡임) · happy(웃는 눈+벌린 입) · wow(커진 눈+오 입) · yum(오물오물) · relaxed · sleepy · wink · smile
  const mood=o.mood||({cheer:'happy',pose:'wink',eat:'yum',relax:'relaxed',sleep:'sleepy',wave:'smile'})[act]||'normal',blink=mood==='normal'&&((t+sd*.37)%3.4)<.13;
@@ -114,7 +122,7 @@ export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.a
  eye(u.eyes[0],L,big);eye(u.eyes[1],R,big);
  const mouth=mood==='wow'||mood==='sleepy'?'o':mood==='happy'||mood==='wink'||mood==='smile'?'open':mood==='yum'?(Math.sin(t*7+sd)>0?'o':'smile'):'smile';
  u.mouthOpen.visible=mouth==='open';u.mouthO.visible=mouth==='o';u.mouthSmile.visible=mouth==='smile';
- u.head.rotation.z=act==='sleep'?.24:act==='relax'?Math.sin(t*2+sd)*.07:0;u.head.rotation.x=act==='sleep'?.12:0;}
+ u.head.rotation.z=act==='sleep'?.24:act==='relax'?Math.sin(t*2+sd)*.07:0;u.head.rotation.x=act==='sleep'?.12:act==='look'||act==='point'?-.32:act==='eat'?.1:0;}
 
 /* ---------- 장소 소품: 바닥 y=0 기준, 높이 약 120~180 ---------- */
 const steam=(x,y,z)=>[0,1,2].map(i=>mesh(G.sphere(9-i*2),mat('#ffffff',{transparent:true,opacity:.75}),x+i*6,y+i*16,z));
@@ -257,7 +265,10 @@ const PROPS={
   for(let r=0;r<3;r++)for(let c=-1;c<=1;c++)g.add(mesh(G.box(16,17,3),'#8fd0f0',c*29,48+r*24,31));return g;},
  house:()=>group(mesh(G.box(84,62,70),'#fff1d6',0,31,0),rot(mesh(G.cone(72,48,4),'#e8604a',0,86,0),0,PI/4),mesh(G.box(20,34,3),'#8a5a3c',0,17,36),mesh(G.box(18,18,3),'#8fd0f0',26,36,36),mesh(G.box(14,30,14),'#c96f5a',24,96,-10)),
  pin:()=>group(mesh(G.sphere(28),'#ff5a4a',0,112,0),rot(mesh(G.cone(21,72),'#ff5a4a',0,52,0),PI),mesh(G.sphere(11),'#ffffff',0,114,21)),
- plane:()=>group(rot(mesh(G.capsule(14,74),'#ffffff'),0,0,PI/2),mesh(G.box(28,3.5,128),'#5b8def',4,0,0),mesh(G.box(18,24,3.5),'#5b8def',-44,13,0),mesh(G.box(14,3,46),'#5b8def',-44,2,0),mesh(G.sphere(8),'#8fd0f0',40,6,0)),
+ // 비행기: 옆 창문마다 일행 얼굴이 빼꼼(얼굴은 createStage 가 넣는다)
+ plane:()=>{const g=group(rot(mesh(G.capsule(22,120),'#ffffff'),0,0,PI/2),rot(mesh(G.capsule(22.4,40),'#5b8def',-20,-6,0),0,0,PI/2),mesh(G.box(46,4,210),'#5b8def',4,-10,0),mesh(G.box(28,40,4),'#5b8def',-74,26,0),mesh(G.box(22,3,76),'#5b8def',-74,6,0),
+  scl(mesh(G.sphere(12),'#8fd0f0',74,10,0),1,.7,1.25),...[-1,1].map(s=>mesh(G.cyl(9,9,22,14),'#c9cfd9',10,-20,s*58)));
+  for(let i=0;i<6;i++)for(const s of [-1,1])g.add(mesh(G.torus(8.6,1.6),'#5b8def',44-i*20,4,s*21.2));return g;},
  train:()=>{const g=group(mesh(G.box(124,42,38),'#5bbf8a',0,31,0),mesh(G.box(124,6,40),'#ffffff',0,55,0),mesh(G.box(20,20,34),'#8fd0f0',52,36,0));for(const x of [-40,-10,20])g.add(mesh(G.box(20,16,40),'#8fd0f0',x,38,0));
   for(const x of [-40,40])for(const z of [-17,17])g.add(rot(mesh(G.cyl(9,9,6),'#3a3f4b',x,9,z),PI/2));return g;},
  /* 공항 */
@@ -450,8 +461,15 @@ export function createStage(canvas){
  let chars=[],props=[],legMeshes=[],stopMeshes=[],heads=[];
  const routeMat={walk:mat('#ff6b4a',{transparent:true}),fly:mat('#5b8def',{transparent:true}),white:mat('#ffffff',{transparent:true})};
  const stopMat=[mat('#ffffff'),mat('#f6c945'),mat('#f6c945')];
+ const table=group(mesh(G.cyl(74,74,6,36),'#f4ece0',0,40,0),mesh(G.cyl(76,76,2,36),'#e9dccb',0,37,0),mesh(G.cyl(6,8,38,10),'#8a5a3c',0,19,0),mesh(G.cyl(26,26,3,20),'#8a5a3c',0,1.5,0));table.visible=false;scene.add(table);
+ const stools=[];let pax=[];
  function setScene(tl,members){
   for(const o of [...dynamic.children])freeTree(o);dynamic.clear();routeGroup.clear();
+  // 비행기 창문 승객: 머리만 창밖으로 빼꼼
+  for(const p of pax){vehicles.plane.remove(p);freeTree(p);}
+  pax=members.slice(0,12).map((m,i)=>{const c=buildAvatar(m.av,''),side=i%2?-1:1,k=c.scale.x,hk=m.av.size==='baby'?1.2:m.av.size==='kid'?1.08:1;c.scale.setScalar(.17/hk);
+   c.position.set(44-Math.floor(i/2)*20,4-108*.17/hk,side*18);c.rotation.y=side>0?0:PI;vehicles.plane.add(c);return c;});
+  while(stools.length<members.length){const st=group(mesh(G.cyl(16,16,6,16),'#c2532f',0,24,0),mesh(G.cyl(3,3,22,8),'#8a5a3c',0,11,0));st.visible=false;scene.add(st);stools.push(st);}
   const kinds=['',...new Set(tl.stops.map(s=>s.costume).filter(Boolean))];
   chars=members.map(m=>{const holder=new THREE.Group(),variants={};for(const k of kinds){const c=buildAvatar(m.av,k);c.visible=false;variants[k]=c;holder.add(c);}holder.userData.variants=variants;holder.userData.char=variants[''];dynamic.add(holder);return holder;});
   props=tl.stops.map(s=>{const p=buildProp(s.react.key);dynamic.add(p);return p;});
@@ -483,16 +501,34 @@ export function createStage(canvas){
   f.stops.forEach((s,i)=>{const m=stopMeshes[i],p=props[i],near=Math.abs(s.x)<3000&&Math.abs(s.z)<3000;m.visible=near;p.visible=near&&s.showProp;if(!near)return;
    const r=s.state===2?17:12;m.material=stopMat[s.state];m.position.set(s.x,3.5,s.z);m.scale.set(r,3,r);
    // 지금 머무는 곳의 소품은 일행 뒤에 크게, 지나온 곳의 소품은 작게 남겨 둔다.
-   if(p.visible){const here=s.state===2;p.scale.setScalar(here?PROP_SCALE:.6);p.position.set(s.x,0,s.z-(here?PROP_BACK:70));p.rotation.y=here?Math.sin(f.t*1.4)*.12:0;}});
+   if(p.visible){const here=s.state===2,onTable=here&&f.party.lay?.kind==='eat';p.scale.setScalar(onTable?.62:here?PROP_SCALE:.6);p.position.set(s.x,onTable?43:0,s.z-(onTable?60:here?PROP_BACK:70));p.rotation.y=here&&!onTable?Math.sin(f.t*1.4)*.12:0;}});
   // 일행
   const n=chars.length,sp=Math.min(90,400/Math.max(1,n)),PS=f.party.scale||1,front=(f.party.front||0)*85;heads=[]; // 일행은 작게, 머무는 동안은 장소 표시 앞쪽에 선다
+  // 머무는 동안의 자리: 식당은 식탁에 둘러앉고, 볼거리는 그것을 바라보며 반원으로, 공연·술집은 무대 앞에, 박물관·공원은 흩어져 구경
+  const lay=f.party.lay,cs=f.stops.find(s=>s.state===2),w=lay&&cs?lay.w:0,kind=lay?.kind||'';
+  const spot=(k)=>{if(!cs)return null;const px=cs.x,pz=cs.z-PROP_BACK,u=n>1?k/(n-1):.5;
+   if(kind==='eat'){const a=(-1+2*u)*(n>2?1.75:1.2),tz=cs.z-60,R=118;const x=cs.x+Math.sin(a)*R,z=tz-Math.cos(a)*R;return {x,z,ry:Math.atan2(cs.x-x,tz-z),act:'eat',sit:true};}
+   if(kind==='pose'){const x=cs.x+(u-.5)*Math.min(320,110*n),z=cs.z+20+Math.abs(u-.5)*-60,ry=Math.atan2(px-x,pz-z),turn=(x<px?-1:1)*.55; // 3/4쯤 돌아서 바라보기
+    return {x,z,ry:ry*.6+turn*0,act:['photo','point','look','photo','pose'][k%5]};}
+   if(kind==='cheer'){const a=(u-.5)*2.2,R=150;const x=px+Math.sin(a)*R,z=pz+Math.cos(a)*R;return {x,z,ry:Math.atan2(px-x,pz-z)*.55,act:'cheer'};}
+   if(kind==='relax'){const side=k%2?1:-1,row=Math.floor(k/2);const x=px+side*(120+row*40),z=pz+60+row*50;return {x,z,ry:Math.atan2(px-x,pz-z)*.75,act:k%3===2?'look':'relax'};}
+   return null;};
+  const show=kind==='eat'&&w>.02;table.visible=show;if(show)table.position.set(cs.x,0,cs.z-60);
+  stools.forEach((st,k)=>{st.visible=false;});
   chars.forEach((h,k)=>{h.visible=f.party.visible;if(!h.visible)return;const want=h.userData.variants[f.party.costume||'']||h.userData.variants[''];
    if(want!==h.userData.char||!want.visible){for(const c of Object.values(h.userData.variants))c.visible=c===want;h.userData.char=want;}
-   h.scale.setScalar(PS);h.position.set((k-(n-1)/2)*sp*PS,0,((k%2)*(n>4?60:24)-12)*PS+front);h.rotation.y=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0;
-   poseAvatar(h.userData.char,{walking:f.party.walking,act:f.party.act,mood:f.party.mood,t:f.t,seed:k*1.7});});
+   h.scale.setScalar(PS);let x=(k-(n-1)/2)*sp*PS,z=((k%2)*(n>4?60:24)-12)*PS+front,ry=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0,act=f.party.act,sit=false;
+   const sp2=w>0?spot(k):null;
+   if(sp2){const e=w*w*(3-2*w);x+=(sp2.x-x)*e;z+=(sp2.z-z)*e;ry+=(sp2.ry-ry)*e;if(w>.9){act=sp2.act;sit=!!sp2.sit;}
+    if(sit){const st=stools[k];st.visible=true;st.position.set(x,0,z);st.scale.setScalar(PS);}}
+   h.position.set(x,0,z);h.rotation.y=ry;
+   poseAvatar(h.userData.char,{walking:f.party.walking||(w>.05&&w<.9),act,mood:f.party.mood,t:f.t,seed:k*1.7,sit});});
   // 탈것(먼 이동)
   for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){const lift=f.vehicle.lift??1; // 이륙·착륙: 낮게 작게 → 높이 크게
-   v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?.8+.7*lift:1.1);}}
+   v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?1+.9*lift:1.1);}}
+  // 카메라 쪽 창문으로 모두 얼굴을 내민다(비행기 방향에 따라 왼쪽·오른쪽 창)
+  if(vehicles.plane.visible){const face=Math.cos(vehicles.plane.rotation.y)>=0?1:-1;pax.forEach((c,i)=>{c.position.x=44-(i%6)*20;c.position.z=face*18;c.rotation.y=face>0?0:PI;});}
+  if(vehicles.plane.visible)pax.forEach((c,i)=>poseAvatar(c,{act:'',mood:['happy','wow','smile','wink'][(Math.floor(f.t/1.6)+i)%4],t:f.t,seed:i*1.3}));
   renderer.render(scene,camera);
   chars.forEach((h,k)=>{heads[k]=h.visible?project(h.position.x,(h.userData.char.position.y+h.userData.char.userData.tag)*h.scale.y,h.position.z):null;});}
  const v3=new THREE.Vector3();

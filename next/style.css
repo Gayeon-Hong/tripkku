@@ -226,3 +226,9 @@ body.night .trip-phase.now{background:#3b7e61}body.night .trip-phase.soon{backgr
 .tk-pieces-tag{font-size:11px;font-weight:700;color:#fff;background:var(--forest,#285c4b);border-radius:999px;padding:2px 8px;margin-right:10px;align-self:center}
 @keyframes tkHop{0%,80%,100%{transform:translateY(0)}88%{transform:translateY(-5px)}}
 @media (prefers-reduced-motion:reduce){.tk-pieces .tk-face{animation:none}}
+
+/* 환율 계산기 방향 바꾸기: 기본 [금액][통화] ⇄ ≈ 원 / 반대 [금액] 원 ⇄ [통화] ≈ 현지 돈 */
+.home-fx input{order:1}.home-fx .fx-won{order:2;font-weight:800}.home-fx select{order:2}.home-fx .fx-swap{order:3}.home-fx output{order:5}
+.home-fx.rev select{order:4}
+.fx-swap{min-width:40px;min-height:40px;border-radius:999px;border:1px solid var(--border,#ddd);background:var(--card,#fff);font-size:18px;font-weight:800;color:var(--forest,#285c4b);cursor:pointer}
+.fx-swap:active{transform:rotate(180deg);transition:transform .2s}
