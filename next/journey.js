@@ -60,10 +60,14 @@ export function cleanAvatar(raw,id){const base=defaultAvatar(id);if(!raw||typeof
  return {faceW:num(raw.faceW,base.faceW),faceH:num(raw.faceH,base.faceH),jaw:num(raw.jaw,base.jaw),skin:color(OPT.skin,raw.skin,base.skin),hair:key(OPT.hair,raw.hair,base.hair),bangs:key(OPT.bangs,raw.bangs,base.bangs),size:key(OPT.size,raw.size,'adult'),hairColor:color(OPT.hairColor,raw.hairColor,base.hairColor),
   eyes:key(OPT.eyes,raw.eyes,base.eyes),brows:key(OPT.brows,raw.brows,base.brows),outfit:color(OPT.outfit,raw.outfit,base.outfit),acc:key(OPT.acc,raw.acc,'none'),
   costume:key(OPT.costume,raw.costume,'on'),gender:key(OPT.gender,raw.gender,base.gender),costumeColor:color(OPT.costumeColor,raw.costumeColor,base.costumeColor),role:String(raw.role||'').slice(0,8)};}
-function localAvatar(){try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'null');}catch{return null;}}
+const localKey=()=>LOCAL_KEY+':'+(api().getMyId?.()||'');
+function localAvatar(){try{return JSON.parse(localStorage.getItem(localKey())||'null');}catch{return null;}}
+// 같은 기기의 다른 계정 캐릭터가 자동 적용돼 내 캐릭터와 똑같이 저장된 경우는 저장 안 한 것으로 본다
+const sameLook=(a,b)=>!!a&&!!b&&JSON.stringify({...a,role:''})===JSON.stringify({...b,role:''});
 export function party(){const a=api(),doc=a.activeDoc?.()||{},me=a.getMyId?.();
  const list=(a.getMembers?.()||[]).slice(0,8);if(!list.length)list.push({user_id:me||'me',display_name:'나'});
- return list.map(m=>{const saved=doc.avatars?.[m.user_id]||(m.user_id===me?localAvatar():null);
+ const mine=doc.avatars?.[me];
+ return list.map(m=>{let saved=doc.avatars?.[m.user_id]||(m.user_id===me?localAvatar():null);if(m.user_id!==me&&sameLook(saved,mine))saved=null;
   const av=cleanAvatar(saved,m.user_id);const name=String(m.display_name||'친구').slice(0,8);
   return {id:m.user_id,me:m.user_id===me,av,label:av.role?av.role+' '+name:name};});}
 
@@ -385,13 +389,14 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .hero-me{display:grid;justify-items:center;gap:3px;border:0;background:none;color:inherit;font-size:11px;font-weight:800;flex:none;padding:0}.hero-me .tk-face{width:96px;height:96px;background:#ffffff99;box-shadow:0 0 0 3px #f6c945}
 .tk-face{border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%;flex:none}.trip-faces{display:flex;margin-top:7px;padding-left:2px}.trip-faces .tk-face{width:34px;height:34px;box-shadow:0 0 0 2px var(--card);margin-right:-7px}
 .invite-member-row>.tk-face{width:44px;height:44px}.invite-member-row>.tk-face+div{flex:1;min-width:0}@media(max-width:600px){.hero-me .tk-face{width:66px;height:66px}}
+.trip-intro:has(.trip-party) .trip-earth{display:none}
 .trip-party{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.trip-party-item{display:grid;justify-items:center;gap:3px;min-width:64px;max-width:84px}.trip-party-face{display:grid;justify-items:center;gap:2px;border:0;background:none;color:var(--ink);font-size:11px;font-weight:750;padding:2px;width:100%}.trip-party-face span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-kick{border:0;background:none;color:var(--danger);font-size:10px;font-weight:800;padding:2px 4px;min-height:24px}.trip-party-leave{align-self:center;border:1px solid var(--border);background:var(--card);color:var(--muted);border-radius:16px;font-size:11px;font-weight:800;padding:6px 12px;min-height:34px;margin-left:auto}
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
 let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_sky2'));
-const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
+const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -403,12 +408,12 @@ function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(si
 /* 홈 화면: 인사 카드에 내 캐릭터. 누르면 꾸미기(여행 밖에서는 이 기기에 저장해 두고, 여행을 열 때 자동으로 적용) */
 function renderHomeHero(openAvatar){const earth=document.querySelector('.home-hero .hero-earth'),me=api().getMyId?.();if(!earth||!me)return;
  let b=document.getElementById('heroMe');if(!b){b=el('button',{id:'heroMe',type:'button',class:'hero-me','aria-label':'내 캐릭터 꾸미기'});earth.before(b);b.addEventListener('click',()=>void openAvatar());}
- const saved=localAvatar(),av=cleanAvatar(saved,me),sig=JSON.stringify([av,!!saved]);if(b.dataset.sig===sig)return;b.dataset.sig=sig;
+ const saved=localAvatar()||(api().getTrips?.()||[]).map(t=>t.data?.avatars?.[me]).find(Boolean),av=cleanAvatar(saved,me),sig=JSON.stringify([av,!!saved]);if(b.dataset.sig===sig)return;b.dataset.sig=sig;
  b.replaceChildren(face(av,'',96),el('span',{text:saved?'내 캐릭터':'내 캐릭터 만들기'}));}
 /* 홈 화면: 여행 카드마다 그 여행에 저장된 일행 캐릭터 */
 function decorateTripCards(){const trips=api().getTrips?.()||[];
- document.querySelectorAll('.trip-card[data-trip-id]').forEach(card=>{if(card.querySelector('.trip-faces'))return;const t=trips.find(x=>x.id===card.dataset.tripId),list=Object.entries(t?.data?.avatars||{}).slice(0,6);if(!list.length)return;
-  const kind=costumeKind(t.country_code);card.querySelector('.trip-card-info')?.append(el('div',{class:'trip-faces','aria-hidden':'true'},list.map(([id,raw])=>face(cleanAvatar(raw,id),kind,34))));});}
+ document.querySelectorAll('.trip-card[data-trip-id]').forEach(card=>{if(card.querySelector('.trip-faces'))return;const t=trips.find(x=>x.id===card.dataset.tripId),me=api().getMyId?.(),av0=t?.data?.avatars||{},list=Object.entries(av0).filter(([id,raw])=>id===me||!sameLook(raw,av0[me])).slice(0,6);if(!list.length)return;
+  const kind=costumeKind(t.data?.meta?.countries?.[0]||t.country_code);card.querySelector('.trip-card-info')?.append(el('div',{class:'trip-faces','aria-hidden':'true'},list.map(([id,raw])=>face(cleanAvatar(raw,id),kind,34))));});}
 /* 초대 창: 참여자 이름 앞에 캐릭터 */
 function decorateInvite(){const ms=party(),kind=tripKind();
  document.querySelectorAll('#inviteMemberList .invite-member-row').forEach((row,i)=>{if(!ms[i]||row.querySelector('.tk-face'))return;row.prepend(face(ms[i].av,kind,44));});}
@@ -519,7 +524,7 @@ function mountAvatar(){
  dlg.querySelector('[data-av="random"]').addEventListener('click',()=>{const role=s.av.role;const keep={size:s.av.size,gender:s.av.gender,costume:s.av.costume};s.av=defaultAvatar(String(Math.random()));Object.assign(s.av,keep);s.av.brows=OPT.brows[Math.floor(Math.random()*4)][0];s.av.acc=OPT.acc[Math.floor(Math.random()*OPT.acc.length)][0];s.av.role=role;paint();});
  dlg.querySelector('[data-av="save"]').addEventListener('click',async()=>{const a=api(),me=a.getMyId?.();if(!me)return a.toast?.('로그인한 뒤에 저장할 수 있어요.');
   const target=s.target||me,mine=target===me;if(!mine&&!a.isAdmin?.())return a.toast?.('다른 사람의 캐릭터는 관리자만 바꿀 수 있어요.');
-  const av=cleanAvatar(s.av,target),g=s.group;if(mine){try{localStorage.setItem(LOCAL_KEY,JSON.stringify(av));}catch{}document.dispatchEvent(new Event('tripkku-avatar-saved'));}
+  const av=cleanAvatar(s.av,target),g=s.group;if(mine){try{localStorage.setItem(localKey(),JSON.stringify(av));}catch{}document.dispatchEvent(new Event('tripkku-avatar-saved'));}
   if(!a.getTrip?.()){a.toast?.('내 캐릭터를 저장했어요. 여행을 열면 자동으로 적용돼요.');return close();}
   try{await a.saveTrip(d=>{d.avatars??={};d.avatars[target]=av;d.meta??={};d.meta.groupType=g;},mine?'내 캐릭터를 저장했어요.':'캐릭터를 바꿨어요.');close();}catch(e){a.toast?.('캐릭터 저장 실패: '+e.message);}});
  const load=id=>{const a=api(),me=a.getMyId?.(),doc=a.activeDoc?.()||{};s.target=id&&(id===me||a.isAdmin?.())?id:me;
