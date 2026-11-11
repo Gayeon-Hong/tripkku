@@ -14,7 +14,7 @@
  *
  * app.js 와는 window.__tripkku 로만 연결된다.
  */
-const W=720,H=1280,PI=Math.PI;
+const W=720,H=1280,PI=Math.PI,SPEEDS=[.5,.75,1,1.25,1.5,1.75,2,2.5];
 const FONT="-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif";
 const INK='#2a2f3c';
 const api=()=>window.__tripkku||{};
@@ -81,7 +81,48 @@ const RULES=[
  [/눈사람|눈썰매|snowman/i,['snowman'],'cheer',['눈사람이다!']],
  [/크리스마스|성탄|트리|christmas|weihnacht|xmas/i,['tree','santa','stall','snowman','gluhwein'],'cheer',['우와, 트리다!','산타다!','구경하자!','메리 크리스마스!','따뜻해~']],
  [/스키|스노보드|보드 타|ski/i,['ski'],'cheer',['야호!']],
- // 특정된 음식
+ // 공항: 이동·체크인은 비행기가 아니다
+ [/(공항|airport).*(체크인|수속|출국|보안|면세 ?구역|탑승 ?대기|라운지)|(체크인|수속).*(공항|airport)/i,['suitcase','airport'],'wave',['수속 중!','두근두근']],
+ [/(공항|airport).*(이동|가기|가는|리무진|셔틀|버스|택시|철도|전철|express)|(이동|리무진|셔틀|택시|버스).*(공항|airport)|공항철도/i,['train'],'wave',['공항 가자!','늦지 말자!']],
+ [/공항|airport/i,['airport'],'wave',['공항 도착!']],
+ // 특정된 음식(나라별)
+ [/타코야끼|타코야키|takoyaki/i,['takoyaki'],'eat',['뜨거워!','겉바속촉!']],
+ [/오니기리|주먹밥|편의점/i,['onigiri'],'eat',['간단하게!']],
+ [/떡볶이|분식/i,['tteokbokki'],'eat',['매콤달콤!']],
+ [/김밥/i,['kimbap'],'eat',['소풍 기분!']],
+ [/북경 ?오리|베이징 ?덕|peking/i,['pekingduck'],'eat',['껍질이 바삭!']],
+ [/훠궈|샤브샤브|전골|hot ?pot/i,['hotpot'],'eat',['보글보글!']],
+ [/버블티|밀크티|타피오카|bubble ?tea/i,['bubbletea'],'eat',['쫀득쫀득!']],
+ [/팟타이|pad ?thai/i,['padthai'],'eat',['맛있다!']],
+ [/망고 ?(밥|스티키|찹쌀)|mango ?sticky/i,['mangorice'],'eat',['달콤해!']],
+ [/반미|banh ?mi/i,['banhmi'],'eat',['바삭바삭!']],
+ [/난 |naan|탄두리/i,['naan'],'eat',['쫄깃해!']],
+ [/사테|꼬치|satay/i,['satay'],'eat',['맛있다!']],
+ [/나시고렝|볶음밥|fried ?rice/i,['friedrice'],'eat',['고슬고슬!']],
+ [/바클라바|로쿰|baklava/i,['baklava'],'eat',['달다달아!']],
+ [/차이|홍차|애프터눈 ?티|티룸|tea/i,['tea'],'eat',['향 좋다~']],
+ [/에스프레소|espresso/i,['espresso'],'eat',['진하다!']],
+ [/마카롱|macaron/i,['macaron'],'eat',['알록달록!']],
+ [/추로스|츄러스|churro/i,['churros'],'eat',['초코 찍먹!']],
+ [/에그타르트|나타|pastel/i,['nata'],'eat',['바삭 촉촉!']],
+ [/퐁듀|fondue|라클렛/i,['fondue'],'eat',['치즈 늘어난다!']],
+ [/와플|waffle/i,['waffle'],'eat',['달콤해!']],
+ [/치즈|cheese/i,['cheese'],'eat',['고소해!']],
+ [/뜨르델닉|굴뚝빵|trdeln/i,['trdelnik'],'eat',['빙글빙글!']],
+ [/굴라시|굴라쉬|goulash|gulasch/i,['goulash'],'eat',['든든해!']],
+ [/피에로기|pierogi/i,['dumpling'],'eat',['쫄깃해!']],
+ [/도넛|도너츠|donut/i,['donut'],'eat',['달콤해!']],
+ [/핫도그|hot ?dog/i,['hotdog'],'eat',['한입 가득!']],
+ [/푸틴|poutine/i,['poutine'],'eat',['든든해!']],
+ [/미트 ?파이|meat ?pie/i,['meatpie'],'eat',['따끈따끈!']],
+ [/타파스|핀초스|tapas/i,['tapas'],'eat',['골라 먹자!']],
+ [/초콜릿|쇼콜라|chocolate/i,['chocolate'],'eat',['달콤해!']],
+ [/일식|일본 ?(음식|요리)|이자카야/i,(c,n)=>['sushi','bowl','takoyaki','grill'][n%4],'eat',['맛있다!']],
+ [/중식|중국 ?(음식|요리)|딤섬/i,(c,n)=>['dumpling','pekingduck','hotpot'][n%3],'eat',['맛있다!']],
+ [/태국 ?(음식|요리)/i,(c,n)=>['padthai','curry','mangorice'][n%3],'eat',['맛있다!']],
+ [/베트남 ?(음식|요리)/i,(c,n)=>['bowl','banhmi'][n%2],'eat',['맛있다!']],
+ [/인도 ?(음식|요리)/i,['naan','curry'],'eat',['맛있다!']],
+ [/멕시코 ?(음식|요리)/i,['taco'],'eat',['올레!']],
  [/소시지|소세지|부어스트|wurst|핫도그/i,['sausage'],'eat',['맛있다!','이 맛이지!']],
  [/프레첼|브레첼|pretzel/i,['pretzel'],'eat',['쫄깃해!']],
  [/슈니첼|학센|돈까스|돈카츠|커틀릿|schnitzel/i,['schnitzel'],'eat',['바삭바삭!']],
@@ -111,11 +152,38 @@ const RULES=[
  [/맥주|비어|펍|이자카야|호프|브루어리|beer|pub/i,['beer'],'cheer',['짠!','캬~']],
  // 무엇을 먹는지 모르는 식사: 아래 foodFor 가 나라에 맞는 음식을 고른다
  [/맛집|식당|저녁|점심|아침|레스토랑|식사|먹|밥|야시장|푸드|restaurant|dinner|lunch/i,null,'eat',['맛있다!','배부르다~','이 집 잘하네!','또 오자!']],
+ // 나라별 랜드마크
+ [/빅 ?벤|big ?ben|국회의사당.*런던|웨스트민스터/i,['bigben'],'pose',['찰칵!','런던이다!']],
+ [/런던 ?아이|london ?eye/i,['ferris'],'cheer',['높다!']],
+ [/콜로세움|colosseo|colosseum/i,['colosseum'],'pose',['찰칵!','웅장하다!']],
+ [/피사|pisa/i,['pisa'],'pose',['기울었다!']],
+ [/개선문|arc de triomphe/i,['arc'],'pose',['찰칵!']],
+ [/풍차|잔세스칸스|킨더다이크|windmill/i,['windmill'],'pose',['찰칵!']],
+ [/사그라다|가우디|sagrada/i,['sagrada'],'pose',['우와…']],
+ [/파르테논|아크로폴리스|parthenon|acropolis/i,['parthenon'],'pose',['찰칵!']],
+ [/타지 ?마할|taj/i,['taj'],'pose',['아름답다…']],
+ [/모스크|아야 ?소피아|블루 ?모스크|mosque/i,['mosque'],'pose',['찰칵!']],
+ [/부르즈|burj/i,['burj'],'pose',['엄청 높다!']],
+ [/바실리|붉은 ?광장|크렘린|kremlin/i,['onion'],'pose',['찰칵!']],
+ [/자유의 ?여신|liberty/i,['liberty'],'pose',['찰칵!']],
+ [/금문교|골든 ?게이트|golden ?gate/i,['goldengate'],'pose',['찰칵!']],
+ [/오페라 ?하우스|opera ?house/i,['opera'],'pose',['찰칵!']],
+ [/피라미드|기자|pyramid/i,['pyramid'],'pose',['신비롭다…']],
+ [/예수상|코르코바도|corcovado/i,['christ'],'pose',['찰칵!']],
+ [/마리나 ?베이|marina ?bay/i,['marina'],'pose',['찰칵!']],
+ [/페트로나스|petronas|트윈 ?타워/i,['petronas'],'pose',['찰칵!']],
+ [/경복궁|창덕궁|덕수궁|창경궁|한옥|고궁/i,['hanok'],'pose',['찰칵!','고즈넉하다']],
+ [/오사카성|히메지|나고야성|구마모토성|천수각/i,['japancastle'],'pose',['찰칵!']],
+ [/만리장성|great ?wall/i,['greatwall'],'cheer',['길다!']],
+ [/타이베이 ?101|taipei ?101/i,['taipei101'],'pose',['찰칵!']],
+ [/앙코르|왓 ?아룬|왓 ?포|왓 ?프라깨우|왕궁.*방콕|방콕.*왕궁/i,['stupa'],'pose',['반짝반짝!']],
+ [/천문 ?시계|시계탑|clock ?tower|orloj/i,['clocktower'],'pose',['정각이다!']],
+ [/체르마트|그린델발트|샬레|chalet/i,['chalet'],'relax',['그림 같아…']],
  // 볼거리
  [/에펠/i,['eiffel'],'pose',['찰칵!','진짜 에펠탑이다!']],
  [/개선문|브란덴부르크|(^|\s)문(\s|$)|게이트|gate|tor$/i,['gate'],'pose',['찰칵!','웅장하다!']],
  [/신사|도리이|이나리|shrine/i,['torii'],'pose',['찰칵!']],
- [/사원|사찰|(^|\s)절(\s|$)|왓 |파고다|경복궁|창덕궁|temple/i,['pagoda'],'pose',['찰칵!','고즈넉하다']],
+ [/사원|사찰|(^|\s)절(\s|$)|왓 |파고다|temple/i,(c,n)=>/^(TH|KH|LA|MM|LK|ID|NP)$/.test(c)?'stupa':/^(TR|AE|SA|EG|MA|PK|BD)$/.test(c)?'mosque':c==='IN'?'taj':'pagoda','pose',['찰칵!','고즈넉하다']],
  [/성당|교회|대성당|돔 |cathedral|church|dom$|basilica/i,['church'],'pose',['찰칵!','우와, 높다!']],
  [/성$|성 |성곽|궁전|궁$|캐슬|castle|schloss|palace|ch[aâ]teau/i,['castle'],'pose',['찰칵!','동화 속 같아!']],
  [/다리|브리지|브릿지|bridge|br[uü]cke/i,['bridge'],'pose',['찰칵!','경치 좋다!']],
@@ -139,13 +207,20 @@ const RULES=[
  [/숙소|호텔|체크인|체크아웃|료칸|게스트하우스|에어비앤비|호스텔|hotel/i,['hotel'],'sleep',['오늘도 수고했어','푹 쉬자']],
  [/공항|항공|비행|flight/i,['plane'],'wave',['도착!','드디어 왔다!']],
  [/역$|역 |열차|기차|버스|지하철|이동|렌터카|station/i,['train'],'wave',['가자!']],
- [/사진|스냅|포토|투어|구경|관광/i,['camera'],'pose',['찰칵!']]
+ [/사진|스냅|포토|투어|구경|관광|시내|자유 ?(시간|일정)|올드 ?타운|구시가/i,(c,n)=>sightFor(c,n),'pose',['찰칵!','여기 좋다!']]
 ];
 // 무엇을 먹는지 안 적힌 식사는 그 나라에서 흔히 먹는 음식으로. 모르는 나라는 평범한 그릇.
-const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitzel','sausage','cake'],CH:['schnitzel','steak','pasta'],IT:['pasta','pizza','steak'],FR:['steak','bread','pasta'],ES:['paella','steak','seafood'],PT:['seafood','steak'],
- GB:['fishchips','steak','burger'],IE:['fishchips','steak'],US:['burger','steak','pizza'],CA:['burger','steak'],AU:['steak','burger','seafood'],NZ:['steak','seafood'],CZ:['sausage','schnitzel','steak'],PL:['dumpling','sausage','schnitzel'],HU:['sausage','schnitzel'],
- NL:['steak','bread','pasta'],BE:['steak','bread'],GR:['kebab','seafood'],TR:['kebab','grill'],MX:['taco','grill'],JP:['bowl','sushi','grill','curry'],KR:['bibimbap','grill','chicken','bowl'],CN:['dumpling','bowl'],TW:['dumpling','bowl'],HK:['dumpling','bowl'],
- TH:['bowl','curry','seafood'],VN:['bowl','seafood'],IN:['curry'],SG:['bowl','seafood'],MY:['curry','bowl'],ID:['grill','bowl'],PH:['grill','seafood']};
+const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitzel','sausage','cake'],CH:['fondue','schnitzel','chocolate','steak'],IT:['pasta','pizza','espresso','steak'],FR:['steak','bread','macaron','pasta'],ES:['paella','tapas','churros','steak'],PT:['seafood','nata','steak'],
+ GB:['fishchips','tea','steak','burger'],IE:['fishchips','steak'],US:['burger','steak','hotdog','donut','pizza'],CA:['poutine','burger','steak'],AU:['meatpie','steak','seafood'],NZ:['meatpie','steak','seafood'],CZ:['goulash','sausage','schnitzel','trdelnik'],PL:['dumpling','sausage','schnitzel'],HU:['goulash','sausage'],
+ NL:['cheese','fishchips','steak'],BE:['waffle','fishchips','chocolate'],GR:['kebab','seafood'],TR:['kebab','baklava','tea','grill'],MX:['taco','grill'],JP:['bowl','sushi','takoyaki','grill','onigiri','curry'],KR:['bibimbap','grill','tteokbokki','chicken','kimbap'],CN:['dumpling','pekingduck','hotpot','bowl'],TW:['dumpling','bubbletea','bowl'],HK:['dumpling','bowl','tea'],
+ TH:['padthai','curry','mangorice','bowl'],VN:['bowl','banhmi','seafood'],IN:['curry','naan'],SG:['seafood','friedrice','satay'],MY:['satay','friedrice','curry'],ID:['friedrice','satay'],PH:['grill','seafood'],
+ AE:['kebab','grill'],SA:['kebab','grill'],EG:['kebab','bread'],MA:['kebab','tea'],RU:['dumpling','bread'],SE:['bread','seafood'],NO:['seafood'],DK:['bread','hotdog'],FI:['seafood','bread'],IS:['seafood','hotdog'],HR:['seafood','pasta'],RO:['goulash','sausage'],UA:['dumpling','bread'],
+ BR:['grill','steak'],AR:['steak','grill'],PE:['seafood'],CL:['seafood','steak'],ZA:['grill','steak'],KE:['grill'],TZ:['grill'],KH:['bowl','curry'],LA:['bowl'],MM:['curry','bowl'],NP:['dumpling','curry'],LK:['curry'],BD:['curry'],PK:['curry','kebab'],IL:['kebab','bread']};
+// 관광 일정이 어디인지 특정되지 않으면 그 나라를 대표하는 건물로
+const SIGHT_BY_COUNTRY={JP:['torii','japancastle','pagoda'],KR:['hanok','tower'],CN:['greatwall','pagoda'],TW:['taipei101','pagoda'],HK:['skyline','boat'],TH:['stupa'],KH:['stupa'],LA:['stupa'],MM:['stupa'],VN:['pagoda','boat'],SG:['marina','skyline'],MY:['petronas','mosque'],ID:['stupa','parasol'],PH:['church','parasol'],
+ US:['liberty','skyline','goldengate'],CA:['mountain','skyline'],GB:['bigben','castle'],IE:['castle','church'],FR:['eiffel','arc','museum'],IT:['colosseum','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['gate','castle','church'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['church','museum'],
+ GR:['parthenon','church'],CZ:['clocktower','bridge','castle'],PL:['church','castle'],HU:['castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
+function sightFor(country,n){const list=SIGHT_BY_COUNTRY[country]||['camera'];return list[n%list.length];}
 const WESTERN=['steak','pasta','pizza','burger'],WEST=/^(SE|NO|DK|FI|IS|LU|SK|SI|HR|RO|BG|RS|EE|LV|LT|MT|CY|BR|AR|CL|ZA)$/;
 function foodFor(country,n){const list=FOOD_BY_COUNTRY[country]||(WEST.test(country)?WESTERN:['dish']);return list[n%list.length];}
 /** seen: 같은 규칙이 지금까지 몇 번 나왔는지(여행 하나를 재생하는 동안 유지) */
@@ -154,12 +229,14 @@ export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.p
  if(i<0&&e.kind==='food')i=RULES.findIndex(r=>r[1]===null);
  if(i<0&&e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
  if(i<0&&e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
- if(i<0)return {key:'pin',act:'pose',say:'찰칵!'};
+ if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
  const [,keys,act,says]=RULES[i],n=seen.get(i)||0;seen.set(i,n+1);
+ if(typeof keys==='function')return {key:keys(country,n),act,say:says[n%says.length]};
  if(keys)return {key:keys[n%keys.length],act,say:says[n%says.length]};
  const fk='food:'+country,m=seen.get(fk)||0;seen.set(fk,m+1); // 나라별로 차례를 따로 센다
  return {key:foodFor(country,m),act,say:says[n%says.length]};}
-const isFlight=e=>e.kind==='flight'||/항공|비행|✈|flight/i.test([e.title,e.note].join(' '));
+// 비행: 예약이 항공이거나 제목이 항공편일 때만. '공항 이동', '공항 체크인' 같은 일정은 비행이 아니다.
+const isFlight=e=>e.kind==='flight'||(/항공편|비행편|비행기|✈|flight|→|->/i.test(String(e.title||''))&&/항공|비행|✈|flight|공항|airport/i.test(String(e.title||''))&&!/이동|가기|가는|체크인|수속|출국 ?심사|리무진|셔틀|버스|택시|공항철도|마중|픽업|도착 후/i.test(String(e.title||'')));
 
 /* ---------- 타임라인 ---------- */
 const cleanCity=s=>String(s||'').replace(/항공편|비행편|항공|비행기/g,' ').replace(/[()\[\]]/g,' ').replace(/\s+/g,' ').trim();
@@ -317,6 +394,10 @@ const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],sno
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
  castle:['🏰',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
  boat:['⛴️',C.move],mountain:['⛰️',C.nature],park:['🌳',C.nature],parasol:['🏖️',C.nature],onsen:['♨️',C.nature],ski:['🎿',C.nature],bag:['🛍️',C.shop],ferris:['🎡',C.fun],zoo:['🦒',C.fun],aquarium:['🐠',C.fun],concert:['🎵',C.fun],stadium:['⚽',C.fun],fireworks:['🎆',C.fun],
+ airport:['🛫',C.move],suitcase:['🧳',C.move],takoyaki:['🐙',C.food],onigiri:['🍙',C.food],tteokbokki:['🌶️',C.food],kimbap:['🍙',C.food],pekingduck:['🦆',C.food],hotpot:['🍲',C.food],bubbletea:['🧋',C.cafe],padthai:['🍜',C.food],mangorice:['🥭',C.cafe],banhmi:['🥖',C.food],naan:['🫓',C.food],satay:['🍢',C.food],friedrice:['🍚',C.food],
+ baklava:['🍯',C.cafe],tea:['🫖',C.cafe],espresso:['☕',C.cafe],macaron:['🧁',C.cafe],churros:['🥖',C.cafe],nata:['🥧',C.cafe],fondue:['🫕',C.food],waffle:['🧇',C.cafe],cheese:['🧀',C.food],trdelnik:['🥐',C.cafe],goulash:['🥘',C.food],donut:['🍩',C.cafe],hotdog:['🌭',C.food],poutine:['🍟',C.food],meatpie:['🥧',C.food],tapas:['🍢',C.food],chocolate:['🍫',C.cafe],
+ bigben:['🕰️',C.sight],colosseum:['🏟️',C.sight],pisa:['🏛️',C.sight],arc:['🏛️',C.sight],windmill:['🌬️',C.sight],sagrada:['⛪',C.sight],parthenon:['🏛️',C.sight],taj:['🕌',C.sight],mosque:['🕌',C.sight],burj:['🏙️',C.sight],onion:['⛪',C.sight],liberty:['🗽',C.sight],goldengate:['🌉',C.sight],opera:['🎭',C.sight],pyramid:['🔺',C.sight],christ:['🗿',C.sight],
+ marina:['🏙️',C.sight],petronas:['🏙️',C.sight],hanok:['🏯',C.sight],japancastle:['🏯',C.sight],greatwall:['🧱',C.sight],taipei101:['🏙️',C.sight],stupa:['🛕',C.sight],chalet:['🏡',C.nature],clocktower:['🕰️',C.sight],
  hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move]};
 function drawPin(ctx,x,y,key,seen,r){const [glyph,color]=ICON[key]||ICON.pin,cy=y-r*2;ctx.save();ctx.globalAlpha=seen?1:.62;
  ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-r*.72,cy+r*.7);ctx.arc(x,cy,r,PI*.76,PI*.24);ctx.closePath();ctx.stroke();ctx.fill();
@@ -381,6 +462,7 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
 
 /* ---------- 화면 연결 (브라우저 전용) ---------- */
 const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:10px;font-weight:800;font-size:13px}.jr-seg button.active{background:var(--soft);color:var(--forest);border-color:#8ea995}
+#journeyDialog .jr-speed{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800}.jr-speed select{width:auto;min-height:39px;padding:6px 8px}.jr-done{display:flex;justify-content:center}
 #jrCanvas{display:block;margin:auto;max-width:100%;max-height:58dvh;width:auto;height:auto;border-radius:14px;border:1px solid var(--border)}.jr-controls{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
 .av-top{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}#avCanvas{width:150px;height:174px;border-radius:14px;background:var(--soft)}
 .av-group{display:grid;gap:5px}.av-group>span{font-weight:740;font-size:12px}.av-chips{display:flex;gap:6px;flex-wrap:wrap}.av-chips button{min-height:36px;min-width:36px;padding:6px 11px;border-radius:18px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-size:12px;font-weight:750}
@@ -395,7 +477,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_sky2'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_world1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -423,13 +505,13 @@ function autoApply(){const a=api(),t=a.getTrip?.(),me=a.getMyId?.(),saved=localA
  const av={...cleanAvatar(saved,me),role:''};a.saveTrip?.(d=>{d.avatars??={};d.avatars[me]??=av;},'내 캐릭터를 이 여행에 적용했어요.').catch(()=>{});}
 function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip-intro .chip-row');if(!anchor||!api().getTrip?.())return;
  let strip=document.getElementById('tripParty');if(!strip){strip=el('div',{id:'tripParty',class:'trip-party',role:'group','aria-label':'함께 가는 사람들'});anchor.after(strip);}
- const A=api(),owner=!!A.isOwner?.(),admin=!!A.isAdmin?.(),members=party(),kind=tripKind(),sig=JSON.stringify([kind,owner,admin,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
+ const A=api(),owner=!!A.isOwner?.(),admin=!!A.isAdmin?.(),manage=!!(A.canManage?.()??owner),ownerId=A.ownerId?.(),members=party(),kind=tripKind(),sig=JSON.stringify([kind,owner,admin,manage,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
  const items=members.map(m=>{const img=el('img',{src:BLANK,alt:'',width:'60',height:'60'}),name=el('span',{text:m.label});
   const face=m.me||admin?el('button',{type:'button',class:'trip-party-face','aria-label':m.label+' · 캐릭터 꾸미기',title:m.me?'내 캐릭터 꾸미기':'관리자: 이 사람 캐릭터 바꾸기'},[img,name]):el('div',{class:'trip-party-face'},[img,name]);
   if(m.me||admin)face.addEventListener('click',()=>void openAvatar(m.id));
   const item=el('div',{class:'trip-party-item'+(m.me?' me':'')},[face]);
-  // 여행 만든 사람은 다른 사람을 내보낼 수 있다
-  if(owner&&!m.me){const kick=el('button',{type:'button',class:'trip-party-kick','aria-label':m.label+' 내보내기'},[document.createTextNode('내보내기')]);kick.addEventListener('click',()=>void A.removeMember?.(m.id));item.append(kick);}
+  // 여행 만든 사람과 트립꾸 관리자는 다른 사람을 내보낼 수 있다(만든 사람은 제외)
+  if(manage&&!m.me&&m.id!==ownerId){const kick=el('button',{type:'button',class:'trip-party-kick','aria-label':m.label+' 내보내기'},[document.createTextNode('내보내기')]);kick.addEventListener('click',()=>void A.removeMember?.(m.id));item.append(kick);}
   setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;});
  // 초대받은 사람은 스스로 나갈 수 있다(만든 사람은 홈에서 여행을 삭제)
  if(!owner&&A.getTrip?.()&&!A.isDemo?.()){const leave=el('button',{type:'button',class:'trip-party-leave'},[document.createTextNode('🚪 이 여행 나가기')]);leave.addEventListener('click',()=>void A.leaveTrip?.(leave));items.push(leave);}
@@ -440,19 +522,20 @@ function mountJourney(){
  dlg.innerHTML=`<div class="modal-content"><header class="modal-header"><h3 id="jrTitle">🎬 우리 여행 동선</h3><button type="button" class="btn icononly" data-jr="close" aria-label="닫기">×</button></header>
  <div class="jr-seg" role="group" aria-label="재생 범위"><button type="button" data-jr-mode="day">선택한 하루</button><button type="button" data-jr-mode="trip">여행 전체</button></div>
  <canvas id="jrCanvas" width="${W}" height="${H}" role="img" aria-label="캐릭터들이 지도 위에서 일정 순서대로 이동하는 애니메이션"></canvas>
- <div class="jr-controls"><button type="button" class="btn primary" data-jr="play">⏸ 멈춤</button><button type="button" class="btn" data-jr="restart">↺ 처음부터</button><button type="button" class="btn" data-jr="speed">속도 ×1</button><button type="button" class="btn" data-jr="rec">⬇ 영상 저장</button></div>
- <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로 처음부터 끝까지 한 번 재생하며 녹화합니다.</p></div>`;
+ <div class="jr-controls"><button type="button" class="btn primary" data-jr="play">⏸ 멈춤</button><button type="button" class="btn" data-jr="restart">↺ 처음부터</button><label class="jr-speed">속도 <select data-jr="speed" aria-label="재생 속도">${SPEEDS.map(v=>`<option value="${v}"${v===1?' selected':''}>×${v}</option>`).join('')}</select></label><button type="button" class="btn" data-jr="rec">⬇ 영상 저장</button></div>
+ <div class="jr-done" hidden><button type="button" class="btn primary" data-jr="savefile">📥 영상 받기</button></div>
+ <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로, 재생을 기다리지 않고 빠르게 만들어요.</p></div>`;
  document.body.append(dlg);
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
- const s={tl:null,members:[],t:0,playing:false,speed:1,raf:0,last:0,rec:null,chunks:[],job:0,busy:'',stage:null};
+ const s={tl:null,members:[],t:0,playing:false,speed:1,raf:0,last:0,rec:null,chunks:[],job:0,busy:'',stage:null,exporting:false,file:null};
  const hint=dlg.querySelector('#jrHint'),HINT=hint.textContent;
- const paintButtons=()=>{btn('play').textContent=s.playing?'⏸ 멈춤':'▶ 재생';btn('speed').textContent='속도 ×'+s.speed;btn('rec').textContent=s.rec?'● 녹화 중…':'⬇ 영상 저장';
-  for(const b of dlg.querySelectorAll('[data-jr-mode]')){b.classList.toggle('active',b.dataset.jrMode===s.tl?.mode);b.disabled=!!s.rec;}
-  for(const k of ['play','restart','speed','rec'])btn(k).disabled=!!s.rec||!s.tl;hint.textContent=s.busy||HINT;};
- const finishRec=(save)=>{const r=s.rec;if(!r)return;s.rec=null;r.onstop=()=>{if(save&&s.chunks.length){const type=r.mimeType||'video/webm',blob=new Blob(s.chunks,{type}),a=el('a',{href:URL.createObjectURL(blob),download:'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+(type.includes('mp4')?'.mp4':'.webm')});
-   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);api().toast?.('여행 영상을 저장했어요.');}s.chunks=[];};
+ const paintButtons=()=>{const busy=!!s.rec||s.exporting;btn('play').textContent=s.playing?'⏸ 멈춤':'▶ 재생';btn('speed').value=String(s.speed);btn('rec').textContent=s.exporting?'● 만드는 중…':s.rec?'● 녹화 중…':'⬇ 영상 저장';
+  for(const b of dlg.querySelectorAll('[data-jr-mode]')){b.classList.toggle('active',b.dataset.jrMode===s.tl?.mode);b.disabled=busy;}
+  for(const k of ['play','restart','speed','rec'])btn(k).disabled=busy||!s.tl;dlg.querySelector('.jr-done').hidden=!s.file;hint.textContent=s.busy||HINT;};
+ const finishRec=(save)=>{const r=s.rec;if(!r)return;s.rec=null;r.onstop=()=>{if(save&&s.chunks.length){const type=r.mimeType||'video/webm';s.file=new File(s.chunks,'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+(type.includes('mp4')?'.mp4':'.webm'),{type});api().toast?.('영상이 준비됐어요. ‘영상 받기’를 눌러 저장하세요.');paintButtons();}s.chunks=[];};
   try{r.stop();}catch{}paintButtons();};
  const tick=now=>{const dt=Math.min(.05,(now-s.last)/1000);s.last=now;s.raf=requestAnimationFrame(tick);
+  if(s.exporting)return; // 영상을 만드는 동안은 화면 재생을 멈춘다
   if(!s.tl){ctx.fillStyle='#eef4e4';ctx.fillRect(0,0,W,H);ctx.fillStyle='#285c4b';ctx.font='800 30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.busy||'준비 중…',W/2,H/2);return;}
   if(s.playing)s.t+=dt*s.speed;
   const f=frameAt(s.tl,s.t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
@@ -474,9 +557,34 @@ function mountJourney(){
  btn('close').addEventListener('click',()=>dlg.close());
  btn('play').addEventListener('click',()=>{if(s.t>=s.tl.total)s.t=0;s.playing=!s.playing;paintButtons();});
  btn('restart').addEventListener('click',()=>{s.t=0;s.playing=true;paintButtons();});
- btn('speed').addEventListener('click',()=>{s.speed=s.speed===1?2:s.speed===2?.5:1;paintButtons();});
+ btn('speed').addEventListener('change',()=>{s.speed=Number(btn('speed').value)||1;paintButtons();});
  dlg.querySelectorAll('[data-jr-mode]').forEach(b=>b.addEventListener('click',()=>void load(b.dataset.jrMode)));
- btn('rec').addEventListener('click',()=>{
+ const fileName=ext=>'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+ext;
+ // 받은 영상: 휴대폰은 공유 창(사진에 저장), 그 밖에는 내려받기. 사용자가 누른 순간에만 열 수 있어 버튼으로 한 번 더 받는다.
+ btn('savefile').addEventListener('click',async()=>{const f=s.file;if(!f)return;
+  try{if(navigator.canShare?.({files:[f]})){await navigator.share({files:[f],title:s.tl?.title||'트립꾸 여행'});return;}}catch(e){if(e?.name==='AbortError')return;}
+  const a=el('a',{href:URL.createObjectURL(f),download:f.name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),8000);});
+ /* 빠른 영상 만들기: 재생을 기다리지 않고 장면을 한 장씩 그려 MP4 로 묶는다(WebCodecs). 지원하지 않는 브라우저는 재생하며 녹화한다. */
+ async function exportFast(){const VE=window.VideoEncoder;if(!VE||!window.VideoFrame)return false;
+  const fps=30,cfgs=[{codec:'avc1.640028',width:W,height:H,bitrate:5e6,framerate:fps},{codec:'avc1.4d0028',width:W,height:H,bitrate:5e6,framerate:fps},{codec:'avc1.42001f',width:W,height:H,bitrate:4e6,framerate:fps}];
+  let cfg=null;for(const c of cfgs){try{if((await VE.isConfigSupported(c)).supported){cfg=c;break;}}catch{}}if(!cfg)return false;
+  let mux;try{mux=await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm');}catch{return false;}
+  const target=new mux.ArrayBufferTarget(),muxer=new mux.Muxer({target,video:{codec:'avc',width:W,height:H},fastStart:'in-memory'});
+  let failed=null;const enc=new VE({output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),error:e=>{failed=e;}});enc.configure(cfg);
+  s.exporting=true;s.playing=false;s.file=null;paintButtons();
+  const total=Math.ceil(s.tl.total/s.speed*fps)+fps; // 끝에 1초 여유
+  try{for(let i=0;i<total&&!failed;i++){if(!dlg.open)throw new Error('closed');
+    const t=Math.min(s.tl.total,i/fps*s.speed),f=frameAt(s.tl,t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
+    const frame=new VideoFrame(canvas,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});enc.encode(frame,{keyFrame:i%(fps*2)===0});frame.close();
+    if(i%6===0){s.busy='영상 만드는 중… '+Math.round(i/total*100)+'%';hint.textContent=s.busy;await new Promise(r=>setTimeout(r,0));}
+    while(enc.encodeQueueSize>8)await new Promise(r=>setTimeout(r,4));}
+   if(failed)throw failed;await enc.flush();muxer.finalize();
+   s.file=new File([target.buffer],fileName('.mp4'),{type:'video/mp4'});s.busy='';api().toast?.('영상이 준비됐어요. ‘영상 받기’를 눌러 저장하세요.');}
+  catch(e){if(e?.message!=='closed')api().toast?.('영상 만들기 실패: '+(e?.message||e));s.busy='';}
+  finally{try{enc.close();}catch{}s.exporting=false;s.t=0;paintButtons();}
+  return true;}
+ btn('rec').addEventListener('click',async()=>{s.file=null;
+  if(await exportFast())return;
   const mime=window.MediaRecorder&&canvas.captureStream?['video/mp4;codecs=avc1.42E01E','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)):null;
   if(!mime)return api().toast?.('이 브라우저는 영상 저장을 지원하지 않아요. 기기의 화면 녹화를 이용해 주세요.');
   try{s.chunks=[];s.rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mime,videoBitsPerSecond:5e6});s.rec.ondataavailable=e=>{if(e.data.size)s.chunks.push(e.data);};s.rec.start(500);}

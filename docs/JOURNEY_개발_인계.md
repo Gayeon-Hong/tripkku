@@ -62,3 +62,9 @@
 6. **영상**: iOS 사파리 mp4 확인, 배경 음악, 사진 끼워 넣기, 공유 시트.
 7. **성능**: 저사양 휴대폰에서 그림자 끄기, 캔버스 해상도 낮추기 옵션.
 8. 토스 미니앱(`toss-miniapp/`)에는 아직 연결하지 않았습니다.
+
+## 권한 (2026-11-12)
+- 여행 만든 사람(`isOwner`) + 트립꾸 관리자(`tripkku_beta_admins`, `isAdmin`) = `canManageTrip()` / `__tripkku.canManage()`.
+  - 참여자 내보내기(만든 사람 본인은 내보낼 수 없음), 초대 버튼, 여행 정보 전체 수정, 모든 사람 캐릭터 변경.
+  - 관리자 쪽 서버 권한은 `sql/2026-11-12_admin_powers.sql`(Supabase SQL Editor에서 한 번 실행)로 열림: `tripkku_admin_remove_member`, 관리자도 가능한 `tripkku_delete_trip`.
+- 수익화가 들어오면 관리자는 결제·쿠폰 검사에서 제외한다.

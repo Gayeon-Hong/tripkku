@@ -58,9 +58,11 @@ function inferDayCountryCode(row, fallbackCode){
  return fallbackCode || tripCountryCode();
 }
 
+function withInfo(t){const i=t?.data?.meta?.info;if(!i)return t;if(i.title)t.title=i.title;if(i.destination)t.destination=i.destination;if(dateRE.test(i.start||''))t.start_date=i.start;if(dateRE.test(i.end||''))t.end_date=i.end;
+ const c=t.data.meta.countries?.[0];if(c&&BY_COUNTRY[c])t.country_code=c;return t;}
 function tripDates(){return daysBetween(trip?.start_date||'',trip?.end_date||'');}
 function activeDoc(){return trip?.data||{};}
-window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, isAdmin: () => isBetaAdmin, isOwner: () => isTripOwner(), isDemo: () => DEMO, removeMember: id => removeTripMember(id), leaveTrip: btn => trip && removeTripFromHome(trip.id, trip.owner_id === user?.id ? 'delete' : 'leave', btn), dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
+window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, isAdmin: () => isBetaAdmin, isOwner: () => isTripOwner(), canManage: () => canManageTrip(), ownerId: () => trip?.owner_id, isDemo: () => DEMO, removeMember: id => removeTripMember(id), leaveTrip: btn => trip && removeTripFromHome(trip.id, trip.owner_id === user?.id ? 'delete' : 'leave', btn), dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
@@ -162,7 +164,7 @@ function renderTripCard(t,hidden=false){
  return `<div class="trip-card ${hidden?'':'phase-'+(phase.cls||'none')}" data-trip-id="${esc(t.id)}"><div class="trip-card-info">${hidden?body:`<button class="trip-open" type="button" data-open-trip="${esc(t.id)}">${body}</button>`}</div><div class="trip-card-actions">${actions}</div></div>`;
 }
 function renderTripList(){
- const opened=openedMap(),rank=t=>Math.max(Number(opened[t.id])||0,Date.parse(t.updated_at||'')||0);
+ trips.forEach(withInfo);const opened=openedMap(),rank=t=>Math.max(Number(opened[t.id])||0,Date.parse(t.updated_at||'')||0);
  const visible=trips.filter(t=>!hiddenTripIds.has(t.id)).sort((a,b)=>rank(b)-rank(a)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
  $('tripList').innerHTML=visible.length?visible.map(t=>renderTripCard(t)).join(''):emptyMessage(trips.length?'모든 여행을 숨겼어요. 아래 숨긴 여행 목록에서 다시 표시할 수 있어요.':'아직 여행이 없어요. 위의 ‘＋ 새 여행 만들기’로 첫 여행을 시작해 보세요.');
  $('hiddenTripCount').textContent=String(hidden.length);$('hiddenTripPanel').hidden=!hidden.length;
@@ -307,7 +309,7 @@ async function openTrip(id){if(!user)return;status('여행 데이터 불러오�
   subscription=client.channel('tripkku-next-'+id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'tripkku_trips'},evt=>{
    if(evt.new?.id===trip?.id&&evt.new.revision>revision)void refreshTripFromCloud();}).subscribe();}
  if(!trip)throw new Error('여행을 찾을 수 없습니다.');normalizeDoc(trip.data);revision=trip.revision||0;
- activeDate=tripDates()[0]||'';window.tripkkuSetTravelCurrency?.(countryInfo(trip.country_code)?.currency||'USD');activeTab='schedule';pendingPlan=null;pendingChatActions=[];chatHistory=[];selectedBookingFile=null;bookingPendingForEvent=null;showScreen('trip');renderAll();chooseTab('schedule');
+ withInfo(trip);activeDate=tripDates()[0]||'';window.tripkkuSetTravelCurrency?.(countryInfo(trip.country_code)?.currency||'USD');activeTab='schedule';pendingPlan=null;pendingChatActions=[];chatHistory=[];selectedBookingFile=null;bookingPendingForEvent=null;showScreen('trip');renderAll();chooseTab('schedule');
  localStorage.setItem('tripkku-next-last-trip',id);markOpened(id);window.scrollTo({top:0,behavior:'auto'});status(DEMO?'체험 모드':'친구와 저장 연결됨 ✓');
  }catch(e){toast('여행 열기 실패: '+e.message);showScreen('home');}}
 async function refreshTripFromCloud(){if(!trip||DEMO)return;
@@ -336,16 +338,37 @@ async function saveTrip(update,success='저장 완료'){if(!trip)throw new Error
   throw new Error('다른 기기에서 동시에 수정 중이에요. 잠시 후 다시 시도해 주세요.');
  };
  const p=saveQueue.then(task);saveQueue=p.catch(e=>{status('저장 오류');toast('저장 실패: '+e.message);console.error(e);});return p;}
+// ---------- 여행 정보 수정 ----------
+let editCountries=[];
+function paintEditCountries(){$('tripEditCountries').innerHTML=editCountries.map((c,i)=>`<span class="chip country-chip">${renderCountryFlag(c,countryInfo(c).flag)} ${esc(countryInfo(c).name)}${i===0?' <small>기본</small>':''}${editCountries.length>1?`<button type="button" data-remove-country="${esc(c)}" aria-label="${esc(countryInfo(c).name)} 빼기">×</button>`:''}${i>0?`<button type="button" data-first-country="${esc(c)}" aria-label="${esc(countryInfo(c).name)}를 기본으로">↑</button>`:''}</span>`).join('');
+ $('tripEditAdd').innerHTML='<option value="">추가할 국가 선택</option>'+COUNTRIES.filter(c=>!editCountries.includes(c.code)).map(c=>`<option value="${c.code}">${c.flag} ${esc(c.name)}</option>`).join('');}
+function openTripEdit(){if(!trip)return;const f=$('tripEditForm'),m=activeDoc().meta||{};
+ f.elements.title.value=trip.title||'';f.elements.destination.value=trip.destination||'';f.elements.start.value=trip.start_date||'';f.elements.end.value=trip.end_date||'';
+ f.elements.travelRoute.value=m.travelRoute||'';f.elements.mustVisit.value=m.mustVisit||'';f.elements.constraints.value=m.constraints||'';
+ editCountries=[...itineraryCountries()];paintEditCountries();$('tripEditDialog').showModal();}
+async function saveTripEdit(e){e.preventDefault();const f=e.currentTarget,title=f.elements.title.value.trim(),destination=f.elements.destination.value.trim(),start=f.elements.start.value,end=f.elements.end.value,dates=daysBetween(start,end);
+ if(!title||destination.length<2)return toast('여행 이름과 여행지를 확인해 주세요.');if(!dates.length)return toast('여행 기간은 1~14일 사이로 설정해 주세요.');if(!editCountries.length)return toast('방문 국가를 하나 이상 골라 주세요.');
+ const lost=(activeDoc().days||[]).filter(d=>!dates.includes(d.date)&&(activeDayEvents(d).length||d.events?.length));
+ if(lost.length&&!confirm(`기간에서 빠지는 ${lost.length}일(${lost.map(d=>fmtDate(d.date)).join(', ')})의 일정이 삭제돼요. 계속할까요?`))return;
+ const btn=$('tripEditSave');setBusy(btn,true,'저장');
+ try{await saveTrip(d=>{d.meta.info={title:title.slice(0,80),destination:destination.slice(0,120),start,end};d.meta.destination=destination;d.meta.startDate=start;d.meta.endDate=end;
+   const old=d.meta.countries?.[0];d.meta.countries=[...editCountries];d.meta.countryCode=editCountries[0];if(old!==editCountries[0])d.meta.language=countryInfo(editCountries[0]).language;
+   d.meta.travelRoute=f.elements.travelRoute.value.trim().slice(0,350);d.meta.mustVisit=f.elements.mustVisit.value.trim().slice(0,900);d.meta.constraints=f.elements.constraints.value.trim().slice(0,1100);
+   d.days=dates.map(date=>d.days.find(x=>x.date===date)||{date,title:'자유 일정',events:[]});},'여행 정보를 수정했어요.');
+  $('tripEditDialog').close();if(!tripDates().includes(activeDate))activeDate=tripDates()[0]||'';renderAll();}
+ catch(err){toast('수정 실패: '+err.message);}finally{setBusy(btn,false,'저장');}}
 function renderIntro(){const c=currentCountry(),d=activeDoc(),lang=d.meta?.language||c.language;
  $('activeTripTitle').textContent=trip.title;$('activeTripSummary').textContent=trip.destination+' · '+fmtDate(trip.start_date)+' ~ '+fmtDate(trip.end_date)+' · '+tripDates().length+'일';
  $('activeCountry').textContent=countriesText();$('activeLanguage').textContent='번역: '+languageLabel(lang);$('activeCurrency').textContent='통화: '+[...new Set(itineraryCountries().map(code=>BY_COUNTRY[code].currency))].join(' · ');
- $('inviteTop').hidden=!isTripOwner();}
+ $('inviteTop').hidden=!canManageTrip();}
 function chooseTab(tab){activeTab=tab;document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();if(tab==='budget')void ensureBudgetFxRates();}
-function renderAll(){if(!trip)return;renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();}
+function renderAll(){if(!trip)return;withInfo(trip);renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();}
 function goHome(){if(trip){trip=null;pendingPlan=null;}if(subscription){void client.removeChannel(subscription);subscription=null;}
  $('inviteTop').hidden=true;showScreen(user?'home':'auth');if(user)void loadTrips();window.scrollTo({top:0,behavior:'smooth'});}
 function isTripOwner(){return Boolean(!DEMO&&user&&trip&&trip.owner_id===user.id);}
+// 트립꾸 관리자(tripkku_beta_admins)는 모든 여행에서 만든 사람과 같은 권한을 가진다.
+function canManageTrip(){return isTripOwner()||Boolean(!DEMO&&user&&trip&&isBetaAdmin);}
 async function copyTextSafe(value){
  try{await navigator.clipboard.writeText(value);return true;}
  catch(_){prompt('이 링크를 복사하세요',value);return false;}
@@ -377,10 +400,10 @@ async function createShareInvite(event,rotate=false){
  finally{if(btn?.isConnected)setBusy(btn,false);}
 }
 async function removeTripMember(target){
- if(!isTripOwner()||target===user.id)return;
+ if(!canManageTrip()||target===user.id||target===trip.owner_id)return;
  const person=members.find(x=>x.user_id===target);
  if(!person||!confirm((person.display_name||'친구')+'의 이 여행 접근·수정 권한을 없앨까요?'))return;
- const {error}=await client.rpc('tripkku_remove_member',{p_trip_id:trip.id,p_member_id:target});
+ const {error}=isTripOwner()?await client.rpc('tripkku_remove_member',{p_trip_id:trip.id,p_member_id:target}):await client.rpc('tripkku_admin_remove_member',{p_trip:trip.id,p_member:target});
  if(error)return toast('참여자 제외 실패: '+error.message);
  members=members.filter(m=>m.user_id!==target);renderInviteMembers();renderIntro();toast('해당 참여자의 접근·수정 권한을 해제했습니다.');
 }
@@ -904,6 +927,11 @@ function legacyExpensePayer(entry){
 
 function bindHandlers(){
  $('goHome').addEventListener('click',goHome);$('backHome').addEventListener('click',goHome);
+ $('editTrip').addEventListener('click',openTripEdit);$('tripEditForm').addEventListener('submit',e=>void saveTripEdit(e));
+ $('tripEditAddBtn').addEventListener('click',()=>{const c=$('tripEditAdd').value;if(c&&BY_COUNTRY[c]&&!editCountries.includes(c)){editCountries.push(c);paintEditCountries();}});
+ $('tripEditCountries').addEventListener('click',e=>{const r=e.target.closest('[data-remove-country]'),u=e.target.closest('[data-first-country]');
+  if(r){editCountries=editCountries.filter(c=>c!==r.dataset.removeCountry);paintEditCountries();}
+  if(u){editCountries=[u.dataset.firstCountry,...editCountries.filter(c=>c!==u.dataset.firstCountry)];paintEditCountries();}});
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();});
  $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;showScreen('auth');});

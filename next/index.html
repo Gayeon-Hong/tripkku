@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer">
 <title>트립꾸 TRIPKKU · 함께 꾸미는 여행 플래너</title><meta name="description" content="어디로 떠나든: AI 동선 추천, 친구와 일정·예산·메모 공유, 국가별 음성 번역까지 한 화면에서">
 <meta name="theme-color" content="#f7f5f0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="트립꾸"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261111_home1">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261112_edit1">
 <script defer src="../travel-status.js?v=20261111_home1"></script></head><body>
 <header class="topbar"><div class="topbar-inner">
  <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="../assets/icon-192.png"><span>TRIPKKU<small>함께 꾸미는 여행</small></span></button>
@@ -40,7 +40,7 @@
   <button class="btn primary big" type="submit" id="newTripSubmit">✨ 여행 만들고 추천 일정 받기</button><p class="tiny">AI가 제안하는 이동·영업 시간은 예상치예요. 실제 예약·교통편은 현지 공식 정보를 확인해야 합니다.</p>
  </form></dialog>
 <section id="tripScreen" hidden>
- <div class="trip-intro card"><div><button id="backHome" class="btn subtle small" type="button">← 내 여행 목록</button><h1 id="activeTripTitle">여행 제목</h1><p id="activeTripSummary" class="muted"></p><div class="chip-row"><span id="activeCountry" class="chip">국가</span><span id="activeLanguage" class="chip">번역 언어</span><span id="activeCurrency" class="chip">통화</span></div></div><img src="./assets/earth-base-light.png" class="trip-earth" alt=""></div>
+ <div class="trip-intro card"><div><div class="trip-intro-top"><button id="backHome" class="btn subtle small" type="button">← 내 여행 목록</button><button id="editTrip" class="btn subtle small" type="button">✏️ 여행 정보 수정</button></div><h1 id="activeTripTitle">여행 제목</h1><p id="activeTripSummary" class="muted"></p><div class="chip-row"><span id="activeCountry" class="chip">국가</span><span id="activeLanguage" class="chip">번역 언어</span><span id="activeCurrency" class="chip">통화</span></div></div><img src="./assets/earth-base-light.png" class="trip-earth" alt=""></div>
  <div class="workspace"><aside class="sidebar card"><nav id="mainNav" aria-label="여행 화면"><button data-tab="schedule" class="active">🗓 일정</button><button data-tab="notes">🧳 준비·메모</button><button data-tab="budget">💳 예산</button><button data-tab="places">❤️ 릴스·장소</button><button data-tab="transport">🚌 교통·예약</button><button data-tab="assistant">💬 챗봇·번역</button></nav><p class="sidebar-note">여행일정과 메모는 친구와 공유됩니다. 개인 파일·개인 지출은 본인만 볼 수 있어요.</p></aside>
  <div class="workspace-content">
  <section id="schedulePage" class="workspace-page"><div class="page-title"><div><h2>여행 일정</h2><p>AI가 추천한 일정도 수정·추가·삭제할 수 있어요.</p></div><div class="page-actions"><button id="journeyPlay" class="btn" type="button">🎬 동선 재생</button><button id="avatarEdit" class="btn" type="button">🧑‍🎨 내 캐릭터</button><button id="regeneratePlan" class="btn" type="button">✨ AI 동선 다시 추천</button><button id="addEvent" class="btn primary" type="button">＋ 일정 추가</button></div></div><div class="card draft-card" id="planPreview" hidden></div><div id="dayTabs" class="day-tabs"></div><div id="planPickerArea" class="plan-picker-area"></div><div id="dayRoute" class="route-link"></div><div id="timeline" class="timeline"></div><p class="tiny">새 일정과 기존 일정의 시간이 겹치면 대체 또는 시간 조정을 선택할 수 있습니다.</p></section>
@@ -90,9 +90,22 @@
  <div id="inviteCreatedBox" class="notice" hidden><label>이 여행의 초대 링크<input id="inviteCreatedLink" readonly aria-label="초대 링크"></label><div class="horizontal"><button class="btn" id="inviteLinkCopyBtn" type="button">📋 링크 복사</button><button class="btn" id="inviteRotateBtn" type="button">↻ 이전 링크 무효화 · 새 링크 만들기</button></div></div><p class="tiny">링크는 30일간 유효하며, 소유자가 재발급하면 이전 링크는 즉시 무효가 됩니다. 이미 참여한 친구는 계속 이용할 수 있습니다. 링크가 다른 사람에게 전달되면 그 사람도 참여할 수 있으니 믿을 수 있는 사람에게만 보내세요.</p>
  <h4>함께 여행을 수정할 수 있는 사람</h4><div id="inviteMemberList" class="stack-list"></div><p class="tiny" id="inviteStatus" role="status"></p>
  </div></dialog>
+<dialog id="tripEditDialog" aria-labelledby="tripEditTitle"><form id="tripEditForm" class="modal-content" method="dialog">
+ <header class="modal-header"><h3 id="tripEditTitle">✏️ 여행 정보 수정</h3><button type="button" class="btn icononly" data-close-dialog="tripEditDialog" aria-label="닫기">×</button></header>
+ <label>여행 이름 <input name="title" maxlength="80" required></label>
+ <label>여행지 <input name="destination" maxlength="120" required placeholder="예: 바르샤바, 베를린, 프라하"></label>
+ <div class="form-row"><label>출발일 <input name="start" type="date" required></label><label>귀국일 <input name="end" type="date" required></label></div>
+ <div><span class="field-label">방문 국가 <small class="muted">첫 번째 나라가 기본 언어·통화가 돼요</small></span><div id="tripEditCountries" class="country-chips"></div>
+  <div class="horizontal"><select id="tripEditAdd" aria-label="추가할 국가"></select><button type="button" class="btn" id="tripEditAddBtn">＋ 국가 추가</button></div></div>
+ <label>방문 순서·도시 (선택) <input name="travelRoute" maxlength="350" placeholder="예: 바르샤바 → 베를린 → 프라하"></label>
+ <label>꼭 가고 싶은 곳 <textarea name="mustVisit" rows="2" maxlength="900"></textarea></label>
+ <label>꼭 지켜야 할 조건 <textarea name="constraints" rows="2" maxlength="1100"></textarea></label>
+ <p class="tiny" id="tripEditNote">기간을 줄이면 빠지는 날짜의 일정은 삭제돼요. 저장하면 함께 여행하는 사람 모두에게 반영됩니다.</p>
+ <footer class="modal-actions"><button type="button" class="btn" data-close-dialog="tripEditDialog">취소</button><button class="btn primary" type="submit" id="tripEditSave">저장</button></footer>
+</form></dialog>
 <dialog id="eventDialog"><form method="dialog" id="eventForm" class="modal-content"><header class="modal-header"><h3 id="eventDialogTitle">일정 추가</h3><button type="button" class="btn icononly" data-close-dialog="eventDialog">×</button></header><label>날짜 <select name="date" id="eventDate" required></select></label><div class="form-row"><label>시작 <input name="start" type="time" value="10:00" required></label><label>종료 <input name="end" type="time" value="11:00" required></label></div><label>일정 이름 <input name="title" maxlength="120" required placeholder="예: 아침 식사"></label><label>장소 <input name="place" maxlength="180" placeholder="예: 도쿄역"></label><label>내용 <textarea name="note" rows="3" maxlength="500" placeholder="기억할 사항"></textarea></label><footer class="modal-actions"><button type="button" class="btn" data-close-dialog="eventDialog">취소</button><button class="btn primary" type="submit">일정 저장</button></footer></form></dialog>
 <dialog id="conflictDialog"><div class="modal-content"><h3>⚠️ 일정이 겹쳐요</h3><div id="conflictDetails" class="notice"></div><p class="muted">어떻게 처리할까요?</p><footer class="modal-actions"><button id="conflictCancel" class="btn" type="button">취소</button><button id="conflictAdjust" class="btn" type="button">시간 조정</button><button id="conflictReplace" class="btn danger" type="button">기존 일정 대체</button></footer></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./app.js?v=20261112_members1"></script>
-<script type="module" src="./journey.js?v=20261112_fix1"></script>
+<script type="module" src="./app.js?v=20261112_admin1"></script>
+<script type="module" src="./journey.js?v=20261112_admin1"></script>
 </body></html>
