@@ -32,7 +32,9 @@ function toast(message){const el=$('toast');el.textContent=String(message);el.cl
 function mapUrl(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place||trip?.destination||'');}
 const isGoogleMapLink=url=>{try{const u=new URL(url);return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(u.hostname)||u.hostname.endsWith('.google.com')&&u.pathname.startsWith('/maps'));}catch{return false;}};
 const displayMapUrl=(item)=>isGoogleMapLink(item?.mapUrl)?item.mapUrl:mapUrl(item?.name||item?.place||'');
-const eventEmoji=(e)=>e.emoji||({food:'🍜',move:'🚆',flight:'✈️',hotel:'🏨',visit:'📍',other:'✨'})[e.kind]||'📍';
+// 종류가 없거나 '방문'으로 저장된 이동 일정도 글자를 보고 ✈️/🚆 아이콘을 붙인다(예: 인천출발바르샤바도착).
+const looksTravel=t=>/출발.*도착|→|->|➜|에서\s*\S+(?:으로|로)\s|행\s?(?:비행|항공)|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b/.test(String(t||''));
+const eventEmoji=(e)=>e.emoji||((!e.kind||e.kind==='visit'||e.kind==='other')&&looksTravel(e.title)?(/기차|열차|버스|ICE|플릭스|트램|train|bus/i.test(e.title)?'🚆':/항공|비행|공항|인천|김포|✈|flight|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b|[A-Z]{2}\s?\d{2,4}/i.test(e.title)?'✈️':'🧭'):null)||({food:'🍜',move:'🚆',flight:'✈️',hotel:'🏨',visit:'📍',other:'✨'})[e.kind]||'📍';
 const compactCountry=(code)=>countryInfo(code)?.name||code;
 function directionsUrl(start,end){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(start)+'&destination='+encodeURIComponent(end);}
 function safeUrl(url){try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}

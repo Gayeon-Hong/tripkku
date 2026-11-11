@@ -152,6 +152,19 @@ const RULES=[
  [/맥주|비어|펍|이자카야|호프|브루어리|beer|pub/i,['beer'],'cheer',['짠!','캬~']],
  // 무엇을 먹는지 모르는 식사: 아래 foodFor 가 나라에 맞는 음식을 고른다
  [/맛집|식당|저녁|점심|아침|레스토랑|식사|먹|밥|야시장|푸드|restaurant|dinner|lunch/i,null,'eat',['맛있다!','배부르다~','이 집 잘하네!','또 오자!']],
+ // 베를린 · 프라하 · 드레스덴
+ [/브란덴부르크|brandenburg/i,['brandenburg'],'pose',['찰칵!','베를린이다!']],
+ [/장벽|이스트 ?사이드|east ?side|mauer|berlin ?wall|베르나우어/i,['berlinwall'],'pose',['역사가 느껴져…','찰칵!']],
+ [/체크포인트|찰리 ?검문소|checkpoint/i,['checkpoint'],'pose',['찰칵!']],
+ [/tv ?타워|티비 ?타워|텔레비전 ?탑|fernsehturm|알렉산더 ?광장|alexanderplatz/i,['fernsehturm'],'pose',['높다!','다 보인다!']],
+ [/국회 ?의사당|라이히스탁|reichstag|분데스탁/i,['reichstag'],'pose',['돔 위로 가자!']],
+ [/프라하 ?성|성 ?비투스|비투스|흐라트차니|hrad|prague ?castle/i,['pragcastle'],'pose',['동화 속 같아!','찰칵!']],
+ [/카를 ?교|까를 ?교|카렐 ?교|charles ?bridge|karl[uů]v/i,['charlesbridge'],'pose',['경치 좋다!','찰칵!']],
+ [/천문 ?시계|오를로이|orloj|구시청사/i,['orloj'],'pose',['정각이다!','인형 나온다!']],
+ [/틴 ?성당|틴 ?교회|t[yý]n/i,['tyn'],'pose',['뾰족뾰족!']],
+ [/성모 ?교회|프라우엔|frauenkirche/i,['frauenkirche'],'pose',['웅장하다…','찰칵!']],
+ [/츠빙거|쯔빙거|zwinger/i,['zwinger'],'pose',['화려하다!','찰칵!']],
+ [/젬퍼|잼퍼|semper|오페라 ?하우스.*드레스덴|드레스덴.*오페라/i,['semperoper'],'cheer',['브라보!','찰칵!']],
  // 나라별 랜드마크
  [/빅 ?벤|big ?ben|국회의사당.*런던|웨스트민스터/i,['bigben'],'pose',['찰칵!','런던이다!']],
  [/런던 ?아이|london ?eye/i,['ferris'],'cheer',['높다!']],
@@ -181,7 +194,7 @@ const RULES=[
  [/체르마트|그린델발트|샬레|chalet/i,['chalet'],'relax',['그림 같아…']],
  // 볼거리
  [/에펠/i,['eiffel'],'pose',['찰칵!','진짜 에펠탑이다!']],
- [/개선문|브란덴부르크|(^|\s)문(\s|$)|게이트|gate|tor$/i,['gate'],'pose',['찰칵!','웅장하다!']],
+ [/개선문|(^|\s)문(\s|$)|게이트|gate|tor$/i,['gate'],'pose',['찰칵!','웅장하다!']],
  [/신사|도리이|이나리|shrine/i,['torii'],'pose',['찰칵!']],
  [/사원|사찰|(^|\s)절(\s|$)|왓 |파고다|temple/i,(c,n)=>/^(TH|KH|LA|MM|LK|ID|NP)$/.test(c)?'stupa':/^(TR|AE|SA|EG|MA|PK|BD)$/.test(c)?'mosque':c==='IN'?'taj':'pagoda','pose',['찰칵!','고즈넉하다']],
  [/성당|교회|대성당|돔 |cathedral|church|dom$|basilica/i,['church'],'pose',['찰칵!','우와, 높다!']],
@@ -218,8 +231,10 @@ const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitz
  BR:['grill','steak'],AR:['steak','grill'],PE:['seafood'],CL:['seafood','steak'],ZA:['grill','steak'],KE:['grill'],TZ:['grill'],KH:['bowl','curry'],LA:['bowl'],MM:['curry','bowl'],NP:['dumpling','curry'],LK:['curry'],BD:['curry'],PK:['curry','kebab'],IL:['kebab','bread']};
 // 관광 일정이 어디인지 특정되지 않으면 그 나라를 대표하는 건물로
 const SIGHT_BY_COUNTRY={JP:['torii','japancastle','pagoda'],KR:['hanok','tower'],CN:['greatwall','pagoda'],TW:['taipei101','pagoda'],HK:['skyline','boat'],TH:['stupa'],KH:['stupa'],LA:['stupa'],MM:['stupa'],VN:['pagoda','boat'],SG:['marina','skyline'],MY:['petronas','mosque'],ID:['stupa','parasol'],PH:['church','parasol'],
- US:['liberty','skyline','goldengate'],CA:['mountain','skyline'],GB:['bigben','castle'],IE:['castle','church'],FR:['eiffel','arc','museum'],IT:['colosseum','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['gate','castle','church'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['church','museum'],
- GR:['parthenon','church'],CZ:['clocktower','bridge','castle'],PL:['church','castle'],HU:['castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
+ US:['liberty','skyline','goldengate'],CA:['mountain','skyline'],GB:['bigben','castle'],IE:['castle','church'],FR:['eiffel','arc','museum'],IT:['colosseum','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['brandenburg','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['church','museum'],
+ GR:['parthenon','church'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
+// 도시 이름이 보이면 그 도시의 대표 건물을 차례로 보여 준다
+const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','reichstag']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper']]];
 function sightFor(country,n){const list=SIGHT_BY_COUNTRY[country]||['camera'];return list[n%list.length];}
 const WESTERN=['steak','pasta','pizza','burger'],WEST=/^(SE|NO|DK|FI|IS|LU|SK|SI|HR|RO|BG|RS|EE|LV|LT|MT|CY|BR|AR|CL|ZA)$/;
 function foodFor(country,n){const list=FOOD_BY_COUNTRY[country]||(WEST.test(country)?WESTERN:['dish']);return list[n%list.length];}
@@ -229,22 +244,55 @@ export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.p
  if(i<0&&e.kind==='food')i=RULES.findIndex(r=>r[1]===null);
  if(i<0&&e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
  if(i<0&&e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
+ const city=CITY_SIGHTS.find(c=>c[0].test(text+' '+(e.city||'')));
+ if(i<0&&city){const k='city:'+city[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:city[1][m%city[1].length],act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
  if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
  const [,keys,act,says]=RULES[i],n=seen.get(i)||0;seen.set(i,n+1);
  if(typeof keys==='function')return {key:keys(country,n),act,say:says[n%says.length]};
  if(keys)return {key:keys[n%keys.length],act,say:says[n%says.length]};
  const fk='food:'+country,m=seen.get(fk)||0;seen.set(fk,m+1); // 나라별로 차례를 따로 센다
  return {key:foodFor(country,m),act,say:says[n%says.length]};}
-// 비행: 예약이 항공이거나 제목이 항공편일 때만. '공항 이동', '공항 체크인' 같은 일정은 비행이 아니다.
-const isFlight=e=>e.kind==='flight'||(/항공편|비행편|비행기|✈|flight|→|->/i.test(String(e.title||''))&&/항공|비행|✈|flight|공항|airport/i.test(String(e.title||''))&&!/이동|가기|가는|체크인|수속|출국 ?심사|리무진|셔틀|버스|택시|공항철도|마중|픽업|도착 후/i.test(String(e.title||'')));
-
-/* ---------- 타임라인 ---------- */
-const cleanCity=s=>String(s||'').replace(/항공편|비행편|항공|비행기/g,' ').replace(/[()\[\]]/g,' ').replace(/\s+/g,' ').trim();
-// 항공 일정의 출발지·도착지: 예약 정보가 있으면 그것을, 없으면 "인천 → 베를린" 같은 제목에서 읽는다.
+// ---------- 이동 일정 글자 분석 ----------
+// "인천출발바르샤바도착", "인천 → 바르샤바", "인천에서 바르샤바로", "ICN-WAW LO098", "바르샤바행 비행기" 등을 출발지·도착지로 나눈다.
+const GROUND=/기차|열차|ICE|\bEC\b|\bIC\b|레일|철도|버스|플릭스|flix|트램|지하철|메트로|택시|우버|볼트|도보|걸어|렌트|렌터카|자차|운전|차로|페리|배로|train|bus|tram|metro|taxi|walk|drive/i;
+const AIRWORD=/항공|비행|✈|🛫|🛬|flight|탑승|기내|에어|air(?:line|port)?|lot\b|대한항공|아시아나|루프트한자/i;
+const FLIGHT_NO=/(?:^|[^A-Za-z])([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?\d{2,4}(?![\d:])/; // KE905, LO 098, 7C1301
+const NOT_PLACE=/호텔|숙소|에어비앤비|airbnb|집|역$|중앙역|hbf|버스 ?터미널|정류장/i;
+const AIRPORT_CODE={ICN:'인천',GMP:'김포',PUS:'부산',CJU:'제주',WAW:'바르샤바',BER:'베를린',PRG:'프라하',DRS:'드레스덴',FRA:'프랑크푸르트',MUC:'뮌헨',VIE:'빈',BUD:'부다페스트',CDG:'파리',LHR:'런던',FCO:'로마',AMS:'암스테르담',NRT:'도쿄',HND:'도쿄',KIX:'오사카',HKG:'홍콩',TPE:'타이베이',BKK:'방콕',SIN:'싱가포르',DXB:'두바이',IST:'이스탄불',HEL:'헬싱키',ZRH:'취리히',BCN:'바르셀로나',MAD:'마드리드',LIS:'리스본',JFK:'뉴욕',LAX:'로스앤젤레스'};
+const cleanCity=v=>String(v||'')
+ .replace(/\d{1,2}[:시]\d{0,2}\s*(?:분)?/g,' ')                         // 시각
+ .replace(FLIGHT_NO,' ')
+ .replace(/[()\[\]{}<>「」『』"'“”]/g,' ')
+ .replace(/(?:국제)?공항|제?\s?[12]\s?(?:여객)?터미널|T[12]\b|airport|int'?l/gi,' ')
+ .replace(/항공편|비행편|비행기|항공|직항|경유|탑승|출국|입국|편$|행$|에서$|으로$|로$|에$|까지$|부터$/g,' ')
+ .replace(/귀국|출국|입국|여행|이동|첫날|마지막 ?날|돌아가기|돌아오기|기차|열차|버스|플릭스버스|대한항공|아시아나|LOT|루프트한자|에어|항공사/gi,' ')
+ .replace(/[✈🛫🛬·,]/g,' ').replace(/\s+/g,' ').trim();
+// "바르샤바 쇼팽공항" → "바르샤바": 공항 이름이 붙어 있으면 앞의 도시만 쓴다
+const sideCity=v=>{const c=cleanCity(v);return /공항|airport/i.test(v)&&c.includes(' ')?c.split(' ')[0]:c;};
+const codeCity=v=>{const m=/^\s*([A-Z]{3})\s*$/.exec(v);return m&&AIRPORT_CODE[m[1]]?AIRPORT_CODE[m[1]]:v;};
+export function parseRoute(title){const raw=String(title||''),t=raw.replace(/\d{1,2}:\d{2}\s*[~\-–]\s*\d{1,2}:\d{2}/g,' ').replace(new RegExp(FLIGHT_NO.source,'g'),' ').replace(/대한항공|아시아나|LOT 폴란드항공|루프트한자|[✈🛫🛬]/g,' ').replace(/\s+/g,' ').trim();let m,A='',B='';
+ if((m=/^(.*?)\s*(?:에서)?\s*출발\s*[,·\-→>]*\s*(.+?)\s*(?:에|으로|로)?\s*도착/.exec(t)))[A,B]=[m[1],m[2]];       // 인천출발바르샤바도착
+ else if((m=/^(.*?)\s*(?:→|->|➜|➡|⇒|〜|~|>)\s*(.+)$/.exec(t))){A=m[1];B=m[2].split(/→|->|➜|➡|⇒|〜|~|>/).at(-1);} // 인천 → 바르샤바
+ else if((m=/\b([A-Z]{3})\s*[-–—\/]\s*([A-Z]{3})\b/.exec(t)))[A,B]=[m[1],m[2]];                               // ICN-WAW
+ else if((m=/^(.*?)에서\s*(.+?)(?:으로|로|까지)(?:\s|$)/.exec(t)))[A,B]=[m[1],m[2]];                            // 인천에서 바르샤바로
+ else if((m=/^([가-힣A-Za-z]{2,}(?:\s?공항)?)\s*[-–—]\s*([가-힣A-Za-z]{2,}(?:\s?공항)?)(?:\s|$)/.exec(t)))[A,B]=[m[1],m[2]]; // 인천-바르샤바
+ else if((m=/([가-힣A-Za-z]{2,}?)\s?행(?:\s|$|비행|항공)/.exec(t)))B=m[1];                                      // 바르샤바행
+ else if((m=/^(.*?)\s*도착/.exec(t))&&AIRWORD.test(t))B=m[1];                                                    // 바르샤바 도착(항공)
+ const air=AIRWORD.test(raw)||FLIGHT_NO.test(raw);
+ if(!A&&!B&&air)B=t; // "대한항공 KE905 프랑크푸르트": 남은 글자가 도착지
+ A=codeCity(sideCity(A));B=codeCity(sideCity(B));
+ return {from:A,to:B,ground:GROUND.test(raw),air,notPlace:NOT_PLACE.test(A)||NOT_PLACE.test(B)};}
+// 비행 판단: 'plane'(확실) · 'maybe'(출발·도착 도시만 있음 → 좌표를 찾은 뒤 거리로 결정) · ''(아님)
+// '공항 이동', '공항 체크인'처럼 한 곳만 있는 일정은 비행이 아니다.
+function flightKind(e){if(e.kind==='flight')return 'plane';const t=String(e.title||''),r=parseRoute(t);
+ if(r.ground||r.notPlace)return '';
+ if(!r.to||(r.from&&r.from===r.to))return '';
+ if(!r.from)return r.air&&!/이동|가기|가는|체크인|수속|심사|리무진|셔틀|마중|픽업/.test(t)?'plane':'';
+ return r.air?'plane':'maybe';}
+const isFlight=e=>flightKind(e)==='plane';
 function flightEnds(e,doc){const b=e.bookingId&&(doc.bookings||[]).find(x=>x.id===e.bookingId);
- if(b?.origin&&b?.destination)return [String(b.origin),String(b.destination)];
- const parts=String(e.title||'').split(/→|->|➜|➡|⇒|~/);if(parts.length>=2)return [cleanCity(parts[0]),cleanCity(parts.at(-1))];
- return ['',cleanCity(e.place||'')];}
+ if(b?.origin&&b?.destination)return [codeCity(cleanCity(b.origin)),codeCity(cleanCity(b.destination))];
+ const r=parseRoute(e.title);return [r.from,r.to||cleanCity(e.place||'')];}
 function retime(tl){const fast=tl.mode==='trip';let acc=0;
  for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2)+(s.flag?1.1:0):s.plane?(fast?3.2:4.2):s.jump?(fast?2:2.8):(fast?.6:1.4)*(1+Math.min(1.6,(s.px||0)/900));s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
 export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a.getTrip?.()||{};
@@ -255,9 +303,9 @@ export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a
  want.forEach(date=>{const day=(doc.days||[]).find(d=>d.date===date);if(!day)return;
   const events=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
   const country=a.dayCountry?.(day)||day.countryCode||trip.country_code||doc.meta?.countryCode||'';
-  events.forEach((e,k)=>{const fly=isFlight(e),ends=fly?flightEnds(e,doc):null;
-   stops.push({country:String(country||'').toUpperCase(),costume:costumeKind(country),title:String(e.title||e.place||'일정'),time:String(e.start||''),date,dayIdx:dates.indexOf(date),firstOfDay:k===0,via:fly?'plane':'walk',
-    q:fly?(ends[1]||String(e.place||'')):String(e.place||e.title||''),fromQ:fly?ends[0]:'',local:!fly,react:reactionFor(e,String(country||'').toUpperCase(),seen)});});});
+  events.forEach((e,k)=>{const fk=flightKind(e),fly=!!fk,ends=fly?flightEnds(e,doc):null;
+   stops.push({country:String(country||'').toUpperCase(),costume:costumeKind(country),title:String(e.title||e.place||'일정'),time:String(e.start||''),date,dayIdx:dates.indexOf(date),firstOfDay:k===0,via:fk==='plane'?'plane':fk==='maybe'?'maybe':'walk',
+    q:fly?(ends[1]||String(e.place||'')):String(e.place||parseRoute(e.title).to||e.title||''),fromQ:fly?ends[0]:'',placeQ:String(e.place||''),local:!fly,react:fly?{key:'airport',act:'wave',say:'도착!'}:reactionFor({...e,city:[day.title,day.city].filter(Boolean).join(' ')},String(country||'').toUpperCase(),seen)});});});
  const places=stops.length-(mode==='trip'?1:0);
  if(mode==='trip'&&places>0)stops.push({title:'집 도착',time:'',date:want.at(-1),dayIdx:dates.indexOf(want.at(-1)),firstOfDay:false,via:'walk',home:true,react:{key:'house',act:'cheer',say:'다녀왔습니다!'}});
  const hr=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])+Number(m[2])/60:null;};
@@ -297,7 +345,10 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  if(Object.keys(fresh).length&&a.saveTrip)a.saveTrip(d=>{d.geo={...(d.geo||{}),...fresh};},'장소 위치를 지도에 표시했어요.').catch(()=>{});
  const ll=q=>{const v=q?known[geoKey(q)]:null;return Array.isArray(v)?v:null;};
  const S=tl.stops;for(const s of S){s.ll=ll(s.q);s.fromLL=ll(s.fromQ);}
- const home=S.find(s=>s.fromLL)?.fromLL||null;for(const s of S)if(s.home&&home)s.ll=home;
+ // 출발·도착 도시만 적힌 이동: 600km 넘게 떨어져 있으면 비행, 아니면 지상 이동
+ S.forEach((s,i)=>{if(s.via!=='maybe')return;const far=s.ll&&s.fromLL&&kmApart(s.fromLL,s.ll)>600;s.via=far?'plane':'walk';if(!far){s.fromLL=null;s.react={key:'train',act:'wave',say:'도착!'};}
+  const g=tl.segs.find(x=>x.type==='move'&&x.to===i);if(g){g.plane=far;g.jump=far;}});
+ const home=S.find(s=>s.via==='plane'&&s.fromLL)?.fromLL||null;for(const s of S)if(s.home&&home)s.ll=home;
  for(const s of S)if(home&&s.ll&&kmApart(home,s.ll)<80){s.costume='';s.country='';}
  // 나라가 바뀌어 처음 도착한 곳에서는 국기를 한 번 띄운다
  let prevCountry='';for(const s of S){s.flag=s.country&&s.country!==prevCountry?s.country:'';if(s.flag)flagImage(s.flag);prevCountry=s.country||'';}
@@ -392,7 +443,7 @@ const C={food:'#f28b30',cafe:'#b9772f',drink:'#c0478f',sight:'#12a39a',nature:'#
 const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
  sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
- castle:['🏰',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
+ castle:['🏰',C.sight],brandenburg:['🏛️',C.sight],berlinwall:['🧱',C.sight],checkpoint:['🛂',C.sight],fernsehturm:['📡',C.sight],reichstag:['🏛️',C.sight],pragcastle:['🏰',C.sight],charlesbridge:['🌉',C.sight],orloj:['🕰️',C.sight],tyn:['⛪',C.sight],frauenkirche:['⛪',C.sight],zwinger:['👑',C.sight],semperoper:['🎭',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
  boat:['⛴️',C.move],mountain:['⛰️',C.nature],park:['🌳',C.nature],parasol:['🏖️',C.nature],onsen:['♨️',C.nature],ski:['🎿',C.nature],bag:['🛍️',C.shop],ferris:['🎡',C.fun],zoo:['🦒',C.fun],aquarium:['🐠',C.fun],concert:['🎵',C.fun],stadium:['⚽',C.fun],fireworks:['🎆',C.fun],
  airport:['🛫',C.move],suitcase:['🧳',C.move],takoyaki:['🐙',C.food],onigiri:['🍙',C.food],tteokbokki:['🌶️',C.food],kimbap:['🍙',C.food],pekingduck:['🦆',C.food],hotpot:['🍲',C.food],bubbletea:['🧋',C.cafe],padthai:['🍜',C.food],mangorice:['🥭',C.cafe],banhmi:['🥖',C.food],naan:['🫓',C.food],satay:['🍢',C.food],friedrice:['🍚',C.food],
  baklava:['🍯',C.cafe],tea:['🫖',C.cafe],espresso:['☕',C.cafe],macaron:['🧁',C.cafe],churros:['🥖',C.cafe],nata:['🥧',C.cafe],fondue:['🫕',C.food],waffle:['🧇',C.cafe],cheese:['🧀',C.food],trdelnik:['🥐',C.cafe],goulash:['🥘',C.food],donut:['🍩',C.cafe],hotdog:['🌭',C.food],poutine:['🍟',C.food],meatpie:['🥧',C.food],tapas:['🍢',C.food],chocolate:['🍫',C.cafe],
@@ -477,7 +528,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_world1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_city1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -487,6 +538,23 @@ async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portra
  if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
 function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
  setTimeout(()=>portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),300);return img;}
+/* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
+const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
+function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
+ const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ const old=box.querySelector('.tk-pieces');
+ const cards=[...box.querySelectorAll(':scope > .event-card')],day=(doc.days||[]).find(d=>d.date===date);
+ if(date!==today||!day||!cards.length){old?.remove();return;}
+ const evs=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
+ const cur=now.getHours()*60+now.getMinutes();let idx=-1,tag='지금';
+ evs.forEach((e,i)=>{const st=toMin(e.start),en=toMin(e.end)??(st!=null?st+60:null);if(st!=null&&st<=cur&&cur<(en>st?en:st+60))idx=i;});
+ if(idx<0){idx=evs.findIndex(e=>(toMin(e.start)??-1)>cur);tag='다음';}
+ if(idx<0){idx=evs.length-1;tag='마지막';}
+ const card=cards[idx];if(!card){old?.remove();return;}
+ const ms=party(),kind=tripKind(),sig=JSON.stringify([idx,tag,ms.map(m=>[m.id,m.av])]);
+ if(old&&old.dataset.sig===sig&&old.parentElement===card)return;old?.remove();
+ const pieces=el('div',{class:'tk-pieces','aria-label':tag+' 여기: '+ms.map(m=>m.label).join(', ')},[el('span',{class:'tk-pieces-tag',text:tag}),...ms.slice(0,6).map((m,i)=>{const f=face(m.av,m.av.costume==='on'?kind:'',34);f.title=m.label;f.style.setProperty('--i',i);return f;})]);
+ pieces.dataset.sig=sig;card.classList.add('tk-has-pieces');card.append(pieces);}
 /* 홈 화면: 인사 카드에 내 캐릭터. 누르면 꾸미기(여행 밖에서는 이 기기에 저장해 두고, 여행을 열 때 자동으로 적용) */
 function renderHomeHero(openAvatar){const earth=document.querySelector('.home-hero .hero-earth'),me=api().getMyId?.();if(!earth||!me)return;
  let b=document.getElementById('heroMe');if(!b){b=el('button',{id:'heroMe',type:'button',class:'hero-me','aria-label':'내 캐릭터 꾸미기'});earth.before(b);b.addEventListener('click',()=>void openAvatar());}
@@ -655,6 +723,7 @@ function init(){
  // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
  const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
  const home=()=>{renderHomeHero(openAvatar);decorateTripCards();};
+ watch('timeline',()=>{const b=document.getElementById('timeline');if(b&&!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
  watch('tripList',decorateTripCards);watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
  document.addEventListener('tripkku-avatar-saved',()=>renderHomeHero(openAvatar));home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}

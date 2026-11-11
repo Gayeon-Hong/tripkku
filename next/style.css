@@ -218,3 +218,11 @@ body.night .trip-phase.now{background:#3b7e61}body.night .trip-phase.soon{backgr
 #tripList .trip-card{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center}#tripList .trip-card-actions{flex-direction:column;align-items:stretch;gap:4px;margin:0;width:auto}#tripList .trip-card-actions .btn{min-height:30px;padding:4px 9px;font-size:11px}
 .trip-intro-top{display:flex;gap:6px;flex-wrap:wrap}.field-label{display:block;font-weight:740;font-size:12px;margin-bottom:6px}.country-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.country-chip{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;font-size:12px}.country-chip small{color:var(--forest);font-weight:800}.country-chip button{border:0;background:none;color:var(--muted);font-weight:900;font-size:14px;padding:0 3px;min-height:24px}
 #tripEditDialog{width:min(96vw,560px);max-height:92dvh}#tripEditDialog .modal-content{max-height:92dvh;overflow:auto}
+
+/* 일정표 위 체스 말(일행 캐릭터) */
+.event-card.tk-has-pieces{position:relative;padding-bottom:46px}
+.tk-pieces{position:absolute;right:10px;bottom:6px;display:flex;align-items:flex-end;gap:0;pointer-events:none}
+.tk-pieces .tk-face{width:34px;height:34px;margin-left:-8px;border-radius:50%;background:var(--card,#fff);box-shadow:0 2px 0 rgba(0,0,0,.12),0 0 0 2px var(--card,#fff);animation:tkHop 2.4s ease-in-out infinite;animation-delay:calc(var(--i)*.18s)}
+.tk-pieces-tag{font-size:11px;font-weight:700;color:#fff;background:var(--forest,#285c4b);border-radius:999px;padding:2px 8px;margin-right:10px;align-self:center}
+@keyframes tkHop{0%,80%,100%{transform:translateY(0)}88%{transform:translateY(-5px)}}
+@media (prefers-reduced-motion:reduce){.tk-pieces .tk-face{animation:none}}

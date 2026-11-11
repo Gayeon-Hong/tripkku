@@ -124,6 +124,15 @@ const half=(r,h,s=24)=>new THREE.CylinderGeometry(r,r,h,s,1,false,0,PI);
 const plate=(...food)=>group(mesh(G.cyl(58,50,7,40),'#ffffff',0,4,0),rot(mesh(G.torus(54,3.5),'#e9eef3',0,8,0),PI/2),
  mesh(G.box(5,3,62),'#c9cfd9',-70,4,0),...[-4,0,4].map(x=>mesh(G.box(1.6,3,14),'#c9cfd9',-70+x,4,-36)),mesh(G.box(7,3,66),'#c9cfd9',70,4,0),...food);
 const flat=(r,c,x,y,z,sx,sy,sz)=>scl(mesh(G.sphere(r,22,14),c,x,y,z),sx,sy,sz);
+// 삼각 지붕(x축 방향으로 긴 삼각기둥, 꼭짓점이 위)
+const prism=(r,len)=>{const g=new THREE.CylinderGeometry(r,r,len,3);g.rotateZ(PI/2);g.rotateX(-PI/2);return g;};
+// 청동 말 4마리가 끄는 전차와 그 위의 인물(브란덴부르크 문·젬퍼 오페라)
+function quadriga(c,k=1,panther=false){const g=group(mesh(G.box(40,16,22),c,0,8,-10),mesh(G.cyl(9,9,4,16),c,-18,8,-14));
+ for(let i=0;i<4;i++){const x=-24+i*16,h=group(scl(mesh(G.capsule(5,16),c,0,22,0),1,1,1),rot(mesh(G.box(6,16,6),c,0,34,10),.7,0,0),rot(mesh(G.box(5,6,11),c,0,42,17),.2,0,0));
+  h.children[0].rotation.x=PI/2;for(const [lx,lz,up] of [[-3,-8,0],[3,-8,0],[-3,8,1],[3,8,1]])h.add(rot(mesh(G.box(2.6,16,2.6),c,lx,up?18:9,lz+(up?4:0)),up?-1:0,0,0));
+  if(panther){h.children[1].scale.set(1,.6,1);h.children[2].scale.set(1.2,.8,.7);}h.position.set(x,0,8);g.add(h);}
+ g.add(mesh(G.capsule(5,16),c,0,32,-14),mesh(G.sphere(5),c,0,48,-14),rot(mesh(G.box(22,14,2),c,-12,40,-18),0,.4,.3),rot(mesh(G.box(22,14,2),c,12,40,-18),0,-.4,-.3),mesh(G.cyl(1,1,36,6),c,7,52,-10),mesh(G.torus(5,1.2),c,7,72,-10));
+ g.scale.setScalar(k);return g;}
 const PROPS={
  /* 크리스마스 */
  tree:()=>{const g=group(mesh(G.cyl(9,11,26),'#8a5a3c',0,13,0),mesh(G.cone(58,70),'#2f9e63',0,48,0),mesh(G.cone(46,60),'#37b071',0,88,0),mesh(G.cone(32,50),'#45c283',0,124,0),mesh(new THREE.OctahedronGeometry(13),'#ffd84a',0,160,0,{emissive:'#ffb400',emissiveIntensity:.7}));
@@ -334,6 +343,87 @@ const PROPS={
   ...[[-56,-56],[56,-56],[-56,56],[56,56]].map(([x,z])=>mesh(G.cone(10,50,12),'#f0c75e',x,51,z,{metalness:.3,roughness:.4}))),
  chalet:()=>group(mesh(G.box(100,60,70),'#a0602a',0,30,0),scl(rot(mesh(G.cone(80,44,4),'#5a3a2a',0,82,0),0,PI/4,0),1,1,.95),mesh(G.box(104,6,10),'#f4ecd8',0,40,36),...[-26,26].map(x=>mesh(G.box(20,18,2),'#8fd0f0',x,48,36)),
   ...[-36,-12,12,36].map(x=>mesh(G.sphere(6),'#ff5a6e',x,38,40)),mesh(G.cone(56,90,7),'#e8eef4',90,45,-50),mesh(G.cone(22,36,7),'#ffffff',90,72,-50)),
+ /* ---------- 베를린 · 프라하 · 드레스덴 랜드마크 ---------- */
+ // 브란덴부르크 문: 기둥 12개, 양쪽 날개 건물, 위에 청동 콰드리가(말 4마리 + 승리의 여신)
+ brandenburg:()=>{const st='#e9dfc6',dk='#d4c7a8',g=group(mesh(G.box(176,10,64),dk,0,5,0));
+  for(const z of [-18,18])for(let i=0;i<6;i++)g.add(mesh(G.cyl(5.5,6.5,92,14),st,-70+i*28,56,z),mesh(G.box(13,5,13),dk,-70+i*28,12,z),mesh(G.box(14,5,14),dk,-70+i*28,100,z));
+  g.add(mesh(G.box(170,16,56),st,0,110,0));for(let i=0;i<18;i++)g.add(mesh(G.box(3,10,2),dk,-80+i*9.4,111,29));
+  g.add(mesh(G.box(150,22,48),st,0,129,0),mesh(G.box(66,12,40),st,0,146,0),mesh(G.box(120,4,2),dk,0,128,25));
+  for(const x of [-104,104])g.add(mesh(G.box(36,64,58),st,x,32,0),mesh(G.box(40,6,62),dk,x,67,0),...[-12,12].map(dx=>mesh(G.cyl(4,4.5,52,10),st,x+dx,32,31)));
+  const q=quadriga('#5f9f8a');q.position.set(0,152,0);g.add(q);return g;},
+ // 베를린 장벽: 둥근 머리를 가진 콘크리트 판, 앞면은 알록달록한 그림(이스트사이드 갤러리), 하나는 부서져 있다
+ berlinwall:()=>{const g=group(mesh(G.box(200,4,40),'#b9b3a6',0,2,8));const cols=[['#ff5a6e','#ffd84a'],['#6fb8ff','#ffffff'],['#8fd0b8','#ff8fb0'],['#ffd84a','#5b8def'],['#b9a4e6','#ff8a3d']];
+  for(let i=0;i<5;i++){const x=-80+i*40,h=i===3?70:104,c=cols[i];g.add(mesh(G.box(36,h,12),'#d8d4cc',x,h/2+4,0));if(i!==3)g.add(rot(mesh(G.cyl(7,7,36,14),'#d8d4cc',x,h+8,0),0,0,PI/2));
+   g.add(mesh(G.box(34,h*.5,1.5),c[0],x,h*.36,7),mesh(G.box(18,h*.22,1.6),c[1],x+5,h*.6,7.6),mesh(G.sphere(6),c[1],x-9,h*.78,7.4),rot(mesh(G.box(30,3,1.4),'#2a2f3c',x,h*.18,7.8),0,0,.2*(i%2?1:-1)));}
+  g.add(...[[42,8,22],[50,5,30],[36,4,28]].map(([x,y,z])=>rot(mesh(G.box(12,8,10),'#cfc9bf',x,y,z),.4,.6,.2)));
+  g.add(mesh(G.box(2,40,2),'#8a8f99',96,24,30),mesh(G.box(28,16,2),'#ffffff',96,50,31),mesh(G.box(24,3,1),'#2a2f3c',96,50,32.4));return g;},
+ // 베를린 TV 타워: 가는 콘크리트 기둥, 은빛 구, 빨강·하양 안테나
+ fernsehturm:()=>{const g=group(mesh(G.cyl(26,34,16,6),'#9aa3ad',0,8,0),...[0,1,2].map(i=>rot(mesh(G.box(70,8,10),'#c9cfd9',0,22,0),0,i*PI/3,0)),mesh(G.cyl(7,12,180,16),'#eef0f2',0,106,0));
+  g.add(mesh(new THREE.SphereGeometry(28,14,10),'#c3cad4',0,176,0,{metalness:.65,roughness:.3,flatShading:true}),mesh(G.cyl(29,29,5,24),'#7d8794',0,176,0));
+  for(let i=0;i<10;i++)g.add(mesh(G.sphere(2.4,8,6),'#ff8a9c',Math.sin(i*.63)*27.5,180,Math.cos(i*.63)*27.5,{emissive:'#ff5a6e',emissiveIntensity:.5}));
+  g.add(mesh(G.cyl(5,6,22,10),'#eef0f2',0,214,0));for(let i=0;i<6;i++)g.add(mesh(G.cyl(2.4,2.6,8,8),i%2?'#ffffff':'#e8323f',0,229+i*8,0));return g;},
+ // 국회의사당: 네 모서리 탑, 앞 기둥, 유리 돔, 독일 국기
+ reichstag:()=>{const st='#d9ceb4',g=group(mesh(G.box(170,56,90),st,0,28,0),mesh(G.box(172,6,92),'#c7bb9f',0,58,0));
+  for(const [x,z] of [[-78,-38],[78,-38],[-78,38],[78,38]])g.add(mesh(G.box(26,74,26),st,x,37,z),mesh(G.box(28,5,28),'#c7bb9f',x,76,z));
+  for(let i=0;i<6;i++)g.add(mesh(G.cyl(4.5,5,46,12),'#efe6d0',-30+i*12,30,48));g.add(rot(mesh(G.cone(46,18,4),st,0,64,48),0,PI/4,0));
+  for(const x of [-60,-46,46,60])for(const y of [20,40])g.add(mesh(G.box(7,10,1.5),'#6f8fc0',x,y,45.8));
+  g.add(mesh(new THREE.SphereGeometry(34,24,12,0,PI*2,0,PI/2),glass('#bfe3f5',.5),0,61,0));for(let i=0;i<8;i++)g.add(rot(mesh(G.torus(34,1.2,PI),'#8a9aa8',0,61,0),0,i*PI/8,0));
+  [['#2a2f3c',0],['#e8323f',1],['#ffd84a',2]].forEach(([c,k])=>g.add(mesh(G.box(22,5,1),c,64,124-k*5,30)));g.add(mesh(G.cyl(1,1,52,6),'#8a8f99',52,102,30));return g;},
+ // 체크포인트 찰리: 하얀 초소, 모래주머니, 표지판
+ checkpoint:()=>group(mesh(G.box(46,52,36),'#f4f1e8',0,26,0),mesh(G.box(54,6,44),'#d8d4cc',0,55,0),mesh(G.box(30,16,1.5),'#8fd0f0',0,34,18.5),mesh(G.box(10,20,1),'#2a2f3c',0,62,0),
+  ...Array.from({length:7},(_,i)=>flat(9,'#c9b28a',-36+i*12,i%2?18:7,30,1.3,.7,1)),mesh(G.cyl(1.5,1.5,90,6),'#8a8f99',46,45,10),mesh(G.box(46,26,2),'#ffffff',46,96,10),mesh(G.box(42,6,1),'#2a2f3c',46,100,11.2),mesh(G.box(30,3,1),'#e8323f',46,90,11.2)),
+ // 프라하 성: 긴 궁전(빨간 지붕) 뒤로 성 비투스 대성당의 두 첨탑과 초록 돔 탑
+ pragcastle:()=>{const g=group(mesh(G.box(190,10,70),'#b9a98a',0,5,10),mesh(G.box(180,46,26),'#f1ead6',0,33,26),scl(mesh(prism(17,184),'#c2532f',0,62,26),1,.75,1));
+  for(let r=0;r<2;r++)for(let i=0;i<14;i++)g.add(mesh(G.box(6,8,1.4),'#5a6a80',-78+i*12,22+r*16,39.4));
+  const sv='#8f8676';g.add(mesh(G.box(90,64,36),sv,-10,52,-20),rot(mesh(G.cone(30,30,4),'#4f6a5a',-10,98,-20),0,PI/4,0),mesh(G.cyl(9,9,2,20),'#c9b8e8',-10,70,-1.5));
+  for(const x of [-46,-26]){g.add(mesh(G.box(16,110,16),sv,x,55,-2),mesh(G.cone(10,58,4),'#3e4a44',x,139,-2));for(const d of [-7,7])g.add(mesh(G.cone(3,18,4),'#3e4a44',x+d,117,5));}
+  g.add(mesh(G.box(28,128,28),sv,30,64,-22),mesh(G.cyl(14,12,14,12),'#5aa58a',30,135,-22),scl(mesh(G.sphere(14),'#5aa58a',30,148,-22),1,1.2,1),mesh(G.cone(6,26,12),'#5aa58a',30,170,-22),mesh(G.sphere(3),'#f0c75e',30,185,-22),
+   mesh(G.cyl(9,9,2,20),'#f0c75e',30,108,-7.5));
+  for(let i=0;i<8;i++)g.add(mesh(G.cone(2.5,14,4),'#3e4a44',-50+i*12,91,-2));return g;},
+ // 카를교: 돌 아치 3개, 난간의 검은 성인상들, 끝에 고딕 다리탑
+ charlesbridge:()=>{const st='#b8a88e',g=group(mesh(G.box(210,3,80),'#7fbfe0',0,1,0),mesh(G.box(190,10,30),st,-10,58,0));
+  for(const x of [-70,-10,50]){g.add(rot(mesh(G.torus(26,6,PI),st,x,26,0),0,0,0),mesh(G.box(52,26,28),st,x,50,0));}
+  for(const x of [-100,-40,20,80])g.add(mesh(G.box(12,52,30),st,x,27,0),scl(rot(mesh(G.cone(8,14,4),st,x,4,17),PI/2,PI/4,0),1,1,1));
+  for(let i=0;i<6;i++)for(const z of [-13,13]){const x=-92+i*28;g.add(mesh(G.box(6,10,6),st,x,68,z),mesh(G.capsule(3.6,12),'#3a3632',x,84,z),mesh(G.sphere(3.4),'#3a3632',x,96,z),mesh(G.torus(4,.8),'#f0c75e',x,101,z));}
+  for(let i=0;i<4;i++)g.add(mesh(G.cyl(.8,.8,20,6),'#3a3632',-80+i*50,74,14),mesh(G.sphere(3,8,6),'#ffe68a',-80+i*50,85,14,{emissive:'#ffd84a',emissiveIntensity:.8}));
+  g.add(mesh(G.box(40,120,36),'#8f8676',96,60,0),mesh(G.box(24,40,2),'#2a2f3c',96,24,18.5),mesh(G.cone(30,56,4),'#3e4a44',96,148,0));
+  for(const [dx,dz] of [[-17,-15],[17,-15],[-17,15],[17,15]])g.add(mesh(G.cone(4,24,4),'#3e4a44',96+dx,132,dz));return g;},
+ // 천문시계: 구시청사 탑 + 파랑·금색 천문 시계판과 달력판, 위에 사도 창문
+ orloj:()=>{const st='#c8b896',g=group(mesh(G.box(60,190,56),st,0,95,-6),mesh(G.box(66,8,62),'#a89880',0,190,-6),mesh(G.cone(40,46,4),'#3e4a44',0,217,-6));
+  for(const [x,z] of [[-28,-30],[28,-30],[-28,18],[28,18]])g.add(mesh(G.cone(6,30,6),'#3e4a44',x,208,z));
+  g.add(mesh(G.box(46,100,8),'#9c8c70',0,70,24));
+  g.add(rot(mesh(G.cyl(19,19,3,32),'#2f5aa8',0,92,29),PI/2),rot(mesh(G.cyl(19,19,3.2,32,1,false,PI*.15,PI*.7),'#c96a3a',0,92,29.3),PI/2),rot(mesh(G.cyl(13,13,3.4,32),'#7fb5e8',0,92,29.6),PI/2,0,0),
+   mesh(G.torus(19,1.6),'#f0c75e',0,92,31.4),mesh(G.torus(9,1.2),'#f0c75e',4,96,31.8),mesh(G.sphere(3),'#ffd84a',8,104,32.5,{emissive:'#ffb400',emissiveIntensity:.6}),rot(mesh(G.box(1.6,18,1.6),'#f0c75e',0,98,32.6),0,0,-.5));
+  g.add(rot(mesh(G.cyl(15,15,3,32),'#f4ecd8',0,46,29),PI/2),mesh(G.torus(15,1.4),'#f0c75e',0,46,31),rot(mesh(G.cyl(6,6,3.2,20),'#c2352a',0,46,29.4),PI/2));
+  g.add(mesh(G.box(8,10,1),'#3a3632',-10,126,28.6),mesh(G.box(8,10,1),'#3a3632',10,126,28.6),mesh(G.cone(14,10,3),'#9c8c70',0,138,26));
+  g.add(mesh(G.capsule(3,8),'#f4f1e8',22,96,30),mesh(G.sphere(3),'#f4f1e8',22,106,30));return g;},
+ // 틴 성당: 뾰족한 작은 첨탑이 둘러싼 두 개의 검은 탑
+ tyn:()=>{const g=group(mesh(G.box(110,52,30),'#efe2c6',0,26,22),mesh(G.box(70,72,40),'#c8b896',0,36,-8));
+  for(let i=0;i<4;i++)g.add(mesh(G.box(10,16,1.4),'#4a5a70',-38+i*25,30,37.4));
+  for(const x of [-30,30]){g.add(mesh(G.box(26,130,26),'#c8b896',x,65,-8),mesh(G.cone(15,70,4),'#2f3236',x,165,-8),mesh(G.sphere(4),'#f0c75e',x,203,-8));
+   for(const [dx,dz] of [[-12,-12],[12,-12],[-12,12],[12,12]])g.add(mesh(G.cone(4,34,4),'#2f3236',x+dx,145,-8+dz),mesh(G.sphere(2),'#f0c75e',x+dx,164,-8+dz));
+   for(const [dx,dz] of [[0,-14],[0,14],[-14,0],[14,0]])g.add(mesh(G.cone(3,22,4),'#2f3236',x+dx,138,-8+dz));}
+  g.add(mesh(G.box(3,16,3),'#f0c75e',0,96,-8),mesh(G.box(10,3,3),'#f0c75e',0,100,-8));return g;},
+ // 드레스덴 성모교회: 사암 몸체(검은 얼룩), 종 모양 큰 돌 돔, 랜턴과 금 십자가, 네 모서리 작은 탑
+ frauenkirche:()=>{const st='#e3d3ae',g=group(mesh(G.box(110,10,110),'#cdbd98',0,5,0),mesh(G.cyl(46,50,74,8),st,0,47,0));
+  for(let i=0;i<8;i++){const a=i*PI/4+PI/8;g.add(mesh(G.box(10,26,2),'#5a6a80',Math.sin(a)*48,52,Math.cos(a)*48));g.children.at(-1).rotation.y=a;}
+  for(const [x,z] of [[-46,-46],[46,-46],[-46,46],[46,46]])g.add(mesh(G.cyl(9,10,96,8),st,x,58,z),scl(mesh(G.sphere(9),'#8a9a8a',x,110,z),1,1.4,1),mesh(G.cone(3,12,8),'#8a9a8a',x,124,z));
+  g.add(scl(mesh(new THREE.SphereGeometry(42,28,16,0,PI*2,0,PI/2),st,0,84,0),1,1.55,1),mesh(G.cyl(40,44,8,24),st,0,86,0),mesh(G.cyl(11,13,30,12),st,0,160,0),scl(mesh(G.sphere(12),st,0,178,0),1,.9,1),mesh(G.cone(5,18,10),st,0,193,0),
+   mesh(G.box(2.6,18,2.6),'#f0c75e',0,210,0,{metalness:.5,roughness:.3}),mesh(G.box(10,2.6,2.6),'#f0c75e',0,213,0,{metalness:.5,roughness:.3}));
+  for(const [x,y,z] of [[-30,30,38],[22,60,42],[-12,110,30],[34,96,10]])g.add(scl(mesh(G.sphere(7,10,8),'#4a4438',x,y,z),1.4,1,.3));return g;},
+ // 츠빙거 궁전: 바로크 회랑, 왕관 문(금빛 왕관), 앞의 분수 연못
+ zwinger:()=>{const st='#ead9b4',g=group(mesh(G.box(190,4,90),'#cdbd98',0,2,0));
+  for(const x of [-64,64]){g.add(mesh(G.box(70,40,22),st,x,22,-24),scl(rot(mesh(G.cone(14,10,4),'#6a8a7a',x,47,-24),0,PI/4,0),3.6,1,1.1));for(let i=0;i<5;i++)g.add(mesh(new THREE.CylinderGeometry(5,5,1.4,16,1,false,0,PI),'#5a6a80',x-24+i*12,26,-12.6),mesh(G.box(10,14,1.4),'#5a6a80',x-24+i*12,19,-12.6));}
+  g.add(mesh(G.box(42,70,30),st,0,37,-24),mesh(G.box(20,36,2),'#3a3a42',0,20,-8.4),mesh(new THREE.CylinderGeometry(10,10,2,16,1,false,-PI/2,PI),'#3a3a42',0,38,-8.4),
+   mesh(G.cyl(16,20,18,8),'#6a8a7a',0,80,-24),scl(mesh(G.sphere(16,16,10),'#6a8a7a',0,96,-24),1,1.3,1),mesh(G.cyl(4,6,10,8),'#6a8a7a',0,116,-24));
+  const gold={metalness:.6,roughness:.3};g.add(mesh(G.cyl(11,8,8,16),'#f0c75e',0,125,-24,gold),...[0,1,2,3].map(i=>rot(mesh(G.torus(7,1.6,PI),'#f0c75e',0,129,-24,gold),0,i*PI/4,0)),mesh(G.sphere(3),'#f0c75e',0,138,-24,gold),mesh(G.box(1.6,8,1.6),'#f0c75e',0,143,-24,gold));
+  for(const x of [-32,-14,14,32])g.add(mesh(G.capsule(3,10),'#f4ecd8',x,80,-12),mesh(G.sphere(3),'#f4ecd8',x,90,-12));
+  g.add(mesh(G.cyl(40,40,6,32),'#d8cfb8',0,5,26),mesh(G.cyl(36,36,6.5,32),'#8fd0f0',0,5.5,26),mesh(G.cyl(3,4,20,10),'#d8cfb8',0,14,26),...steam(0,26,26));return g;},
+ // 젬퍼 오페라: 반원형 정면, 아치 창 두 줄, 위에 표범 4두 마차
+ semperoper:()=>{const st='#e6dcc4',g=group(mesh(G.box(180,6,80),'#cdbd98',0,3,0),mesh(new THREE.CylinderGeometry(78,78,70,32,1,false,-PI/2,PI),st,0,41,-10),mesh(new THREE.CylinderGeometry(80,80,6,32,1,false,-PI/2,PI),'#cfc3a6',0,78,-10));
+  for(let r=0;r<2;r++)for(let i=0;i<9;i++){const a=-PI/2+(i+.5)*PI/9;g.add(rot(mesh(G.box(9,r?14:18,1.5),'#4a5a70',Math.sin(a)*78.5,r?60:30,-10+Math.cos(a)*78.5),0,a,0));}
+  g.add(mesh(G.box(60,96,30),st,0,51,52),mesh(G.box(38,58,2),'#cfc3a6',0,58,67.4),mesh(new THREE.CylinderGeometry(19,19,2.2,20,1,false,-PI/2,PI),'#4a5a70',0,72,68),mesh(G.box(38,26,2.2),'#4a5a70',0,59,68),mesh(G.box(64,6,34),'#cfc3a6',0,102,52));
+  const q=quadriga('#4f5a52',.8,true);q.position.set(0,106,52);g.add(q);return g;},
  clocktower:()=>group(mesh(G.box(54,170,54),'#a89880',0,85,0),mesh(G.cone(40,60,4),'#3a4a3a',0,200,0),...[-1,1].map(s=>mesh(G.cone(8,30,6),'#3a4a3a',s*24,186,24)),mesh(G.cyl(22,22,3,28),'#3a5aa0',0,110,28),mesh(G.cyl(16,16,4,28),'#f0c75e',0,110,29),
   rot(mesh(G.box(2,16,2),'#2a2f3c',0,114,31),0,0,.6),mesh(G.box(100,70,40),'#c8b8a0',-60,35,-10))
 };
