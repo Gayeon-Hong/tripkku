@@ -12,7 +12,7 @@
  * 공개 키는 브라우저에 있어도 안전하지만, service_role·Gemini 키는 절대 여기에 넣지 않는다.
  */
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm';
-import {COUNTRIES,BY_COUNTRY,LANGUAGES,suggestCountry,countryInfo,languageLabel} from './countries.js';
+import {COUNTRIES,BY_COUNTRY,LANGUAGES,suggestCountry,countryInfo,languageLabel,renderCountryFlag} from './countries.js';
 
 // Public URL and publishable key are safe in the browser; never put GEMINI_API_KEY here.
 const CONFIG={url:'https://aachvbbblwycutggzdpp.supabase.co',publishable:'sb_publishable_VeMIoHqNqCTnxZSMCqLHVg_FLQTW6Pq'};
@@ -48,6 +48,16 @@ const emptyMessage=(message)=>`<div class="empty-state">${esc(message)}</div>`;
 const FALLBACK_COUNTRY='KR';
 function tripCountryCode(){return trip?.country_code||activeDoc().meta?.countryCode||activeDoc().meta?.countries?.[0]||FALLBACK_COUNTRY;}
 function currentCountry(){const day=activeDoc().days?.find(d=>d.date===activeDate);return countryInfo(day?.countryCode||tripCountryCode());}
+function inferDayCountryCode(row, fallbackCode){
+ if(row?.countryCode && BY_COUNTRY[row.countryCode]) return row.countryCode;
+ const text = `${row?.title||''} ${(row?.events||[]).map(e=>(e.title||'')+' '+(e.place||'')+' '+(e.note||'')).join(' ')}`;
+ if(/프라하|체코|블타바|카를교|바츨라프|prague|praha|czech/i.test(text)) return 'CZ';
+ if(/독일|베를린|드레스덴|라이프치히|할레|포츠담|브란덴부르크|germany|berlin|dresden|leipzig|halle/i.test(text)) return 'DE';
+ if(/폴란드|바르샤바|쇼팽|warsaw|warszawa|poland/i.test(text)) return 'PL';
+ if(/일본|도쿄|오사카|오이타|후쿠오카|japan|tokyo/i.test(text)) return 'JP';
+ return fallbackCode || tripCountryCode();
+}
+
 function tripDates(){return daysBetween(trip?.start_date||'',trip?.end_date||'');}
 function activeDoc(){return trip?.data||{};}
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
@@ -135,7 +145,7 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
 function renderTripCard(t,hidden=false){
  const c=countryInfo(t.country_code),mine=t.owner_id===user?.id;
  const actions=hidden?`<button class="btn small" type="button" data-unhide-trip="${esc(t.id)}">↩ 다시 표시</button>${mine?`<button class="btn danger small" type="button" data-delete-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 영구 삭제">영구 삭제</button>`:`<button class="btn danger small" type="button" data-leave-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 나가기">나가기</button>`}`:`<button class="btn small" type="button" data-open-trip="${esc(t.id)}">열기</button>${mine?`<button class="btn small" type="button" data-share-trip="${esc(t.id)}">🔗 초대</button>`:''}<button class="btn small" type="button" data-hide-trip="${esc(t.id)}">🙈 숨기기</button>`;
- return `<div class="trip-card"><div class="trip-card-info"><strong>${c.flag} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
+ const flagHtml=renderCountryFlag(t.country_code,c.flag);return `<div class="trip-card"><div class="trip-card-info"><strong>${flagHtml} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
 }
 function renderTripList(){
  const visible=trips.filter(t=>!hiddenTripIds.has(t.id)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
@@ -381,7 +391,7 @@ function routeForStops(rawStops){const stops=[...new Set(rawStops.filter(Boolean
  return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(stops[0])+'&destination='+encodeURIComponent(stops.at(-1))+(stops.length>2?'&waypoints='+stops.slice(1,-1).map(encodeURIComponent).join('%7C'):'');}
 function routeForDay(events){return routeForStops(events.filter(e=>e.place&&e.kind!=='move').map(e=>e.place));}
 function renderSchedule(){const dates=tripDates();if(!dates.includes(activeDate))activeDate=dates[0];
- $('dayTabs').innerHTML=dates.map((date,i)=>{const row=activeDoc().days.find(d=>d.date===date),flag=row?.countryCode?countryInfo(row.countryCode).flag:'';return `<button data-day="${date}" class="${date===activeDate?'active':''}">${flag} ${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`;}).join('');
+ $('dayTabs').innerHTML=dates.map((date,i)=>{const row=activeDoc().days.find(d=>d.date===date);const dayCode=inferDayCountryCode(row,tripCountryCode());const flagHtml=renderCountryFlag(dayCode,countryInfo(dayCode).flag);return `<button data-day="${date}" class="${date===activeDate?'active':''}">${flagHtml} ${esc(fmtDate(date))}<br><small>${i+1}일 차</small></button>`;}).join('');
  $('dayTabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeDate=b.dataset.day;renderSchedule();renderTranslatorConfig();renderIntro();}));
  const day=activeDoc().days.find(d=>d.date===activeDate),events=[...(day?.events||[])].sort((a,b)=>a.start.localeCompare(b.start));
  const route=routeForDay(events);$('dayRoute').innerHTML=route?`<a href="${esc(route)}" target="_blank" rel="noopener noreferrer" class="btn small">🗺 오늘의 추천 동선 Google 지도에서 확인 ↗</a>`:'';

@@ -63,3 +63,11 @@ const MATCH = [
 export function suggestCountry(destination){const matches=MATCH.filter(([,re])=>re.test(destination||''));return matches.length===1?matches[0][0]:'';}
 export function languageLabel(code){return LANGUAGES[code]?.[0]||code;}
 export function countryInfo(code){return BY_COUNTRY[code]||BY_COUNTRY.JP;}
+
+export function renderCountryFlag(code, fallbackEmoji = ''){
+  if(!code) return fallbackEmoji;
+  const upper = String(code).toUpperCase();
+  const c = BY_COUNTRY[upper];
+  const alt = fallbackEmoji || c?.flag || upper;
+  return `<span class="flag-wrapper" title="${c?.name || upper}"><img src="https://purecatamphetamine.github.io/country-flag-icons/3x2/${upper}.svg" class="country-flag-svg" alt="${alt}" style="width:1.25em;height:0.84em;vertical-align:-0.12em;border-radius:2px;display:inline-block;box-shadow:0 1px 2px rgba(0,0,0,0.18);margin-right:4px;" onerror="this.outerHTML='${alt}'"></span>`;
+}
