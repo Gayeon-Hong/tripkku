@@ -60,7 +60,7 @@ function inferDayCountryCode(row, fallbackCode){
 
 function tripDates(){return daysBetween(trip?.start_date||'',trip?.end_date||'');}
 function activeDoc(){return trip?.data||{};}
-window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule };
+window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
