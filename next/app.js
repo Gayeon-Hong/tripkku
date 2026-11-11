@@ -406,21 +406,27 @@ function renderSchedule(){const dates=tripDates();if(!dates.includes(activeDate)
  const day=activeDoc().days.find(d=>d.date===activeDate);
  const planArea=$('planPickerArea');
  if(planArea){
-  if(day&&Array.isArray(day.plans)&&day.plans.length>1){
-   const currentIdx=Math.min(Math.max(0,Number(day.activePlan)||0),day.plans.length-1);
-   planArea.innerHTML=`<div class="plan-picker" id="planPicker" aria-label="${esc(day.title||'')} 일정 선택"><div class="plan-buttons" role="group" aria-label="일정 안 선택">${day.plans.map((p,idx)=>`<button class="plan-button ${idx===currentIdx?'active':''}" type="button" data-plan-idx="${idx}" aria-pressed="${idx===currentIdx}"><b>${esc(p.title)}</b><small>${esc(p.hint||'')}</small></button>`).join('')}</div>${day.plans[currentIdx]?.hint?`<p class="plan-hint">💡 ${esc(day.plans[currentIdx].hint)}</p>`:''}</div>`;
+  // 하루 일정 여러 안(1안/2안…): 누구나 '＋ 새 안'으로 지금 일정을 복사해 다른 안을 만들고 전환할 수 있다.
+  if(day){
+   const plans=Array.isArray(day.plans)&&day.plans.length?day.plans:[{title:'1안',hint:'',events:day.events||[]}];
+   const currentIdx=Math.min(Math.max(0,Number(day.activePlan)||0),plans.length-1);
+   planArea.innerHTML=`<div class="plan-picker" id="planPicker" aria-label="${esc(day.title||'')} 일정 선택"><div class="plan-buttons" role="group" aria-label="일정 안 선택">${plans.map((p,idx)=>`<button class="plan-button ${idx===currentIdx?'active':''}" type="button" data-plan-idx="${idx}" aria-pressed="${idx===currentIdx}"><b>${esc(p.title||`${idx+1}안`)}</b><small>${esc(p.hint||`일정 ${(p.events||[]).length}개`)}</small></button>`).join('')}${plans.length<4?`<button class="plan-button plan-add" type="button" data-plan-add><b>＋ 새 안 만들기</b><small>지금 일정을 복사해 ${plans.length+1}안으로</small></button>`:''}</div>${plans.length>1?`<div class="plan-tools"><button type="button" class="btn small subtle" data-plan-rename>✏️ 이름 바꾸기</button><button type="button" class="btn small subtle" data-plan-remove>🗑 이 안 삭제</button></div>`:''}</div>`;
+   const withDay=fn=>d=>{const t=d.days.find(x=>x.date===activeDate);if(!t)return;if(!Array.isArray(t.plans)||!t.plans.length)t.plans=[{title:'1안',hint:'',events:clone(t.events||[])}];t.activePlan=Math.min(Math.max(0,Number(t.activePlan)||0),t.plans.length-1);fn(t);t.events=clone(t.plans[t.activePlan].events||[]);};
    planArea.querySelectorAll('[data-plan-idx]').forEach(b=>b.addEventListener('click',()=>{
-    const idx=Number(b.dataset.planIdx);if(day.activePlan===idx)return;
-    void saveTrip(d=>{
-     const targetDay=d.days.find(x=>x.date===activeDate);
-     if(targetDay){
-      targetDay.activePlan=idx;
-      if(Array.isArray(targetDay.plans)&&targetDay.plans[idx]?.events){
-       targetDay.events=clone(targetDay.plans[idx].events);
-      }
-     }
-    },`${idx+1}안 일정으로 전환했습니다.`);
+    const idx=Number(b.dataset.planIdx);if(idx===currentIdx)return;
+    void saveTrip(withDay(t=>{t.activePlan=idx;}),`${plans[idx]?.title||idx+1+'안'} 일정으로 전환했습니다.`).then(()=>renderSchedule());
    }));
+   planArea.querySelector('[data-plan-add]')?.addEventListener('click',()=>{
+    void saveTrip(withDay(t=>{const n=t.plans.length+1;t.plans.push({title:`${n}안`,hint:'',events:clone(t.plans[t.activePlan].events||[]).map(e=>({...e,id:uuid()}))});t.activePlan=t.plans.length-1;}),`${plans.length+1}안을 만들었어요. 일정을 자유롭게 고쳐 보세요.`).then(()=>renderSchedule());
+   });
+   planArea.querySelector('[data-plan-rename]')?.addEventListener('click',async()=>{
+    const cur=plans[currentIdx];const name=(await Promise.resolve(prompt('이 안의 이름 (예: 비 오는 날 안)',cur?.title||'')))?.trim();if(!name)return;
+    void saveTrip(withDay(t=>{t.plans[t.activePlan].title=name.slice(0,20);}),'이름을 바꿨어요.').then(()=>renderSchedule());
+   });
+   planArea.querySelector('[data-plan-remove]')?.addEventListener('click',()=>{
+    if(!confirm(`'${plans[currentIdx]?.title||'이 안'}'을(를) 삭제할까요? 이 안의 일정도 함께 지워져요.`))return;
+    void saveTrip(withDay(t=>{t.plans.splice(t.activePlan,1);t.activePlan=0;}),'안을 삭제했어요.').then(()=>renderSchedule());
+   });
   }else{
    planArea.innerHTML='';
   }
