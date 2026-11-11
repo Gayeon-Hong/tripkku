@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>COG LOUNGE - 3D 서바이벌 아레나</title>
   <style>
-    :root {
+    [data-theme="cream-navy"] {
       --bg: #dbe3f0;
       --wall-base: #f8f9fc;
       --floor-base: #e5dac9;
@@ -19,18 +19,33 @@
       --ticker-gold: #f7ce55;
     }
 
-    [data-theme="dark-navy"] {
-      --bg: #060b14;
-      --wall-base: #10192a;
-      --floor-base: #182338;
-      --navy-accent: #23375e;
-      --navy-soft: #2e477a;
+    :root, [data-theme="dark-navy"] {
+      --bg: #070c16;
+      --wall-base: #101726;
+      --floor-base: #1e1813;
+      --navy-accent: #18263e;
+      --navy-soft: #23375c;
       --text: #f1f5f9;
       --text-muted: #94a3b8;
-      --panel-bg: rgba(15, 23, 42, 0.92);
-      --panel-border: rgba(255, 255, 255, 0.14);
-      --ticker-bg: #03060b;
+      --panel-bg: rgba(12, 19, 34, 0.92);
+      --panel-border: rgba(247, 206, 85, 0.2);
+      --ticker-bg: #040810;
+      --ticker-gold: #f7ce55;
     }
+      --bg: #dbe3f0;
+      --wall-base: #f8f9fc;
+      --floor-base: #e5dac9;
+      --navy-accent: #111e38;
+      --navy-soft: #1d2e52;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --panel-bg: rgba(255, 255, 255, 0.92);
+      --panel-border: rgba(17, 30, 56, 0.12);
+      --ticker-bg: #091120;
+      --ticker-gold: #f7ce55;
+    }
+
+    
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--text); }
@@ -247,6 +262,7 @@
 
       <!-- 가로 퀵 버튼 바 -->
       <div class="quick-action-bar">
+        <button class="action-pill" id="btn-games" style="background:#f59e0b;color:#0b1322;font-weight:900;">🎮 게임 아레나</button>
         <button class="action-pill" id="btn-secretary">👩‍💼 비서실</button>
         <button class="action-pill" id="btn-invite" style="color:#f59e0b;">🎁 친구초대 (+200)</button>
         <button class="action-pill" id="btn-closet">👕 일상복</button>
@@ -343,6 +359,116 @@
     </div>
   </div>
 
+
+
+  <!-- 24종 두뇌 게임 아레나 모달 -->
+  <div class="modal-backdrop ui-interactive" id="games-modal">
+    <div class="modal-card" style="max-width:540px;max-height:85vh;overflow-y:auto;">
+      <div class="modal-head" style="position:sticky;top:0;background:var(--panel-bg);padding-bottom:10px;z-index:2;">
+        <div>
+          <h3>🎮 데블스 플랜 24종 두뇌 게임 아레나</h3>
+          <p style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
+            라운지에서 코그(COG)를 걸고 심리전·두뇌 대결에 입장하세요!
+          </p>
+        </div>
+        <button class="modal-close" onclick="closeModal('games-modal')">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-top:10px;">
+        
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">⚖️</span>
+            <span class="badge" style="background:rgba(245,158,11,0.2);color:#f59e0b;">메인 매치</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">소수결의 법칙</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            적은 쪽을 고른 소수만 생존! 상대방의 블러핑과 버릇을 꿰뚫으세요.
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=minority" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:#f59e0b;color:#000;font-weight:800;">
+            ⚔️ 소수결 입장하기
+          </a>
+        </div>
+
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">❓</span>
+            <span class="badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;">심리 베팅</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">블라인드 숫자전</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            1부터 9까지 카드를 한 번씩 내며 상대방의 패를 카운터치는 뇌지컬 승부.
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=blind" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
+            ⚔️ 블라인드전 입장
+          </a>
+        </div>
+
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">▦</span>
+            <span class="badge" style="background:rgba(239,68,68,0.2);color:#f87171;">서바이벌</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">징검다리 건너기</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            잠깐 깜빡인 안전한 강화유리 돌을 순서대로 기억해 끝까지 질주하세요.
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=bridge" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
+            ⚔️ 징검다리 입장
+          </a>
+        </div>
+
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">△</span>
+            <span class="badge" style="background:rgba(16,185,129,0.2);color:#34d399;">관찰·추리</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">3장의 법칙 (결! 합!)</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            색·모양·개수가 모두 같거나 다른 3장의 세트를 빠르게 찾아내는 게임.
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=triad" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
+            ⚔️ 3장의 법칙 입장
+          </a>
+        </div>
+
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">🤝</span>
+            <span class="badge" style="background:rgba(236,72,153,0.2);color:#f472b6;">죄수의 딜레마</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">믿을까 배신할까</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            6라운드 동안 협력할 것인가, 마지막에 통수치고 코그를 독식할 것인가!
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=trust" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
+            ⚔️ 배신 게임 입장
+          </a>
+        </div>
+
+        <div class="closet-item" style="text-align:left;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:20px;">₩</span>
+            <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;">비공개 입찰</span>
+          </div>
+          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">밀실 칩 경매</div>
+          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
+            30칩으로 5개 보물을 비밀 입찰! 함정 상자를 피하고 최대 수익을 내세요.
+          </div>
+          <a href="https://thinkchip-arena.pages.dev/?game=auction" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
+            ⚔️ 칩 경매 입장
+          </a>
+        </div>
+
+      </div>
+
+      <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.05);border-radius:10px;text-align:center;">
+        <a href="https://thinkchip-arena.pages.dev/" target="_blank" style="color:#f59e0b;font-weight:800;font-size:13px;text-decoration:none;">
+          🌐 24종 전체 게임 웹 플랫폼 바로가기 (새창 열기) ↗
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- 친구 초대 모달 -->
   <div class="modal-backdrop ui-interactive" id="invite-modal">
@@ -1457,7 +1583,7 @@
     };
 
     let state = {
-      isDarkTheme: false,
+      isDarkTheme: true, // 데블스 플랜 분위기의 세련되고 차분한 다크 네이비 라운지 기본값
       phase: "TEAM_SECRET",
       balance: 4250,
       attendanceClaimed: false
@@ -1465,20 +1591,20 @@
 
     const canvas = document.getElementById("webgl-canvas");
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(CONFIG.THEMES.CREAM_NAVY.bg);
+    scene.background = new THREE.Color(CONFIG.THEMES.DARK_NAVY.bg);
 
     // 모바일 세로 화면(Portrait)에 최적화된 동적 FOV 및 카메라 위치
     const initialAspect = window.innerWidth / window.innerHeight;
-    const initialFov = initialAspect < 1 ? 68 : 42;
+    const initialFov = initialAspect < 1 ? 62 : 38;
     const camera = new THREE.PerspectiveCamera(initialFov, initialAspect, 0.1, 100);
     
-    // 모바일 세로에 맞춰 방 전체가 한눈에 들어오는 황금 위치
+    // PC와 모바일 모두에서 캐릭터 목/얼굴이 상단 배너에 가리지 않도록 카메라 시선과 높이 최적화
     if (initialAspect < 1) {
-      camera.position.set(10, 11, 13); // 모바일에서 캐릭터와 소파가 큼직하게 중앙에 오도록 줌인
+      camera.position.set(10, 9.5, 12.5);
     } else {
-      camera.position.set(9, 10, 12);
+      camera.position.set(11, 7.8, 14.0); // PC 와이드스크린에서 캐릭터 상체가 화면 중심에 시원하게 들어옴
     }
-    camera.lookAt(0, 1.2, 0);
+    camera.lookAt(0, 0.95, 0);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1487,6 +1613,9 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.95, 0); // 캐릭터 중심 시선 고정
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2.15;
@@ -1510,7 +1639,7 @@
     scene.add(deskLight);
 
     // 재질
-    const currentTheme = CONFIG.THEMES.CREAM_NAVY;
+    const currentTheme = CONFIG.THEMES.DARK_NAVY;
     const materials = {
       floor: new THREE.MeshStandardMaterial({ color: 0xc9b59e, roughness: 0.4, metalness: 0.05 }), // 따뜻한 라이트 오크
       wallBase: new THREE.MeshStandardMaterial({ color: 0xf3eee6, roughness: 0.6 }),             // 포근한 크림 아이보리
@@ -1825,6 +1954,12 @@
     });
 
     
+    
+    // 게임 아레나 모달 열기
+    document.getElementById("btn-games").addEventListener("click", () => {
+      document.getElementById("games-modal").classList.add("open");
+    });
+
     // 친구 초대 모달 및 보상
     document.getElementById("btn-invite").addEventListener("click", () => {
       document.getElementById("invite-modal").classList.add("open");
@@ -1872,12 +2007,13 @@
     window.addEventListener("resize", () => {
       const a = window.innerWidth / window.innerHeight;
       camera.aspect = a;
-      camera.fov = a < 1 ? 68 : 42;
+      camera.fov = a < 1 ? 62 : 38;
       if (a < 1) {
-        camera.position.set(15, 17, 19);
+        camera.position.set(10, 9.5, 12.5);
       } else {
-        camera.position.set(12, 13, 16);
+        camera.position.set(11, 7.8, 14.0);
       }
+      controls.target.set(0, 0.95, 0);
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
