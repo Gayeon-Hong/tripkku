@@ -9,6 +9,7 @@
  *                   걸어서 이동하고, 먼 곳(비행·도시 간)은 화면이 바뀌며 멀리서 본 지도 위를 탈것이 지나간다.
  *   4) 그리기       3D 장면은 journey3d.js(Three.js)가 그리고, 그 위에 이름표·말풍선·제목을 2D로 덧그린다.
  *   5) 영상 저장    합쳐진 캔버스를 녹화해 파일로 내려받는다.
+ *   6) 여행 계획    여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다(내 캐릭터를 누르면 꾸미기).
  *
  * app.js 와는 window.__tripkku 로만 연결된다.
  */
@@ -236,9 +237,26 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .av-group{display:grid;gap:5px}.av-group>span{font-weight:740;font-size:12px}.av-chips{display:flex;gap:6px;flex-wrap:wrap}.av-chips button{min-height:36px;min-width:36px;padding:6px 11px;border-radius:18px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-size:12px;font-weight:750}
 .av-chips button.swatch{padding:0;width:36px;border-radius:50%}.av-chips button.active{border-color:#285c4b;box-shadow:0 0 0 2px #285c4b33}body.night .av-chips button.active{border-color:#92c6ac}
 .av-slider{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:11px;font-weight:600;color:var(--muted)}.av-slider input{min-height:28px;padding:0;border:0;background:none;accent-color:#285c4b}
+.trip-party{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.trip-party-item{display:grid;justify-items:center;gap:2px;border:0;background:none;color:var(--ink);font-size:11px;font-weight:750;padding:2px;min-width:64px;max-width:84px}.trip-party-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
 let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js'));
+const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
+
+/* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
+const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+let portraits=null;const portraitCache=new Map();
+async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portraitCache.has(key))return portraitCache.get(key);
+ if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
+function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip-intro .chip-row');if(!anchor||!api().getTrip?.())return;
+ let strip=document.getElementById('tripParty');if(!strip){strip=el('div',{id:'tripParty',class:'trip-party',role:'group','aria-label':'함께 가는 사람들'});anchor.after(strip);}
+ const members=party(),kind=tripKind(),sig=JSON.stringify([kind,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
+ strip.replaceChildren(...members.map(m=>{const img=el('img',{src:BLANK,alt:'',width:'60',height:'60'}),name=el('span',{text:m.label});
+  const item=m.me?el('button',{type:'button',class:'trip-party-item me','aria-label':m.label+' · 내 캐릭터 꾸미기',title:'내 캐릭터 꾸미기'},[img,name]):el('div',{class:'trip-party-item'},[img,name]);
+  if(m.me)item.addEventListener('click',()=>void openAvatar());
+  // 3D 는 화면이 한가할 때 불러와 그림만 채운다. 실패하면 동그란 빈칸으로 남는다.
+  setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;}));}
 
 function mountJourney(){
  const dlg=el('dialog',{id:'journeyDialog','aria-labelledby':'jrTitle'});
@@ -301,7 +319,6 @@ function mountAvatar(){
  const group=(title,chips)=>el('div',{class:'av-group'},[el('span',{text:title}),el('div',{class:'av-chips'},chips)]);
  const chip=(label,active,onClick,color)=>{const b=el('button',{type:'button',class:(color?'swatch ':'')+(active?'active':''),'aria-pressed':String(active)});
   if(color){b.style.background=color;b.setAttribute('aria-label',label);}else b.textContent=label;b.addEventListener('click',onClick);return b;};
- const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
  const refresh=()=>s.preview?.set(s.av,s.av.costume==='on'?tripKind():'');
  const paint=()=>{
   const set=(k,v)=>()=>{s.av[k]=v;paint();};
@@ -340,7 +357,7 @@ function init(){
  play.addEventListener('click',()=>void openJourney(ended()?'trip':'day'));
  edit.addEventListener('click',()=>void openAvatar());
  // 여행 마지막 날부터는 버튼이 '여행 영상 만들기'로 바뀐다.
- const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());};
+ const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());renderPartyStrip(openAvatar);};
  const title=document.getElementById('activeTripTitle');if(title)new MutationObserver(label).observe(title,{childList:true,characterData:true,subtree:true});
  label();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}
