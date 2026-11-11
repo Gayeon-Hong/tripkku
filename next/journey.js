@@ -165,6 +165,15 @@ const RULES=[
  [/성모 ?교회|프라우엔|frauenkirche/i,['frauenkirche'],'pose',['웅장하다…','찰칵!']],
  [/츠빙거|쯔빙거|zwinger/i,['zwinger'],'pose',['화려하다!','찰칵!']],
  [/젬퍼|잼퍼|semper|오페라 ?하우스.*드레스덴|드레스덴.*오페라/i,['semperoper'],'cheer',['브라보!','찰칵!']],
+ [/베를린 ?돔|베를린 ?대성당|berliner ?dom/i,['berlindom'],'pose',['찰칵!','돔이 크다!']],
+ [/전승 ?기념탑|승전 ?기념탑|지게스조일레|siegess/i,['siegessaeule'],'pose',['금빛 천사다!']],
+ [/샤를로텐|샬로텐|charlottenburg/i,['charlottenburg'],'pose',['찰칵!','궁전이다!']],
+ [/댄싱 ?하우스|춤추는 ?집|dancing ?house|tan[cč][ií]c/i,['dancinghouse'],'pose',['건물이 춤춘다!']],
+ [/화약탑|화약 ?문|powder ?tower|pra[sš]n/i,['powdertower'],'pose',['찰칵!']],
+ [/군주의 ?행렬|퓌르스텐|f[uü]rstenzug/i,['fuerstenzug'],'pose',['엄청 길다!']],
+ [/문화 ?과학 ?궁전|문화궁전|pkin|pa[lł]ac kultury/i,['pkin'],'pose',['높다!']],
+ [/바르샤바 ?왕궁|왕궁 ?광장|구시가.*바르샤바|바르샤바.*구시가|zamek kr[oó]lewski|지그문트/i,['warsawcastle'],'pose',['찰칵!']],
+ [/슈트리첼|striezel|대관람차|관람차|ferris/i,['xferris'],'cheer',['높다!','반짝반짝!']],
  // 나라별 랜드마크
  [/빅 ?벤|big ?ben|국회의사당.*런던|웨스트민스터/i,['bigben'],'pose',['찰칵!','런던이다!']],
  [/런던 ?아이|london ?eye/i,['ferris'],'cheer',['높다!']],
@@ -234,7 +243,9 @@ const SIGHT_BY_COUNTRY={JP:['torii','japancastle','pagoda'],KR:['hanok','tower']
  US:['liberty','skyline','goldengate'],CA:['mountain','skyline'],GB:['bigben','castle'],IE:['castle','church'],FR:['eiffel','arc','museum'],IT:['colosseum','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['brandenburg','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['church','museum'],
  GR:['parthenon','church'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
 // 도시 이름이 보이면 그 도시의 대표 건물을 차례로 보여 준다
-const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','reichstag']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper']]];
+const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','berlindom','reichstag','siegessaeule']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn','powdertower','dancinghouse']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper','fuerstenzug']],[/바르샤바|warszawa|warsaw/i,['warsawcastle','pkin']]];
+// 크리스마스 마켓은 도시마다 다르게: 드레스덴은 대관람차·피라미드부터
+const CITY_XMAS=[[/드레스덴|dresden/i,['xferris','xpyramid','stall','gluhwein','tree']],[/베를린|berlin/i,['tree','xpyramid','gluhwein','xferris','santa']],[/프라하|praha|prague/i,['tree','stall','santa','gluhwein']],[/바르샤바|warszawa|warsaw/i,['tree','xferris','stall']]];
 function sightFor(country,n){const list=SIGHT_BY_COUNTRY[country]||['camera'];return list[n%list.length];}
 const WESTERN=['steak','pasta','pizza','burger'],WEST=/^(SE|NO|DK|FI|IS|LU|SK|SI|HR|RO|BG|RS|EE|LV|LT|MT|CY|BR|AR|CL|ZA)$/;
 function foodFor(country,n){const list=FOOD_BY_COUNTRY[country]||(WEST.test(country)?WESTERN:['dish']);return list[n%list.length];}
@@ -247,6 +258,8 @@ export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.p
  const city=CITY_SIGHTS.find(c=>c[0].test(text+' '+(e.city||'')));
  if(i<0&&city){const k='city:'+city[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:city[1][m%city[1].length],act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
  if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
+ if(Array.isArray(RULES[i][1])&&RULES[i][1].includes('tree')&&RULES[i][1].includes('stall')){const cx=CITY_XMAS.find(c=>c[0].test(text+' '+(e.city||'')));
+  if(cx){const k='xmas:'+cx[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:cx[1][m%cx[1].length],act:'cheer',say:['반짝반짝!','메리 크리스마스!','구경하자!','따뜻해~'][m%4]};}}
  const [,keys,act,says]=RULES[i],n=seen.get(i)||0;seen.set(i,n+1);
  if(typeof keys==='function')return {key:keys(country,n),act,say:says[n%says.length]};
  if(keys)return {key:keys[n%keys.length],act,say:says[n%says.length]};
@@ -305,7 +318,7 @@ export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a
   const country=a.dayCountry?.(day)||day.countryCode||trip.country_code||doc.meta?.countryCode||'';
   events.forEach((e,k)=>{const fk=flightKind(e),fly=!!fk,ends=fly?flightEnds(e,doc):null;
    stops.push({country:String(country||'').toUpperCase(),costume:costumeKind(country),title:String(e.title||e.place||'일정'),time:String(e.start||''),date,dayIdx:dates.indexOf(date),firstOfDay:k===0,via:fk==='plane'?'plane':fk==='maybe'?'maybe':'walk',
-    q:fly?(ends[1]||String(e.place||'')):String(e.place||parseRoute(e.title).to||e.title||''),fromQ:fly?ends[0]:'',placeQ:String(e.place||''),local:!fly,react:fly?{key:'airport',act:'wave',say:'도착!'}:reactionFor({...e,city:[day.title,day.city].filter(Boolean).join(' ')},String(country||'').toUpperCase(),seen)});});});
+    q:fly?(ends[1]||String(e.place||'')):String(e.place||parseRoute(e.title).to||e.title||''),fromQ:fly?ends[0]:'',placeQ:String(e.place||''),ground:/버스|플릭스|flix|bus|셔틀|리무진|코치|coach/i.test(String(e.title||''))?'bus':'train',local:!fly,react:fly?{key:'airport',act:'wave',say:'도착!'}:reactionFor({...e,city:[day.title,day.city].filter(Boolean).join(' ')},String(country||'').toUpperCase(),seen)});});});
  const places=stops.length-(mode==='trip'?1:0);
  if(mode==='trip'&&places>0)stops.push({title:'집 도착',time:'',date:want.at(-1),dayIdx:dates.indexOf(want.at(-1)),firstOfDay:false,via:'walk',home:true,react:{key:'house',act:'cheer',say:'다녀왔습니다!'}});
  const hr=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])+Number(m[2])/60:null;};
@@ -361,6 +374,8 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  else{const step=300/(256*2**14);S.forEach((s,i)=>{s.mx=.5+Math.sin(i*1.15+.5)*step*.6;s.my=.5-i*step;});} // 좌표를 하나도 못 찾으면 지도 없이 줄지어 세운다
  // 가까운 이웃이 화면에 들어오는 선에서 최대한 클로즈업
  S.forEach((s,i)=>{let z=Z_CLOSE;for(const j of [i-1,i+1]){const o=S[j];if(!o)continue;const d=apart(s,o);if(d<1e-9)continue;const f=Math.log2(380/(d*256));if(f>=Z_NEAR)z=Math.min(z,f);}s.z=s.home?Z_NEAR:clamp(z,Z_NEAR,Z_CLOSE);});
+ // 같은 곳(150km 안)으로 가는 '비행'은 비행이 아니다: 도착 후의 '인천 도착', '입국' 같은 일정 때문에 비행기를 두 번 타지 않게
+ for(const g of tl.segs)if(g.type==='move'&&g.plane){const A=S[g.from],B=S[g.to];if(A.ll&&B.ll&&kmApart(A.ll,B.ll)<150){g.plane=false;g.jump=false;B.via='walk';}}
  // 걸어서 보여 주기엔 먼 구간은 "화면 전환 + 멀리서 본 지도"로 처리
  for(const g of tl.segs)if(g.type==='move'){const A=S[g.from],B=S[g.to],d=apart(A,B),zMin=Math.min(A.z,B.z);g.px=d*256*2**zMin;g.jump=g.plane||g.px>3400;g.zMid=d<1e-9?zMin:clamp(Math.log2(520/(d*256)),1.8,zMin);}
  return retime(tl);}
@@ -391,6 +406,16 @@ export function sunTimes(lat,lon,date,offset){const d=new Date(date+'T12:00:00Z'
  const c=Math.cos(90.833*R)/(Math.cos(lat*R)*Math.cos(dec))-Math.tan(lat*R)*Math.tan(dec);
  if(c>1)return {rise:12,set:12};if(c<-1)return {rise:-2,set:26}; // 극야 · 백야
  const ha=Math.acos(c)/R,loc=m=>((m/60+offset)%24+24)%24;return {rise:loc(720-4*(lon+ha)-eq),set:loc(720-4*(lon-ha)-eq)};}
+// 머무는 동안의 카메라 연출: 볼거리는 건물 쪽으로 다가가 옆으로 돌며 훑고 → 물러나 기념사진, 식사는 식탁으로 천천히 다가가기, 신나는 곳은 살짝 흔들며 돌기
+const XMAS_KEYS=new Set(['tree','santa','stall','snowman','gluhwein','xferris','xpyramid']);
+const smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v);};
+function camMoveAt(act,p){const io=smooth(Math.min(p/.14,(1-p)/.12)); // 들어오고 나갈 때는 기본 구도로
+ if(act==='pose'){const a=smooth((p-.08)/.2),b=smooth((p-.34)/.06),c=smooth((p-.74)/.1),k=a*(1-b)+c; // 훑어보기 → 기념사진(물러남) → 반대쪽에서 한 번 더 가까이
+  return {yaw:io*((-.5+smooth((p-.1)/.24))*(1-b)+c*(.5-(p-.74)*1.2)),zoom:1-.3*k*io-.08*b*(1-c)*io,low:1-.3*k*io,lx:0,ly:60*k*io,lz:-95*k*io};}
+ if(act==='eat')return {yaw:io*Math.sin(p*PI*2)*.18,zoom:1-.3*io,low:1-.12*io,lx:0,ly:-20*io,lz:-50*io};
+ if(act==='cheer')return {yaw:io*Math.sin(p*PI*2)*.42,zoom:1-.16*io,low:1-.2*io,lx:0,ly:50*io,lz:-80*io};
+ if(act==='relax')return {yaw:io*(-.3+p*.6),zoom:1-.12*io,low:1,lx:0,ly:20*io,lz:-60*io};
+ return null;}
 function skyAt(h,sun){h=((h%24)+24)%24;const r=sun?.rise??6.5,st=sun?.set??18;
  const night=h<r-.75||h>st+.75?1:h<r+.5?(r+.5-h)/1.25:h>st-.5?(h-(st-.5))/1.25:0,
   dusk=Math.max(0,1-Math.abs(h-st)/1.2)*.9+Math.max(0,1-Math.abs(h-r)/1)*.5;return {night:clamp(night,0,1),dusk:Math.min(1,dusk)};}
@@ -403,7 +428,7 @@ function tile(z,x,y){const k=z+'/'+x+'/'+y;let e=TILES.get(k);
   img.src=TILE_URL.replace('{z}',z).replace('{x}',x).replace('{y}',y);TILES.set(k,e);}
  return e;}
 // 기울어진 카메라에 보이는 바닥 범위(좌우 XR, 뒤쪽 FAR, 앞쪽 NEAR)를 덮는 타일들
-const XR=480,FAR=1380,NEAR=440;
+const XR=720,FAR=1500,NEAR=520; // 카메라가 장소 주변을 돌 때도 지도가 비지 않게 넉넉히
 function groundTiles(cam,fn){const zi=clamp(Math.floor(cam.z),0,19),k=Math.pow(2,cam.z-zi),n=2**zi,px=cam.cx*256*n,py=cam.cy*256*n;
  for(let ty=Math.floor((py-FAR/k)/256);ty<=Math.floor((py+NEAR/k)/256);ty++){if(ty<0||ty>=n)continue;
   for(let tx=Math.floor((px-XR/k)/256);tx<=Math.floor((px+XR/k)/256);tx++)fn(zi,((tx%n)+n)%n,ty,(tx*256-px)*k,(ty*256-py)*k,256*k,zi+'/'+tx+'/'+ty);}}
@@ -441,8 +466,9 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
  return {t,cam,seg,p,cur,stop,moving,here,tiles,dolly:mid&&seg.plane?1+.22*(cam.lift??1):1-.17*edge,fade:cam.fade,
   stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state===2};}),
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
-  party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood,lay:seg.type==='dwell'?{kind:stop.react.act,w:clamp(Math.min(p/.16,(1-p)/.1),0,1)}:null},
-  vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
+  party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood,lay:seg.type==='dwell'?{kind:stop.react.act,w:clamp(Math.min(p/.16,(1-p)/.1),0,1),selfie:stop.react.act==='pose'&&p>.37&&p<.72}:null},
+  camMove:seg.type==='dwell'?camMoveAt(stop.react.act,p):null,xmas:seg.type==='dwell'&&XMAS_KEYS.has(stop.react.key)?Math.max(.001,p):0,
+  vehicle:mid?{kind:seg.plane?'plane':S[seg.to].ground||'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
   sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h,(moving&&p<.5?S[seg.from]:S[seg.to]||stop).sun||stop.sun),weather:tl.weather?.[stop.date]||''};})(),
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
 
@@ -463,7 +489,7 @@ const C={food:'#f28b30',cafe:'#b9772f',drink:'#c0478f',sight:'#12a39a',nature:'#
 const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
  sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
- castle:['🏰',C.sight],brandenburg:['🏛️',C.sight],berlinwall:['🧱',C.sight],checkpoint:['🛂',C.sight],fernsehturm:['📡',C.sight],reichstag:['🏛️',C.sight],pragcastle:['🏰',C.sight],charlesbridge:['🌉',C.sight],orloj:['🕰️',C.sight],tyn:['⛪',C.sight],frauenkirche:['⛪',C.sight],zwinger:['👑',C.sight],semperoper:['🎭',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
+ castle:['🏰',C.sight],xferris:['🎡',C.sight],xpyramid:['🎄',C.sight],berlindom:['⛪',C.sight],siegessaeule:['🗽',C.sight],charlottenburg:['🏰',C.sight],dancinghouse:['🏢',C.sight],powdertower:['🏰',C.sight],fuerstenzug:['🖼️',C.sight],pkin:['🏙️',C.sight],warsawcastle:['🏰',C.sight],brandenburg:['🏛️',C.sight],berlinwall:['🧱',C.sight],checkpoint:['🛂',C.sight],fernsehturm:['📡',C.sight],reichstag:['🏛️',C.sight],pragcastle:['🏰',C.sight],charlesbridge:['🌉',C.sight],orloj:['🕰️',C.sight],tyn:['⛪',C.sight],frauenkirche:['⛪',C.sight],zwinger:['👑',C.sight],semperoper:['🎭',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
  boat:['⛴️',C.move],mountain:['⛰️',C.nature],park:['🌳',C.nature],parasol:['🏖️',C.nature],onsen:['♨️',C.nature],ski:['🎿',C.nature],bag:['🛍️',C.shop],ferris:['🎡',C.fun],zoo:['🦒',C.fun],aquarium:['🐠',C.fun],concert:['🎵',C.fun],stadium:['⚽',C.fun],fireworks:['🎆',C.fun],
  airport:['🛫',C.move],suitcase:['🧳',C.move],takoyaki:['🐙',C.food],onigiri:['🍙',C.food],tteokbokki:['🌶️',C.food],kimbap:['🍙',C.food],pekingduck:['🦆',C.food],hotpot:['🍲',C.food],bubbletea:['🧋',C.cafe],padthai:['🍜',C.food],mangorice:['🥭',C.cafe],banhmi:['🥖',C.food],naan:['🫓',C.food],satay:['🍢',C.food],friedrice:['🍚',C.food],
  baklava:['🍯',C.cafe],tea:['🫖',C.cafe],espresso:['☕',C.cafe],macaron:['🧁',C.cafe],churros:['🥖',C.cafe],nata:['🥧',C.cafe],fondue:['🫕',C.food],waffle:['🧇',C.cafe],cheese:['🧀',C.food],trdelnik:['🥐',C.cafe],goulash:['🥘',C.food],donut:['🍩',C.cafe],hotdog:['🌭',C.food],poutine:['🍟',C.food],meatpie:['🥧',C.food],tapas:['🍢',C.food],chocolate:['🍫',C.cafe],
@@ -548,7 +574,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_act1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_ui1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -558,6 +584,17 @@ async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portra
  if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
 function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
  setTimeout(()=>portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),300);return img;}
+/* 일정표: 일정 카드마다 그 장소의 3D 소품 그림을 붙인다(동선 영상에 나오는 것과 같은 것). */
+const propCache=new Map();
+async function propThumb(key){if(propCache.has(key))return propCache.get(key);if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.prop(key);propCache.set(key,url);return url;}
+function decorateTimeline(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{},day=(doc.days||[]).find(d=>d.date===date);
+ const cards=[...box.querySelectorAll(':scope > .event-card')];if(!day||!cards.length)return;
+ const evs=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
+ const country=String(a.dayCountry?.(day)||'').toUpperCase(),seen=new Map();
+ evs.forEach((e,i)=>{const card=cards[i];if(!card)return;const key=flightKind(e)?'airport':reactionFor({...e,city:[day.title,day.city].filter(Boolean).join(' ')},country,seen).key;
+  if(card.querySelector('.tk-prop')?.dataset.key===key)return;card.querySelector('.tk-prop')?.remove();
+  const img=el('img',{src:BLANK,alt:'',class:'tk-prop',width:'72',height:'72'});img.dataset.key=key;card.classList.add('tk-has-prop');card.append(img);
+  setTimeout(()=>propThumb(key).then(url=>{img.src=url;img.classList.add('on');}).catch(()=>img.remove()),200+i*60);});}
 /* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
 const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
 function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
@@ -743,7 +780,7 @@ function init(){
  // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
  const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
  const home=()=>{renderHomeHero(openAvatar);decorateTripCards();};
- watch('timeline',()=>{const b=document.getElementById('timeline');if(b&&!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
+ watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;if(b.querySelector('.event-card:not(.tk-has-prop)'))decorateTimeline();if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
  watch('tripList',decorateTripCards);watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
  document.addEventListener('tripkku-avatar-saved',()=>renderHomeHero(openAvatar));home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}

@@ -269,8 +269,12 @@ const PROPS={
  plane:()=>{const g=group(rot(mesh(G.capsule(22,120),'#ffffff'),0,0,PI/2),rot(mesh(G.capsule(22.4,40),'#5b8def',-20,-6,0),0,0,PI/2),mesh(G.box(46,4,210),'#5b8def',4,-10,0),mesh(G.box(28,40,4),'#5b8def',-74,26,0),mesh(G.box(22,3,76),'#5b8def',-74,6,0),
   scl(mesh(G.sphere(12),'#8fd0f0',74,10,0),1,.7,1.25),...[-1,1].map(s=>mesh(G.cyl(9,9,22,14),'#c9cfd9',10,-20,s*58)));
   for(let i=0;i<6;i++)for(const s of [-1,1])g.add(mesh(G.torus(8.6,1.6),'#5b8def',44-i*20,4,s*21.2));return g;},
- train:()=>{const g=group(mesh(G.box(124,42,38),'#5bbf8a',0,31,0),mesh(G.box(124,6,40),'#ffffff',0,55,0),mesh(G.box(20,20,34),'#8fd0f0',52,36,0));for(const x of [-40,-10,20])g.add(mesh(G.box(20,16,40),'#8fd0f0',x,38,0));
+ train:()=>{const g=group(mesh(G.box(124,42,38),'#5bbf8a',0,31,0),mesh(G.box(124,6,40),'#ffffff',0,55,0),mesh(G.box(20,20,34),'#8fd0f0',52,36,0));for(const x of [-46,-24,-2,20])g.add(mesh(G.box(17,17,39.4),'#2f4a66',x,39,0));
   for(const x of [-40,40])for(const z of [-17,17])g.add(rot(mesh(G.cyl(9,9,6),'#3a3f4b',x,9,z),PI/2));return g;},
+ // 버스: 창문마다 일행 얼굴이 빼꼼(얼굴은 createStage 가 넣는다)
+ bus:()=>{const g=group(mesh(G.box(140,50,46),'#ffb84a',0,37,0),mesh(G.box(140,6,48),'#ffffff',0,64,0),mesh(G.box(142,8,47),'#e8882a',0,18,0),mesh(G.box(4,24,40),'#8fd0f0',70,44,0),mesh(G.box(6,6,10),'#ffe68a',71,22,-14),mesh(G.box(6,6,10),'#ffe68a',71,22,14));
+  for(const x of [-52,-30,-8,14,36])g.add(mesh(G.box(17,18,47.4),'#2f4a66',x,46,0));
+  for(const x of [-44,44])for(const z of [-21,21])g.add(rot(mesh(G.cyl(10,10,7),'#3a3f4b',x,10,z),PI/2));return g;},
  /* 공항 */
  airport:()=>group(mesh(G.box(170,44,70),'#e8eef4',0,22,0),mesh(G.box(170,6,74),'#5b8def',0,47,0),...Array.from({length:7},(_,i)=>mesh(G.box(18,24,2),'#8fd0f0',-66+i*22,24,36)),mesh(G.cyl(9,12,120,12),'#c9cfd9',70,60,-20),
   mesh(G.cyl(22,16,24,12),'#8fd0f0',70,128,-20),mesh(G.cyl(24,24,5,12),'#5b6f8a',70,142,-20),(()=>{const p=PROPS.plane();p.position.set(-40,96,24);p.scale.setScalar(.6);p.rotation.set(0,.6,.25);return p;})()),
@@ -435,6 +439,61 @@ const PROPS={
   for(let r=0;r<2;r++)for(let i=0;i<9;i++){const a=-PI/2+(i+.5)*PI/9;g.add(rot(mesh(G.box(9,r?14:18,1.5),'#4a5a70',Math.sin(a)*78.5,r?60:30,-10+Math.cos(a)*78.5),0,a,0));}
   g.add(mesh(G.box(60,96,30),st,0,51,52),mesh(G.box(38,58,2),'#cfc3a6',0,58,67.4),mesh(new THREE.CylinderGeometry(19,19,2.2,20,1,false,-PI/2,PI),'#4a5a70',0,72,68),mesh(G.box(38,26,2.2),'#4a5a70',0,59,68),mesh(G.box(64,6,34),'#cfc3a6',0,102,52));
   const q=quadriga('#4f5a52',.8,true);q.position.set(0,106,52);g.add(q);return g;},
+ /* ---------- 크리스마스 마켓(도시별) ---------- */
+ // 대관람차: 전구가 달린 큰 바퀴가 돌아간다(userData.spin)
+ xferris:()=>{const g=group(mesh(G.box(120,8,50),'#8a5a3c',0,4,0),...[-1,1].map(s=>rot(mesh(G.cyl(3.5,3.5,150,8),'#e8eef4',s*30,74,-10),0,0,s*.21)),...[-1,1].map(s=>rot(mesh(G.cyl(3.5,3.5,150,8),'#e8eef4',s*30,74,10),0,0,s*.21)),mesh(G.box(40,26,30),'#c2352a',0,20,26),rot(mesh(G.cone(30,14,4),'#ffffff',0,40,26),0,PI/4,0));
+  const wheel=group(mesh(G.torus(78,3),'#ffffff'),mesh(G.torus(62,1.6),'#ffd84a'),rot(mesh(G.cyl(9,9,26,16),'#c2352a'),PI/2));
+  for(let i=0;i<12;i++){const a=i/12*PI*2;wheel.add(rot(mesh(G.box(1.6,78,1.6),'#e8eef4',Math.cos(a)*39,Math.sin(a)*39,0),0,0,a-PI/2),mesh(G.sphere(9,12,8),['#ff5a6e','#ffd84a','#6fb8ff','#8fd0b8'][i%4],Math.cos(a)*78,Math.sin(a)*78,0),
+   mesh(G.sphere(2.6,8,6),'#ffe68a',Math.cos(a+.26)*78,Math.sin(a+.26)*78,4,{emissive:'#ffd84a',emissiveIntensity:.9}));}
+  wheel.position.set(0,146,0);g.add(wheel);g.userData.spin=[[wheel,'z',.5]];return g;},
+ // 크리스마스 피라미드(에르츠게비르게): 층마다 인형, 촛불, 위에서 날개가 돈다
+ xpyramid:()=>{const g=group(mesh(G.cyl(60,64,10,8),'#8a5a3c',0,5,0));const fan=group();
+  [[52,10],[40,62],[28,112]].forEach(([r,y],L)=>{g.add(mesh(G.cyl(r,r,5,8),'#a8794f',0,y,0),mesh(G.cyl(r+4,r+4,3,8),'#c2352a',0,y+50,0));
+   for(let i=0;i<8;i++){const a=i*PI/4;g.add(mesh(G.cyl(1.6,1.6,48,6),'#8a5a3c',Math.sin(a)*r,y+26,Math.cos(a)*r));if(i%2===0)g.add(mesh(G.cyl(1.4,1.4,10,6),'#ffffff',Math.sin(a)*(r+2),y+57,Math.cos(a)*(r+2)),mesh(G.sphere(2.6,8,6),'#ffe68a',Math.sin(a)*(r+2),y+64,Math.cos(a)*(r+2),{emissive:'#ffb400',emissiveIntensity:1}));}
+   for(let i=0;i<4;i++){const a=i*PI/2+L*.5;g.add(mesh(G.capsule(4,8),['#c2352a','#3f8fd6','#f4ecd8','#2f9e63'][i],Math.sin(a)*r*.55,y+12,Math.cos(a)*r*.55),mesh(G.sphere(3.6),'#ffd9c2',Math.sin(a)*r*.55,y+24,Math.cos(a)*r*.55));}});
+  g.add(mesh(G.cyl(3,3,180,8),'#8a5a3c',0,95,0));for(let i=0;i<8;i++)fan.add(rot(mesh(G.box(46,1.6,14),i%2?'#f4ecd8':'#c2352a',Math.cos(i*PI/4)*26,0,Math.sin(i*PI/4)*26),.45,-i*PI/4,0));
+  fan.position.set(0,188,0);g.add(fan,mesh(G.sphere(5),'#f0c75e',0,194,0));g.userData.spin=[[fan,'y',1.6]];return g;},
+ /* ---------- 베를린 · 프라하 · 드레스덴 · 바르샤바 (2) ---------- */
+ // 베를린 대성당: 초록 큰 돔과 네 모서리 작은 돔
+ berlindom:()=>{const st='#cfc6b4',gr='#5f9f8a',g=group(mesh(G.box(150,60,90),st,0,30,0),mesh(G.box(154,6,94),'#b9b09c',0,62,0),mesh(G.cyl(40,44,30,16),st,0,80,0),mesh(new THREE.SphereGeometry(40,24,14,0,PI*2,0,PI/2),gr,0,95,0),mesh(G.cyl(8,10,16,10),gr,0,140,0),scl(mesh(G.sphere(8),gr,0,152,0),1,1.2,1),
+   mesh(G.box(2.4,16,2.4),'#f0c75e',0,170,0),mesh(G.box(9,2.4,2.4),'#f0c75e',0,173,0));
+  for(const [x,z] of [[-62,-32],[62,-32],[-62,32],[62,32]])g.add(mesh(G.box(24,84,24),st,x,42,z),mesh(new THREE.SphereGeometry(13,16,10,0,PI*2,0,PI/2),gr,x,84,z),mesh(G.cone(3,12,8),gr,x,102,z));
+  for(let i=0;i<4;i++)g.add(mesh(G.cyl(4.5,5,46,10),'#e3dccb',-21+i*14,30,48));g.add(mesh(G.box(46,6,10),'#b9b09c',0,56,48),mesh(G.box(22,30,2),'#4a5a70',0,22,45.6));return g;},
+ // 전승기념탑: 붉은 받침, 금띠 기둥, 꼭대기 금빛 여신
+ siegessaeule:()=>{const gold={metalness:.6,roughness:.3},g=group(mesh(G.cyl(46,50,14,24),'#b0553f',0,7,0),mesh(G.cyl(34,34,30,24),'#c8bca6',0,29,0),...Array.from({length:12},(_,i)=>mesh(G.cyl(2.2,2.2,30,8),'#e3dccb',Math.sin(i*PI/6)*37,29,Math.cos(i*PI/6)*37)),mesh(G.cyl(40,40,5,24),'#c8bca6',0,46,0),mesh(G.cyl(11,14,120,16),'#c8bca6',0,108,0));
+  for(let i=0;i<3;i++)g.add(rot(mesh(G.torus(13.5-i,2.2),'#f0c75e',0,74+i*32,0,gold),PI/2));
+  g.add(mesh(G.cyl(16,12,8,16),'#c8bca6',0,172,0),mesh(G.capsule(6,18),'#f0c75e',0,194,0,gold),mesh(G.sphere(5),'#f0c75e',0,212,0,gold),rot(mesh(G.box(26,16,2),'#f0c75e',-12,202,-5,gold),0,.5,.35),rot(mesh(G.box(26,16,2),'#f0c75e',12,202,-5,gold),0,-.5,-.35),
+   mesh(G.cyl(.9,.9,34,6),'#f0c75e',9,212,4,gold),mesh(G.torus(5,1.1),'#f0c75e',9,231,4,gold));return g;},
+ // 샤를로텐부르크 궁전: 긴 노란 궁전, 가운데 초록 돔과 금빛 조각
+ charlottenburg:()=>{const y='#f1dc9a',g=group(mesh(G.box(200,6,70),'#cdbd98',0,3,0),mesh(G.box(190,40,30),y,0,26,-10),scl(mesh(prism(18,192),'#b8502f',0,55,-10),1,.6,1),mesh(G.box(50,58,40),y,0,35,-6),mesh(G.cyl(18,22,26,12),'#e8e0c8',0,77,-6),mesh(new THREE.SphereGeometry(19,20,12,0,PI*2,0,PI/2),'#5f9f8a',0,90,-6),mesh(G.cyl(4,5,12,8),'#5f9f8a',0,114,-6),
+   mesh(G.capsule(3,8),'#f0c75e',0,128,-6,{metalness:.6,roughness:.3}),mesh(G.sphere(2.6),'#f0c75e',0,138,-6,{metalness:.6,roughness:.3}));
+  for(let r=0;r<2;r++)for(let i=0;i<16;i++){const x=-88+i*11.7;if(Math.abs(x)<26)continue;g.add(mesh(G.box(5,9,1.4),'#5a6a80',x,16+r*15,5.4));}
+  for(let i=0;i<3;i++)g.add(mesh(G.box(7,14,1.4),'#5a6a80',-14+i*14,40,14.4));g.add(mesh(G.box(12,20,1.4),'#8a5a3c',0,13,14.4));
+  for(const x of [-60,60])g.add(mesh(G.cone(12,26,10),'#2f9e63',x,19,24),mesh(G.cone(9,20,10),'#37b071',x,34,24));return g;},
+ // 댄싱 하우스: 가운데가 잘록한 유리 탑과 그 옆 돌 탑(꼭대기 철망 돔)
+ dancinghouse:()=>{const g=group(mesh(G.box(150,4,70),'#b9b3a6',0,2,0));for(let i=0;i<9;i++){const k=1-.38*Math.sin(i/8*PI),x=-34+Math.sin(i*.5)*6;g.add(mesh(G.cyl(26*k+2,26*k,16.4,16),glass('#9fd3ea',.7),x,12+i*16,6),rot(mesh(G.torus(26*k+1.5,1),'#6f8fa0',x,20+i*16,6),PI/2));}
+  g.add(mesh(G.cyl(30,30,140,20),'#e8e0cc',26,72,0));for(let r=0;r<6;r++)for(let i=0;i<5;i++){const a=-1+i*.5;g.add(rot(mesh(G.box(9,11,2),'#4a5a70',26+Math.sin(a)*30,22+r*21+Math.sin(i*1.7+r)*4,Math.cos(a)*30),0,a,0));}
+  g.add(mesh(new THREE.SphereGeometry(18,10,8),mat('#c9cfd9',{wireframe:true}),26,156,0),mesh(G.box(70,120,50),'#d8ceb8',84,60,-8));for(let r=0;r<4;r++)for(let i=0;i<3;i++)g.add(mesh(G.box(10,14,1.4),'#4a5a70',66+i*18,22+r*26,17.4));return g;},
+ // 화약탑: 검게 그을린 고딕 문탑
+ powdertower:()=>{const st='#5a544c',g=group(mesh(G.box(64,150,56),st,0,75,0),mesh(G.box(26,44,58),'#1f2024',0,22,0),rot(mesh(G.cyl(13,13,58,16),'#1f2024',0,44,0),PI/2),mesh(G.box(70,8,62),'#6a645a',0,152,0),mesh(G.cone(42,70,4),'#2f3a36',0,192,0));
+  for(const [x,z] of [[-30,-26],[30,-26],[-30,26],[30,26]])g.add(mesh(G.cyl(6,6,26,8),st,x,160,z),mesh(G.cone(7,26,8),'#2f3a36',x,186,z));
+  for(let i=0;i<3;i++)g.add(mesh(G.box(8,16,1.4),'#c9a86a',-18+i*18,104,28.4),mesh(G.capsule(3,8),'#c9b28a',-18+i*18,76,29));g.add(mesh(G.sphere(3),'#f0c75e',0,230,0));return g;},
+ // 군주의 행렬: 긴 벽에 금빛 타일 벽화(말 탄 사람들의 행렬)
+ fuerstenzug:()=>{const g=group(mesh(G.box(210,96,16),'#d8ccb0',0,48,-8),mesh(G.box(214,6,20),'#b8ac90',0,98,-8),mesh(G.box(206,46,1.5),'#e6c56a',0,56,.6),mesh(G.box(206,3,2),'#3a3632',0,80,1),mesh(G.box(206,3,2),'#3a3632',0,32,1));
+  for(let i=0;i<8;i++){const x=-88+i*25,c=i%2?'#4a3a2a':'#2f2a24';g.add(rot(mesh(G.capsule(4.5,12),c,x,46,2),0,0,PI/2),mesh(G.box(3.5,10,2),c,x+9,56,2),mesh(G.box(6,4,2),c,x+12,61,2),...[-6,-2,3,7].map(d=>mesh(G.box(1.8,10,1.6),c,x+d,38,2)),mesh(G.capsule(2.6,7),'#8a2f2a',x-1,58,2),mesh(G.sphere(2.6),'#f4d9b8',x-1,67,2),mesh(G.box(1,16,1),c,x+3,66,2));}
+  for(let i=0;i<7;i++)g.add(mesh(G.box(12,16,2),'#5a6a80',-84+i*28,16,.6));return g;},
+ // 바르샤바 문화과학궁전: 계단처럼 올라가는 탑과 첨탑, 시계
+ pkin:()=>{const st='#d9cdb2',g=group(mesh(G.box(170,40,110),st,0,20,0),mesh(G.box(90,70,70),st,0,75,0),mesh(G.box(56,70,50),st,0,145,0),mesh(G.box(36,30,34),st,0,195,0),mesh(G.cyl(9,13,26,8),st,0,223,0),mesh(G.cone(5,60,8),'#c9b28a',0,266,0));
+  for(const [x,z] of [[-66,-40],[66,-40],[-66,40],[66,40]])g.add(mesh(G.box(30,64,26),st,x,32,z),mesh(G.cone(9,22,4),st,x,75,z));
+  for(let L=0;L<3;L++){const w=[86,52,32][L],y=[112,182,212][L];for(let i=0;i<7;i++)g.add(mesh(G.box(w/10,6,2),st,-w/2+w/14+i*w/7,y,[36,26,18][L]));}
+  for(let r=0;r<5;r++)for(let i=0;i<6;i++)g.add(mesh(G.box(6,8,1.4),'#5a6a80',-32+i*13,50+r*12,35.6));for(let r=0;r<4;r++)for(let i=0;i<4;i++)g.add(mesh(G.box(5,8,1.4),'#5a6a80',-19+i*13,122+r*13,25.6));
+  g.add(rot(mesh(G.cyl(9,9,2,24),'#ffffff',0,198,17.6),PI/2),rot(mesh(G.box(1.4,7,1),'#2a2f3c',0,200,19),0,0,.5),mesh(G.sphere(2.4),'#ff5a6e',0,297,0,{emissive:'#ff5a6e',emissiveIntensity:.8}));return g;},
+ // 바르샤바 왕궁: 붉은 벽돌 궁전, 가운데 시계탑(초록 지붕) + 지그문트 기둥
+ warsawcastle:()=>{const br='#c8694a',g=group(mesh(G.box(210,4,80),'#b9b3a6',0,2,0),mesh(G.box(180,54,34),br,-10,31,-14),scl(mesh(prism(20,182),'#8a4632',-10,66,-14),1,.6,1),mesh(G.box(30,100,30),br,-10,54,-8),mesh(G.cyl(13,16,12,8),'#5f9f8a',-10,110,-8),scl(mesh(G.sphere(13,14,10),'#5f9f8a',-10,122,-8),1,1.25,1),mesh(G.cone(4,26,8),'#5f9f8a',-10,146,-8),mesh(G.sphere(2.6),'#f0c75e',-10,161,-8),
+   rot(mesh(G.cyl(9,9,2,24),'#ffffff',-10,86,7.6),PI/2),rot(mesh(G.box(1.4,7,1),'#2a2f3c',-10,88,9),0,0,-.6));
+  for(let r=0;r<3;r++)for(let i=0;i<13;i++){const x=-92+i*14;if(Math.abs(x+10)<18)continue;g.add(mesh(G.box(6,9,1.4),'#f4ecd8',x,16+r*15,3.6));}
+  for(const x of [-98,78])g.add(mesh(G.cyl(9,9,70,8),br,x,35,-4),mesh(G.cone(11,22,8),'#5f9f8a',x,81,-4));
+  g.add(mesh(G.box(22,10,22),'#c8bca6',84,7,26),mesh(G.cyl(4,5,90,12),'#d8ccb0',84,57,26),mesh(G.box(12,5,12),'#c8bca6',84,104,26),mesh(G.capsule(3.6,12),'#4a4a52',84,118,26),mesh(G.sphere(3.4),'#4a4a52',84,130,26),mesh(G.box(1.4,22,1.4),'#4a4a52',90,122,26),mesh(G.box(8,1.4,1.4),'#4a4a52',90,128,26));return g;},
  clocktower:()=>group(mesh(G.box(54,170,54),'#a89880',0,85,0),mesh(G.cone(40,60,4),'#3a4a3a',0,200,0),...[-1,1].map(s=>mesh(G.cone(8,30,6),'#3a4a3a',s*24,186,24)),mesh(G.cyl(22,22,3,28),'#3a5aa0',0,110,28),mesh(G.cyl(16,16,4,28),'#f0c75e',0,110,29),
   rot(mesh(G.box(2,16,2),'#2a2f3c',0,114,31),0,0,.6),mesh(G.box(100,70,40),'#c8b8a0',-60,35,-10))
 };
@@ -457,18 +516,25 @@ export function createStage(canvas){
  const shadow=rot(new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),new THREE.ShadowMaterial({opacity:.24})),-PI/2);shadow.position.y=3;shadow.receiveShadow=true;scene.add(shadow);
  const tileGeo=new THREE.PlaneGeometry(1,1),boxGeo=G.box(1,1,1),discGeo=G.cyl(1,1,1,28);
  const tiles=new Map(),tileGroup=new THREE.Group(),routeGroup=new THREE.Group(),dynamic=new THREE.Group();scene.add(tileGroup,routeGroup,dynamic);
- const vehicles={plane:buildProp('plane'),train:buildProp('train')};for(const v of Object.values(vehicles)){v.visible=false;scene.add(v);}
+ const vehicles={plane:buildProp('plane'),train:buildProp('train'),bus:buildProp('bus')};for(const v of Object.values(vehicles)){v.visible=false;scene.add(v);}
  let chars=[],props=[],legMeshes=[],stopMeshes=[],heads=[];
  const routeMat={walk:mat('#ff6b4a',{transparent:true}),fly:mat('#5b8def',{transparent:true}),white:mat('#ffffff',{transparent:true})};
  const stopMat=[mat('#ffffff'),mat('#f6c945'),mat('#f6c945')];
  const table=group(mesh(G.cyl(74,74,6,36),'#f4ece0',0,40,0),mesh(G.cyl(76,76,2,36),'#e9dccb',0,37,0),mesh(G.cyl(6,8,38,10),'#8a5a3c',0,19,0),mesh(G.cyl(26,26,3,20),'#8a5a3c',0,1.5,0));table.visible=false;scene.add(table);
  const stools=[];let pax=[];
+ // 탈것마다 창문 자리: [첫 창 x, 창 간격, 머리 높이, 옆으로 내민 거리, 창 수, 크기]
+ const SEATS={plane:[44,-20,4,18,6,.17],train:[20,-22,40,15,4,.16],bus:[36,-22,47,19.5,5,.17]};
+ // 하늘을 나는 산타 썰매(크리스마스 장소에 머무는 동안)
+ const sleigh=(()=>{const g=group(mesh(G.box(40,14,22),'#c2352a',0,10,0),rot(mesh(G.box(14,22,22),'#c2352a',-22,18,0),0,0,.25),...[-9,9].map(z=>mesh(G.box(52,2.4,2.4),'#f0c75e',2,1,z)),mesh(G.capsule(9,8),'#e8323f',-2,26,0),mesh(G.sphere(7),'#ffd9c2',-2,42,0),flat(6,'#ffffff',1,38,0,1,1,1.1),rot(mesh(G.cone(7,14),'#e8323f',-4,52,0),0,0,.3),mesh(G.sphere(2.6),'#ffffff',-9,57,0),flat(11,'#a8794f',-18,26,0,1,1.1,1));
+  for(let i=0;i<3;i++){const x=46+i*30,d=group(rot(mesh(G.capsule(5.5,14),'#a8794f',0,14,0),0,0,PI/2),rot(mesh(G.box(5,12,5),'#a8794f',10,22,0),0,0,-.5),mesh(G.sphere(5),'#a8794f',15,29,0),...[-1,1].map(z=>mesh(G.box(1.2,9,1.2),'#7a5434',14,37,z*3)),...[[-7,-3],[-7,3],[7,-3],[7,3]].map(([lx,lz])=>rot(mesh(G.box(2.2,12,2.2),'#7a5434',lx,5,lz),0,0,lx>0?-.5:.5)));
+   if(i===2)d.add(mesh(G.sphere(2.4),'#ff3b3b',20,29,0,{emissive:'#ff3b3b',emissiveIntensity:1}));d.position.set(x,6+i*3,0);g.add(d);}
+  g.add(rot(mesh(G.box(96,1,1),'#f0c75e',66,22,0),0,0,.04));g.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.fog=false;o.material.emissive.copy(o.material.color);o.material.emissiveIntensity=.45;o.castShadow=false;}});g.visible=false;scene.add(g);return g;})();
  function setScene(tl,members){
   for(const o of [...dynamic.children])freeTree(o);dynamic.clear();routeGroup.clear();
   // 비행기 창문 승객: 머리만 창밖으로 빼꼼
-  for(const p of pax){vehicles.plane.remove(p);freeTree(p);}
-  pax=members.slice(0,12).map((m,i)=>{const c=buildAvatar(m.av,''),side=i%2?-1:1,k=c.scale.x,hk=m.av.size==='baby'?1.2:m.av.size==='kid'?1.08:1;c.scale.setScalar(.17/hk);
-   c.position.set(44-Math.floor(i/2)*20,4-108*.17/hk,side*18);c.rotation.y=side>0?0:PI;vehicles.plane.add(c);return c;});
+  for(const p of pax){p.parent?.remove(p);freeTree(p);}pax=[];
+  for(const [vk,[x0,dx,hy,,slots,sc]] of Object.entries(SEATS))members.slice(0,slots).forEach((m,i)=>{const c=buildAvatar(m.av,''),hk=m.av.size==='baby'?1.2:m.av.size==='kid'?1.08:1;c.scale.setScalar(sc/hk);
+   c.position.set(x0+i*dx,hy-108*sc/hk,0);c.userData.veh=vk;vehicles[vk].add(c);pax.push(c);});
   while(stools.length<members.length){const st=group(mesh(G.cyl(16,16,6,16),'#c2532f',0,24,0),mesh(G.cyl(3,3,22,8),'#8a5a3c',0,11,0));st.visible=false;scene.add(st);stools.push(st);}
   const kinds=['',...new Set(tl.stops.map(s=>s.costume).filter(Boolean))];
   chars=members.map(m=>{const holder=new THREE.Group(),variants={};for(const k of kinds){const c=buildAvatar(m.av,k);c.visible=false;variants[k]=c;holder.add(c);}holder.userData.variants=variants;holder.userData.char=variants[''];dynamic.add(holder);return holder;});
@@ -485,7 +551,9 @@ export function createStage(canvas){
   sun.intensity=1.9*(1-.85*nt)*(1-grey*.6);sun.color.copy(col('#fff6e8','#ff9a5a',dk*1.2).lerp(new THREE.Color('#9fb4ff'),nt));
   lamp.intensity=nt*2.2;for(const m of glowMats){m.emissive.copy(m.color);m.emissiveIntensity=nt*1.1;}
   const tileTint=col('#ffffff','#ffe2c4',dk*.45).lerp(new THREE.Color('#4a5878'),nt*.85).lerp(new THREE.Color('#c4cbd2'),grey*(1-nt));
-  const d=f.dolly||1;camera.position.set(0,800*d,960*d);camera.lookAt(0,96,0);shadow.visible=!f.vehicle||f.vehicle.kind!=='plane'||f.vehicle.lift<.5;
+  const d=f.dolly||1,cm=f.camMove;
+  if(cm){const R=960*d*cm.zoom,yaw=cm.yaw;camera.position.set(Math.sin(yaw)*R+cm.lx*(1-cm.zoom),800*d*cm.zoom*cm.low,Math.cos(yaw)*R+cm.lz);camera.lookAt(cm.lx,96+cm.ly,cm.lz);}
+  else{camera.position.set(0,800*d,960*d);camera.lookAt(0,96,0);}shadow.visible=!f.vehicle||f.vehicle.kind!=='plane'||f.vehicle.lift<.5;
   // 지도 타일
   const used=new Set();
   for(const t of f.tiles){used.add(t.key);let m=tiles.get(t.key);
@@ -501,7 +569,7 @@ export function createStage(canvas){
   f.stops.forEach((s,i)=>{const m=stopMeshes[i],p=props[i],near=Math.abs(s.x)<3000&&Math.abs(s.z)<3000;m.visible=near;p.visible=near&&s.showProp;if(!near)return;
    const r=s.state===2?17:12;m.material=stopMat[s.state];m.position.set(s.x,3.5,s.z);m.scale.set(r,3,r);
    // 지금 머무는 곳의 소품은 일행 뒤에 크게, 지나온 곳의 소품은 작게 남겨 둔다.
-   if(p.visible){const here=s.state===2,onTable=here&&f.party.lay?.kind==='eat';p.scale.setScalar(onTable?.62:here?PROP_SCALE:.6);p.position.set(s.x,onTable?43:0,s.z-(onTable?60:here?PROP_BACK:70));p.rotation.y=here&&!onTable?Math.sin(f.t*1.4)*.12:0;}});
+   if(p.visible){const here=s.state===2,onTable=here&&f.party.lay?.kind==='eat';p.scale.setScalar(onTable?.62:here?PROP_SCALE:.6);p.position.set(s.x,onTable?43:0,s.z-(onTable?60:here?PROP_BACK:70));p.rotation.y=here&&!onTable&&!p.userData.spin?Math.sin(f.t*1.4)*.12:0;if(p.userData.spin)for(const [o,ax,sp] of p.userData.spin)o.rotation[ax]=f.t*sp;}});
   // 일행
   const n=chars.length,sp=Math.min(90,400/Math.max(1,n)),PS=f.party.scale||1,front=(f.party.front||0)*85;heads=[]; // 일행은 작게, 머무는 동안은 장소 표시 앞쪽에 선다
   // 머무는 동안의 자리: 식당은 식탁에 둘러앉고, 볼거리는 그것을 바라보며 반원으로, 공연·술집은 무대 앞에, 박물관·공원은 흩어져 구경
@@ -509,7 +577,8 @@ export function createStage(canvas){
   const spot=(k)=>{if(!cs)return null;const px=cs.x,pz=cs.z-PROP_BACK,u=n>1?k/(n-1):.5;
    if(kind==='eat'){const a=(-1+2*u)*(n>2?1.75:1.2),tz=cs.z-60,R=118;const x=cs.x+Math.sin(a)*R,z=tz-Math.cos(a)*R;return {x,z,ry:Math.atan2(cs.x-x,tz-z),act:'eat',sit:true};}
    if(kind==='pose'){const x=cs.x+(u-.5)*Math.min(320,110*n),z=cs.z+20+Math.abs(u-.5)*-60,ry=Math.atan2(px-x,pz-z),turn=(x<px?-1:1)*.55; // 3/4쯤 돌아서 바라보기
-    return {x,z,ry:ry*.6+turn*0,act:['photo','point','look','photo','pose'][k%5]};}
+    if(lay.selfie)return {x:cs.x+(u-.5)*Math.min(240,84*n),z:cs.z+34,ry:(u-.5)*-.5,act:k%2?'cheer':'pose'}; // 다 같이 돌아서서 기념사진
+    return {x,z,ry:ry*.6,act:['photo','point','look','photo','pose'][k%5]};}
    if(kind==='cheer'){const a=(u-.5)*2.2,R=150;const x=px+Math.sin(a)*R,z=pz+Math.cos(a)*R;return {x,z,ry:Math.atan2(px-x,pz-z)*.55,act:'cheer'};}
    if(kind==='relax'){const side=k%2?1:-1,row=Math.floor(k/2);const x=px+side*(120+row*40),z=pz+60+row*50;return {x,z,ry:Math.atan2(px-x,pz-z)*.75,act:k%3===2?'look':'relax'};}
    return null;};
@@ -527,8 +596,11 @@ export function createStage(canvas){
   for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){const lift=f.vehicle.lift??1; // 이륙·착륙: 낮게 작게 → 높이 크게
    v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?1+.9*lift:1.1);}}
   // 카메라 쪽 창문으로 모두 얼굴을 내민다(비행기 방향에 따라 왼쪽·오른쪽 창)
-  if(vehicles.plane.visible){const face=Math.cos(vehicles.plane.rotation.y)>=0?1:-1;pax.forEach((c,i)=>{c.position.x=44-(i%6)*20;c.position.z=face*18;c.rotation.y=face>0?0:PI;});}
-  if(vehicles.plane.visible)pax.forEach((c,i)=>poseAvatar(c,{act:'',mood:['happy','wow','smile','wink'][(Math.floor(f.t/1.6)+i)%4],t:f.t,seed:i*1.3}));
+  pax.forEach((c,i)=>{const v=vehicles[c.userData.veh];if(!v.visible)return;const face=Math.cos(v.rotation.y)>=0?1:-1;c.position.z=face*SEATS[c.userData.veh][3];c.rotation.y=face>0?0:PI;
+   poseAvatar(c,{act:'',mood:['happy','wow','smile','wink'][(Math.floor(f.t/1.6)+i)%4],t:f.t,seed:i*1.3});});
+  // 날아가는 산타: 화면 왼쪽 → 오른쪽으로 물결치며 지나가고, 잠깐 쉬었다 다시
+  const sx=f.xmas?(f.xmas-.12)/.8:-1;sleigh.visible=sx>0&&sx<1&&!f.vehicle; // 크리스마스 장소에 머무는 동안 한 번 가로질러 날아간다
+  if(sleigh.visible){sleigh.position.set(-430+sx*860,215+Math.sin(sx*PI)*45+Math.sin(f.t*5)*6,90);sleigh.rotation.z=Math.cos(sx*PI)*.28;sleigh.scale.setScalar(.85);}
   renderer.render(scene,camera);
   chars.forEach((h,k)=>{heads[k]=h.visible?project(h.position.x,(h.userData.char.position.y+h.userData.char.userData.tag)*h.scale.y,h.position.z):null;});}
  const v3=new THREE.Vector3();
@@ -550,4 +622,7 @@ export function createPortraits(size=176){
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,10,2000);lights(scene);
  return {render(av,kind=''){const c=buildAvatar(av,kind),k=c.scale.y;camera.position.set(0,100*k+8,250*k+20);camera.lookAt(0,96*k,0); // 키에 맞춰 머리와 윗몸이 들어오게
   c.rotation.y=.28;poseAvatar(c,{act:'wave',mood:'smile',t:.16});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;},
+  /** 장소 소품 한 개를 작은 그림으로(일정표 카드용). 소품 크기에 맞춰 카메라를 잡는다. */
+  prop(key){const p=buildProp(key),box=new THREE.Box3().setFromObject(p),c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3()),r=Math.max(sz.x,sz.y,sz.z*.8)*.62+8;
+   p.rotation.y=-.45;camera.position.set(c.x+r*.9,c.y+r*.75,c.z+r*3.4);camera.lookAt(c.x,c.y,c.z);scene.add(p);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(p);freeTree(p);return url;},
   dispose(){renderer.dispose();}};}
