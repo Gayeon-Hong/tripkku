@@ -486,12 +486,15 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
 const FLAGS=new Map();
 function flagImage(code){let e=FLAGS.get(code);if(!e&&typeof Image!=='undefined'){const img=new Image();img.crossOrigin='anonymous';e={img,ok:false};img.onload=()=>{e.ok=true;};img.src='https://purecatamphetamine.github.io/country-flag-icons/3x2/'+code+'.svg';FLAGS.set(code,e);}return e;}
 function countryName(code){try{return new Intl.DisplayNames(['ko'],{type:'region'}).of(code)||code;}catch{return code;}}
-function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.3;if(sec>show)return;const k=Math.min(1,sec/.22),out=Math.min(1,(show-sec)/.25),s=(.6+.4*ease(k))*(.9+.1*out),e=flagImage(code);
- ctx.save();ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,262);ctx.scale(s*.55,s*.55);
- ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(20,34,28,.28)';ctx.shadowBlur=30;fillRR(ctx,-170,-150,340,300,34);ctx.shadowBlur=0;
- if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.clip();ctx.drawImage(e.img,-120,-116,240,160);ctx.restore();ctx.strokeStyle='rgba(36,61,52,.18)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.stroke();}
- else{ctx.fillStyle='#eaf2eb';fillRR(ctx,-120,-116,240,160,16);ctx.fillStyle='#285c4b';ctx.font='900 64px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,0,-36);}
- ctx.fillStyle='#243d34';ctx.font='900 40px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(fit(ctx,countryName(code)+' 도착!',300),0,96);ctx.restore();}
+// 나라가 바뀌면 제목 카드 아래에 작은 알림 띠가 위에서 내려왔다가 사라진다: [국기] 독일 도착!
+function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.6;if(sec>show)return;const k=ease(Math.min(1,sec/.3)),out=Math.min(1,(show-sec)/.3),e=flagImage(code);
+ const text=countryName(code)+' 도착!';ctx.save();ctx.font='900 34px '+FONT;const tw=Math.min(300,ctx.measureText(text).width),w=tw+160,h=84;
+ ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,196+(1-k)*-26);
+ ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(20,34,28,.26)';ctx.shadowBlur=22;ctx.shadowOffsetY=6;fillRR(ctx,-w/2,-h/2,w,h,h/2);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+ const fx=-w/2+22,fw=84,fh=56;
+ if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.clip();ctx.drawImage(e.img,fx,-fh/2,fw,fh);ctx.restore();ctx.strokeStyle='rgba(36,61,52,.2)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.stroke();}
+ else{ctx.fillStyle='#eaf2eb';fillRR(ctx,fx,-fh/2,fw,fh,10);ctx.fillStyle='#285c4b';ctx.font='900 26px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,fx+fw/2,2);}
+ ctx.fillStyle='#243d34';ctx.font='900 34px '+FONT;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(fit(ctx,text,300),fx+fw+18,2);ctx.restore();}
 
 /* ---------- 장소 아이콘 핀: 지도 위 각 장소에 종류별 색·아이콘 핀을 꽂는다(지도 앱의 장소 핀처럼) ---------- */
 const EMOJI=",'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'";
