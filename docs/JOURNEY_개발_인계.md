@@ -68,3 +68,8 @@
   - 참여자 내보내기(만든 사람 본인은 내보낼 수 없음), 초대 버튼, 여행 정보 전체 수정, 모든 사람 캐릭터 변경.
   - 관리자 쪽 서버 권한은 `sql/2026-11-12_admin_powers.sql`(Supabase SQL Editor에서 한 번 실행)로 열림: `tripkku_admin_remove_member`, 관리자도 가능한 `tripkku_delete_trip`.
 - 수익화가 들어오면 관리자는 결제·쿠폰 검사에서 제외한다.
+
+## 최적화 (2026-11-12)
+- `next/sw.js`: 진짜 서비스 워커. 화면(HTML)은 네트워크 먼저, `?v=` 붙은 파일·CDN(three, supabase, mp4-muxer)·국기는 캐시 먼저, 그 밖의 같은 출처 파일은 캐시 보여 주고 뒤에서 갱신, 지도 타일은 최대 500장. **Supabase·AI·환율·날씨는 캐시하지 않음.** 파일을 고치면 지금처럼 `?v=`만 올리면 됨. `push`/`notificationclick` 처리도 미리 들어 있음(서버 쪽은 아직 없음).
+- 캐릭터 얼굴 그림은 `localStorage('tripkku-portraits-v1')`에 최대 16개 저장 → 다시 열 때 three.js(약 700KB)를 받지 않음. 처음에도 화면이 한가할 때(requestIdleCallback) 받음.
+- manifest: maskable 아이콘, 바로가기(`?new=1`), 카테고리 등 스토어용 항목 추가.

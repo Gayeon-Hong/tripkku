@@ -3,15 +3,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer">
 <title>트립꾸 TRIPKKU · 함께 꾸미는 여행 플래너</title><meta name="description" content="어디로 떠나든: AI 동선 추천, 친구와 일정·예산·메모 공유, 국가별 음성 번역까지 한 화면에서">
 <meta name="theme-color" content="#f7f5f0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="트립꾸"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261112_adm2">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://aachvbbblwycutggzdpp.supabase.co" crossorigin><link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm"><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261112_adm2">
 <script defer src="../travel-status.js?v=20261111_home1"></script></head><body>
 <header class="topbar"><div class="topbar-inner">
- <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="../assets/icon-192.png"><span>TRIPKKU<small>함께 꾸미는 여행</small></span></button>
+ <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="../assets/icon-192.png" width="40" height="40" decoding="async"><span>TRIPKKU<small>함께 꾸미는 여행</small></span></button>
  <div class="topbar-actions"><span id="syncBadge" class="sync-badge" aria-live="polite">여행을 준비해요</span><button id="moodToggle" class="btn icononly" type="button" aria-label="지구 표정 변경" title="지구 표정 변경">😊</button><button id="themeToggle" class="btn icononly" type="button" aria-label="낮 밤 테마 바꾸기">☾</button><button id="feedbackTop" class="btn" type="button" hidden>💌 피드백</button><button id="adminFeedbackBtn" class="btn" type="button" hidden>🛠 관리자</button><button id="inviteTop" class="btn" type="button" hidden>친구 초대</button><button id="logoutBtn" class="btn ghost" type="button" hidden>로그아웃</button></div>
 </div></header>
 <main id="main" class="shell">
 <section id="authScreen" class="auth card">
- <img class="auth-globe" alt="TRIPKKU 지구 캐릭터" src="./assets/earth-base-light.png"><span class="eyebrow">NEXT TRAVEL STARTS HERE</span><h1>여행의 시작부터<br>돌아오는 날까지.</h1>
+ <img class="auth-globe" alt="TRIPKKU 지구 캐릭터" src="./assets/earth-base-light.png" loading="lazy" decoding="async"><span class="eyebrow">NEXT TRAVEL STARTS HERE</span><h1>여행의 시작부터<br>돌아오는 날까지.</h1>
  <p>여행지만 정해도 충분해요. AI가 동선을 추천하고, 직접 또는 챗봇으로 바꿀 수 있어요. 친구와 함께 일정·메모·예산을 관리하세요.</p>
  <div class="login-methods"><button id="loginBtn" class="btn primary" type="button" hidden aria-hidden="true" tabindex="-1" style="display:none!important">Google로 시작하기</button><button id="kakaoLoginBtn" class="btn secondary" type="button">카카오로 시작하기</button></div><p class="tiny">여행 데이터는 로그인 후 내 여행방에 저장됩니다. 체험은 <a href="?demo=1">데모 모드</a>로 볼 수 있어요.</p>
  <p class="error" id="authError" role="alert"></p>
@@ -106,6 +106,6 @@
 <dialog id="eventDialog"><form method="dialog" id="eventForm" class="modal-content"><header class="modal-header"><h3 id="eventDialogTitle">일정 추가</h3><button type="button" class="btn icononly" data-close-dialog="eventDialog">×</button></header><label>날짜 <select name="date" id="eventDate" required></select></label><div class="form-row"><label>시작 <input name="start" type="time" value="10:00" required></label><label>종료 <input name="end" type="time" value="11:00" required></label></div><label>일정 이름 <input name="title" maxlength="120" required placeholder="예: 아침 식사"></label><label>장소 <input name="place" maxlength="180" placeholder="예: 도쿄역"></label><label>내용 <textarea name="note" rows="3" maxlength="500" placeholder="기억할 사항"></textarea></label><footer class="modal-actions"><button type="button" class="btn" data-close-dialog="eventDialog">취소</button><button class="btn primary" type="submit">일정 저장</button></footer></form></dialog>
 <dialog id="conflictDialog"><div class="modal-content"><h3>⚠️ 일정이 겹쳐요</h3><div id="conflictDetails" class="notice"></div><p class="muted">어떻게 처리할까요?</p><footer class="modal-actions"><button id="conflictCancel" class="btn" type="button">취소</button><button id="conflictAdjust" class="btn" type="button">시간 조정</button><button id="conflictReplace" class="btn danger" type="button">기존 일정 대체</button></footer></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./app.js?v=20261112_adm2"></script>
-<script type="module" src="./journey.js?v=20261112_adm2"></script>
+<script type="module" src="./app.js?v=20261112_opt1"></script>
+<script type="module" src="./journey.js?v=20261112_opt1"></script>
 </body></html>

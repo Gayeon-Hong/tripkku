@@ -11,12 +11,46 @@
     {
       "src": "../assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "../assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "lang": "ko",
+  "dir": "ltr",
+  "scope": "./",
+  "orientation": "portrait-primary",
+  "categories": [
+    "travel",
+    "productivity",
+    "lifestyle"
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "shortcuts": [
+    {
+      "name": "새 여행 만들기",
+      "short_name": "새 여행",
+      "url": "./?new=1",
+      "icons": [
+        {
+          "src": "../assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

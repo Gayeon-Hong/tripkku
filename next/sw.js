@@ -1,10 +1,27 @@
-// Build v16.1 - compact globe controls and reviewed luggage guidance.
-// Neutral migration service worker. New friend app does not register a service worker.
-// Previously installed Tripkku SW may update to this file, stop caching and unregister.
-self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
-self.addEventListener('activate',event=>event.waitUntil((async()=>{
-  const keys=await caches.keys();
-  await Promise.all(keys.filter(key=>/tripkku|oita/i.test(key)).map(key=>caches.delete(key)));
-  await self.registration.unregister();
-  await self.clients.claim();
-})()));
+// 트립꾸 서비스 워커: 다시 열 때 빠르게, 오프라인에서도 화면이 뜨게, (나중에) 푸시 알림을 받게.
+// 데이터(Supabase·AI·환율·날씨)는 절대 캐시하지 않는다. 화면 파일만 캐시한다.
+const VERSION='tk-20261112-1',STATIC=VERSION+'-static',TILES='tk-tiles-1',TILE_MAX=500;
+self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{
+  for(const k of await caches.keys())if(k!==STATIC&&k!==TILES)await caches.delete(k);
+  await self.clients.claim();})()));
+const put=async(name,req,res)=>{if(res&&(res.ok||res.type==='opaque')){const c=await caches.open(name);await c.put(req,res.clone());}return res;};
+const cacheFirst=async(name,req)=>(await caches.match(req))||put(name,req,await fetch(req));
+const staleWhileRevalidate=async(name,req)=>{const hit=await caches.match(req),net=fetch(req).then(r=>put(name,req,r)).catch(()=>hit);return hit||net;};
+const networkFirst=async(name,req)=>{try{return await put(name,req,await fetch(req));}catch(err){const hit=await caches.match(req,{ignoreSearch:true});if(hit)return hit;throw err;}};
+async function trimTiles(){const c=await caches.open(TILES),keys=await c.keys();for(const k of keys.slice(0,Math.max(0,keys.length-TILE_MAX)))await c.delete(k);}
+self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;const url=new URL(req.url);
+  if(url.origin===location.origin){
+    if(req.mode==='navigate')return e.respondWith(networkFirst(STATIC,req));               // 화면은 항상 최신 먼저
+    if(url.searchParams.has('v'))return e.respondWith(cacheFirst(STATIC,req));              // 버전 붙은 파일은 바뀌지 않는다
+    return e.respondWith(staleWhileRevalidate(STATIC,req));}                                // 그림·기타: 일단 보여 주고 뒤에서 갱신
+  if(url.hostname==='cdn.jsdelivr.net'||url.hostname==='purecatamphetamine.github.io')return e.respondWith(cacheFirst(STATIC,req));
+  if(url.hostname==='tile.openstreetmap.org'){e.respondWith(cacheFirst(TILES,req));e.waitUntil(trimTiles());return;}
+  // 그 밖(Supabase, AI, 환율, 날씨, 위치 검색)은 건드리지 않는다
+});
+// 푸시 알림(MS 스토어·설치형에서 사용 예정): 서버가 {title, body, url} 을 보낸다
+self.addEventListener('push',e=>{let d={};try{d=e.data?.json()||{};}catch{d={body:e.data?.text()};}
+  e.waitUntil(self.registration.showNotification(d.title||'트립꾸',{body:d.body||'',icon:'../assets/icon-192.png',badge:'../assets/light-64.png',tag:d.tag||'tripkku',data:{url:d.url||'./'}}));});
+self.addEventListener('notificationclick',e=>{e.notification.close();const url=new URL(e.notification.data?.url||'./',self.registration.scope).href;
+  e.waitUntil((async()=>{for(const c of await self.clients.matchAll({type:'window',includeUncontrolled:true}))if('focus' in c){await c.focus();if('navigate' in c)await c.navigate(url).catch(()=>{});return;}
+    await self.clients.openWindow(url);})());});

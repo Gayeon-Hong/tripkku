@@ -588,10 +588,19 @@ const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
 const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 let portraits=null;const portraitCache=new Map();
+// 한 번 그린 얼굴은 기기에 저장해 둔다 → 다음에 열 때는 3D 엔진(약 700KB)을 받지 않고도 바로 보인다.
+const PORTRAIT_STORE='tripkku-portraits-v1',PORTRAIT_KEEP=16;
+const portraitHash=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36);};
+let portraitDisk=null;const diskPortraits=()=>{if(!portraitDisk){try{portraitDisk=JSON.parse(localStorage.getItem(PORTRAIT_STORE)||'{}')||{};}catch{portraitDisk={};}}return portraitDisk;};
+const savePortrait=(h,url)=>{const d=diskPortraits();delete d[h];d[h]=url;const keys=Object.keys(d);for(const k of keys.slice(0,Math.max(0,keys.length-PORTRAIT_KEEP)))delete d[k];
+ try{localStorage.setItem(PORTRAIT_STORE,JSON.stringify(d));}catch{try{localStorage.removeItem(PORTRAIT_STORE);}catch{}portraitDisk={};}};
+const idle=()=>new Promise(r=>(window.requestIdleCallback||(f=>setTimeout(f,250)))(()=>r(),{timeout:1500}));
 async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portraitCache.has(key))return portraitCache.get(key);
- if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
+ const h=portraitHash(key),saved=diskPortraits()[h];if(saved){portraitCache.set(key,saved);return saved;}
+ await idle(); // 첫 화면을 먼저 그린 뒤에 3D 엔진을 받는다
+ if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);savePortrait(h,url);return url;}
 function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
- setTimeout(()=>portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),300);return img;}
+ portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{});return img;}
 /* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
 const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
 function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
@@ -634,7 +643,7 @@ function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip
   const item=el('div',{class:'trip-party-item'+(m.me?' me':'')},[face]);
   // 여행 만든 사람과 트립꾸 관리자는 다른 사람을 내보낼 수 있다(만든 사람은 제외)
   if(manage&&!m.me&&m.id!==ownerId){const kick=el('button',{type:'button',class:'trip-party-kick','aria-label':m.label+' 내보내기'},[document.createTextNode('내보내기')]);kick.addEventListener('click',()=>void A.removeMember?.(m.id));item.append(kick);}
-  setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;});
+  portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{});return item;});
  // 초대받은 사람은 스스로 나갈 수 있다(만든 사람은 홈에서 여행을 삭제)
  if(!owner&&A.getTrip?.()&&!A.isDemo?.()){const leave=el('button',{type:'button',class:'trip-party-leave'},[document.createTextNode('🚪 이 여행 나가기')]);leave.addEventListener('click',()=>void A.leaveTrip?.(leave));items.push(leave);}
  strip.replaceChildren(...items);}

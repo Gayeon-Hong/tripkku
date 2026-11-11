@@ -973,6 +973,10 @@ function bindHandlers(){
  $('tripList').addEventListener('click',homeListAction);
  $('openNewTrip').addEventListener('click',()=>{$('newTripDialog').showModal();});
  $('homeLive').addEventListener('click',()=>{if(!window.tripkkuLive?.country)document.querySelector('.tripkku-live-toggle')?.click();});
+ // 서비스 워커: 다시 열 때 빠르게 + 오프라인에서도 화면이 뜨게(데이터는 캐시하지 않음)
+ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+ // 홈 화면 바로가기 '새 여행 만들기'
+ if(new URLSearchParams(location.search).get('new')==='1')setTimeout(()=>{if(user||DEMO)$('openNewTrip')?.click();},1200);
  $('fxAmount').addEventListener('input',()=>void renderHomeFx());$('fxCurrency').addEventListener('change',()=>{homeFx.manual=true;void renderHomeFx();});
  $('fxSwap').addEventListener('click',async()=>{const inp=$('fxAmount'),v=Number(String(inp.value).replace(/,/g,''));homeFx.rev=!homeFx.rev;try{localStorage.setItem('tripkku-fx-rev',homeFx.rev?'1':'0');}catch{}
   // 방금 계산한 결과를 새 입력값으로 넘겨 바로 반대로 볼 수 있게
