@@ -361,115 +361,6 @@
 
 
 
-  <!-- 24종 두뇌 게임 아레나 모달 -->
-  <div class="modal-backdrop ui-interactive" id="games-modal">
-    <div class="modal-card" style="max-width:540px;max-height:85vh;overflow-y:auto;">
-      <div class="modal-head" style="position:sticky;top:0;background:var(--panel-bg);padding-bottom:10px;z-index:2;">
-        <div>
-          <h3>🎮 데블스 플랜 24종 두뇌 게임 아레나</h3>
-          <p style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-            라운지에서 코그(COG)를 걸고 심리전·두뇌 대결에 입장하세요!
-          </p>
-        </div>
-        <button class="modal-close" onclick="closeModal('games-modal')">✕</button>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-top:10px;">
-        
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">⚖️</span>
-            <span class="badge" style="background:rgba(245,158,11,0.2);color:#f59e0b;">메인 매치</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">소수결의 법칙</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            적은 쪽을 고른 소수만 생존! 상대방의 블러핑과 버릇을 꿰뚫으세요.
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=minority" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:#f59e0b;color:#000;font-weight:800;">
-            ⚔️ 소수결 입장하기
-          </a>
-        </div>
-
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">❓</span>
-            <span class="badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;">심리 베팅</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">블라인드 숫자전</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            1부터 9까지 카드를 한 번씩 내며 상대방의 패를 카운터치는 뇌지컬 승부.
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=blind" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
-            ⚔️ 블라인드전 입장
-          </a>
-        </div>
-
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">▦</span>
-            <span class="badge" style="background:rgba(239,68,68,0.2);color:#f87171;">서바이벌</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">징검다리 건너기</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            잠깐 깜빡인 안전한 강화유리 돌을 순서대로 기억해 끝까지 질주하세요.
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=bridge" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
-            ⚔️ 징검다리 입장
-          </a>
-        </div>
-
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">△</span>
-            <span class="badge" style="background:rgba(16,185,129,0.2);color:#34d399;">관찰·추리</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">3장의 법칙 (결! 합!)</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            색·모양·개수가 모두 같거나 다른 3장의 세트를 빠르게 찾아내는 게임.
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=triad" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
-            ⚔️ 3장의 법칙 입장
-          </a>
-        </div>
-
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">🤝</span>
-            <span class="badge" style="background:rgba(236,72,153,0.2);color:#f472b6;">죄수의 딜레마</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">믿을까 배신할까</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            6라운드 동안 협력할 것인가, 마지막에 통수치고 코그를 독식할 것인가!
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=trust" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
-            ⚔️ 배신 게임 입장
-          </a>
-        </div>
-
-        <div class="closet-item" style="text-align:left;padding:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:20px;">₩</span>
-            <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;">비공개 입찰</span>
-          </div>
-          <div style="font-weight:800;font-size:14px;color:var(--text);margin-top:6px;">밀실 칩 경매</div>
-          <div style="font-size:11.5px;color:var(--text-muted);line-height:1.4;margin:4px 0 8px 0;">
-            30칩으로 5개 보물을 비밀 입찰! 함정 상자를 피하고 최대 수익을 내세요.
-          </div>
-          <a href="https://thinkchip-arena.pages.dev/?game=auction" target="_blank" class="claim-btn" style="display:block;text-align:center;text-decoration:none;padding:8px;font-size:12px;background:var(--navy-soft);">
-            ⚔️ 칩 경매 입장
-          </a>
-        </div>
-
-      </div>
-
-      <div style="margin-top:14px;padding:12px;background:rgba(255,255,255,0.05);border-radius:10px;text-align:center;">
-        <a href="https://thinkchip-arena.pages.dev/" target="_blank" style="color:#f59e0b;font-weight:800;font-size:13px;text-decoration:none;">
-          🌐 24종 전체 게임 웹 플랫폼 바로가기 (새창 열기) ↗
-        </a>
-      </div>
-    </div>
-  </div>
-
   <!-- 친구 초대 모달 -->
   <div class="modal-backdrop ui-interactive" id="invite-modal">
     <div class="modal-card">
@@ -1955,9 +1846,9 @@
 
     
     
-    // 게임 아레나 모달 열기
+    // 24종 개별 게임 아레나로 원클릭 즉시 이동
     document.getElementById("btn-games").addEventListener("click", () => {
-      document.getElementById("games-modal").classList.add("open");
+      window.location.href = "./arena.html";
     });
 
     // 친구 초대 모달 및 보상
