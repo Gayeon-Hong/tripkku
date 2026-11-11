@@ -3,8 +3,8 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer">
 <title>트립꾸 TRIPKKU · 함께 꾸미는 여행 플래너</title><meta name="description" content="어디로 떠나든: AI 동선 추천, 친구와 일정·예산·메모 공유, 국가별 음성 번역까지 한 화면에서">
 <meta name="theme-color" content="#f7f5f0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="트립꾸"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261111b">
-<script defer src="../travel-status.js"></script></head><body>
+<link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="icon" href="../assets/favicon.png"><link rel="stylesheet" href="./style.css?v=20261111_home1">
+<script defer src="../travel-status.js?v=20261111_home1"></script></head><body>
 <header class="topbar"><div class="topbar-inner">
  <button class="brand" type="button" id="goHome" aria-label="TRIPKKU 홈으로 이동"><img alt="" src="../assets/icon-192.png"><span>TRIPKKU<small>함께 꾸미는 여행</small></span></button>
  <div class="topbar-actions"><span id="syncBadge" class="sync-badge" aria-live="polite">여행을 준비해요</span><button id="moodToggle" class="btn icononly" type="button" aria-label="지구 표정 변경" title="지구 표정 변경">😊</button><button id="themeToggle" class="btn icononly" type="button" aria-label="낮 밤 테마 바꾸기">☾</button><button id="feedbackTop" class="btn" type="button" hidden>💌 피드백</button><button id="adminFeedbackBtn" class="btn" type="button" hidden>🛠 관리자</button><button id="inviteTop" class="btn" type="button" hidden>친구 초대</button><button id="logoutBtn" class="btn ghost" type="button" hidden>로그아웃</button></div>
@@ -17,9 +17,15 @@
  <p class="error" id="authError" role="alert"></p>
 </section>
 <section id="homeScreen" hidden>
- <div class="home-hero"><div><span class="eyebrow">AI TRAVEL PLANNER</span><h1>어디로 떠나볼까요? <span>✈️</span></h1><p>나라·날짜·가고 싶은 곳을 적어 주세요. 여행 스타일에 맞춘 추천 동선을 만든 뒤 자유롭게 수정할 수 있어요.</p></div><img src="./assets/earth-base-light.png" class="hero-earth" alt="TRIPKKU 지구 캐릭터"></div>
- <div class="home-columns"><form id="newTripForm" class="card planner-card">
-  <div class="card-title"><h2>새 여행 만들기</h2><span class="tag">AI 추천</span></div>
+ <div class="home-hero"><div class="home-hero-text"><span class="eyebrow">TRIPKKU</span><h1 id="homeGreeting">어디로 떠나볼까요?</h1><button id="homeLive" class="home-live" type="button">📍 내 위치를 켜면 지금 있는 곳의 날씨·환율을 보여 줘요</button><div class="home-fx" role="group" aria-label="환율 계산기"><input id="fxAmount" inputmode="decimal" maxlength="12" placeholder="금액" aria-label="현지 금액"><select id="fxCurrency" aria-label="통화"></select><output id="fxResult" for="fxAmount fxCurrency" aria-live="polite">= ? 원</output></div><button id="openNewTrip" class="btn primary home-new" type="button">＋ 새 여행 만들기</button></div><img src="./assets/earth-base-light.png" class="hero-earth" alt=""></div>
+ <div class="home-main">
+  <div class="home-list"><div class="card-title"><h2>내 여행</h2><button id="refreshTrips" class="btn small subtle" type="button">새로고침</button></div><div id="tripList" class="trip-list"><p class="muted">여행을 불러오는 중…</p></div></div>
+  <details class="card invite-panel join-panel"><summary>🔗 초대 링크로 참여하기</summary><p>친구가 카카오톡으로 보낸 <b>여행 초대 링크</b>를 누르면 자동으로 참여할 수 있어요. 이메일이나 계정 ID는 필요 없고, 카카오 로그인만 하면 됩니다.</p><label>여행에서 표시할 이름 (선택)<input id="joinNickname" placeholder="예: 유림" maxlength="30" autocomplete="nickname"></label><div class="horizontal"><input id="joinCode" placeholder="초대 링크 또는 32자리 코드" maxlength="500" autocomplete="off" aria-label="초대 링크"><button id="joinBtn" class="btn primary" type="button">참여하기</button></div><p class="tiny">이 여행의 초대 링크를 가진 로그인 사용자만 참여할 수 있습니다. 다른 여행은 자동으로 공개되지 않아요.</p></details>
+  <details class="card hidden-trip-panel" id="hiddenTripPanel"><summary>📦 숨긴 여행 <span id="hiddenTripCount" class="tag">0</span></summary><p class="tiny">여기서는 다시 표시하거나, 내가 만든 여행을 영구 삭제할 수 있어요. 초대받은 여행은 ‘나가기’가 가능합니다.</p><div id="hiddenTripList" class="trip-list"></div></details>
+ </div>
+</section>
+<dialog id="newTripDialog" class="new-trip-dialog" aria-labelledby="newTripTitle"><form id="newTripForm" class="modal-content planner-card">
+  <header class="modal-header"><h3 id="newTripTitle">✈️ 새 여행 만들기</h3><button type="button" class="btn icononly" data-close-dialog="newTripDialog" aria-label="닫기">×</button></header>
   <div class="form-row"><label>가고 싶은 도시·지역 <input id="newDestination" name="destination" required maxlength="120" placeholder="예: 파리 / 도쿄 / 방콕" autocomplete="off"></label>
   <label>첫 방문 국가 <select id="newCountry" name="country" required><option value="">국가 선택 (도시 입력 시 추천)</option></select></label></div>
   <label>함께 방문할 다른 국가 (선택) <input id="newAdditionalCountries" name="additionalCountries" maxlength="260" placeholder="예: 스위스, 프랑스 (쉼표로 구분)" autocomplete="off"><small class="muted">여러 나라라면 방문 순서대로 적어 주세요. 국가별 언어와 통화가 자동 추가돼요.</small></label>
@@ -32,13 +38,7 @@
   <label>이미 예약했거나 꼭 지켜야 할 조건 <textarea name="constraints" rows="2" maxlength="1100" placeholder="예: 1일차 15시 공항 도착, 마지막 날 12시 비행기, 2일차 18시 숙소 체크인"></textarea></label>
   <div id="localeHint" class="locale-hint">국가를 선택하면 번역 언어·현지 통화를 자동으로 맞춰 드려요.</div>
   <button class="btn primary big" type="submit" id="newTripSubmit">✨ 여행 만들고 추천 일정 받기</button><p class="tiny">AI가 제안하는 이동·영업 시간은 예상치예요. 실제 예약·교통편은 현지 공식 정보를 확인해야 합니다.</p>
- </form>
- <div class="home-side"><div class="card home-list"><div class="card-title"><h2>내 여행</h2><button id="refreshTrips" class="btn small" type="button">새로고침</button></div><div id="tripList" class="trip-list"><p class="muted">여행을 불러오는 중…</p></div></div>
- <details class="card hidden-trip-panel" id="hiddenTripPanel"><summary>📦 숨긴 여행 <span id="hiddenTripCount" class="tag">0</span></summary><p class="tiny">여기서는 다시 표시하거나, 내가 만든 여행을 영구 삭제할 수 있어요. 초대받은 여행은 ‘나가기’가 가능합니다.</p><div id="hiddenTripList" class="trip-list"></div></details>
- <div class="card invite-panel"><h3>🔗 친구가 초대했나요?</h3><p>친구가 카카오톡으로 보낸 <b>여행 초대 링크</b>를 누르면 자동으로 참여할 수 있어요. 이메일이나 계정 ID는 필요 없고, 카카오 로그인만 하면 됩니다.</p><label>여행에서 표시할 이름 (선택)<input id="joinNickname" placeholder="예: 유림" maxlength="30" autocomplete="nickname"></label><div class="horizontal"><input id="joinCode" placeholder="초대 링크 또는 32자리 코드" maxlength="500" autocomplete="off" aria-label="초대 링크"><button id="joinBtn" class="btn primary" type="button">참여하기</button></div><p class="tiny">이 여행의 초대 링크를 가진 로그인 사용자만 참여할 수 있습니다. 다른 여행은 자동으로 공개되지 않아요.</p></div>
- 
- </div></div>
-</section>
+ </form></dialog>
 <section id="tripScreen" hidden>
  <div class="trip-intro card"><div><button id="backHome" class="btn subtle small" type="button">← 내 여행 목록</button><h1 id="activeTripTitle">여행 제목</h1><p id="activeTripSummary" class="muted"></p><div class="chip-row"><span id="activeCountry" class="chip">국가</span><span id="activeLanguage" class="chip">번역 언어</span><span id="activeCurrency" class="chip">통화</span></div></div><img src="./assets/earth-base-light.png" class="trip-earth" alt=""></div>
  <div class="workspace"><aside class="sidebar card"><nav id="mainNav" aria-label="여행 화면"><button data-tab="schedule" class="active">🗓 일정</button><button data-tab="notes">🧳 준비·메모</button><button data-tab="budget">💳 예산</button><button data-tab="places">❤️ 릴스·장소</button><button data-tab="transport">🚌 교통·예약</button><button data-tab="assistant">💬 챗봇·번역</button></nav><p class="sidebar-note">여행일정과 메모는 친구와 공유됩니다. 개인 파일·개인 지출은 본인만 볼 수 있어요.</p></aside>
@@ -93,6 +93,6 @@
 <dialog id="eventDialog"><form method="dialog" id="eventForm" class="modal-content"><header class="modal-header"><h3 id="eventDialogTitle">일정 추가</h3><button type="button" class="btn icononly" data-close-dialog="eventDialog">×</button></header><label>날짜 <select name="date" id="eventDate" required></select></label><div class="form-row"><label>시작 <input name="start" type="time" value="10:00" required></label><label>종료 <input name="end" type="time" value="11:00" required></label></div><label>일정 이름 <input name="title" maxlength="120" required placeholder="예: 아침 식사"></label><label>장소 <input name="place" maxlength="180" placeholder="예: 도쿄역"></label><label>내용 <textarea name="note" rows="3" maxlength="500" placeholder="기억할 사항"></textarea></label><footer class="modal-actions"><button type="button" class="btn" data-close-dialog="eventDialog">취소</button><button class="btn primary" type="submit">일정 저장</button></footer></form></dialog>
 <dialog id="conflictDialog"><div class="modal-content"><h3>⚠️ 일정이 겹쳐요</h3><div id="conflictDetails" class="notice"></div><p class="muted">어떻게 처리할까요?</p><footer class="modal-actions"><button id="conflictCancel" class="btn" type="button">취소</button><button id="conflictAdjust" class="btn" type="button">시간 조정</button><button id="conflictReplace" class="btn danger" type="button">기존 일정 대체</button></footer></div></dialog>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script type="module" src="./app.js?v=20261111_chars1"></script>
+<script type="module" src="./app.js?v=20261111_home1"></script>
 <script type="module" src="./journey.js?v=20261111_3d2"></script>
 </body></html>

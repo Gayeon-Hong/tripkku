@@ -39,6 +39,8 @@ document.head.append(liveStatusCSS);
   let latestTemp = '';
   let latestWeather = '';
   let latestFX = '';
+  let latestCur = '';   // 지금 있는 곳의 통화와 1원당 환율(홈 화면 계산기용)
+  let latestRate = 0;
   let lastWeatherTime = 0;
   let lastWeatherPos = null;
   let fxCache = new Map();
@@ -57,8 +59,11 @@ document.head.append(liveStatusCSS);
     const r = Math.PI / 180, h = Math.sin((b.lat-a.lat)*r/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2;
     return 12742 * Math.asin(Math.min(1, Math.sqrt(h)));
   };
+  // 홈 화면 등 다른 곳에서도 쓸 수 있게 지금 상태를 알린다(좌표는 내보내지 않는다).
+  const publish = () => { window.tripkkuLive = enabled ? { country: latestCountry, city: latestCity, temp: latestTemp, fx: latestFX, cur: latestCur, rate: latestRate, pending: !latestCountry } : null; document.dispatchEvent(new Event('tripkku-live')); };
   const render = () => {
     if (!enabled) return;
+    publish();
     const place = latestCountry ? `${countryName(latestCountry)}${latestCity ? `(${latestCity})` : ''}에 있어요!` : '현재 위치 확인 중…';
     title.textContent = '🌍 ' + place;
     details.textContent = [latestTemp, latestFX].filter(Boolean).join('  ·  ') || '날씨·환율 불러오는 중…';
@@ -75,7 +80,7 @@ document.head.append(liveStatusCSS);
     if (!code || code === 'KRW') { latestFX = ''; render(); return; }
     const now = Date.now();
     const prior = fxCache.get(code);
-    if (prior && now-prior.when < 6*60*60*1000) { latestFX = prior.label; render(); return; }
+    if (prior && now-prior.when < 6*60*60*1000) { latestFX = prior.label; latestCur = code; latestRate = prior.rate; render(); return; }
     try {
       // KRW 1,000 -> local currency (not local currency -> KRW).
       const info = await fetchJSON(`https://api.frankfurter.dev/v2/rate/krw/${encodeURIComponent(code.toLowerCase())}`);
@@ -97,7 +102,7 @@ document.head.append(liveStatusCSS);
       const localName = currencyNames[code] || code;
       const date = String(info.date || '').replace(/^\d{4}-/, '');
       const label = `\uD83D\uDCB1 1,000\uC6D0 \u2248 ${formatted}${localName} (${code})${date ? ' \u00B7 '+date : ''}`;
-      fxCache.set(code, { when: now, label }); latestFX = label; render();
+      fxCache.set(code, { when: now, label, rate }); latestFX = label; latestCur = code; latestRate = rate; render();
     } catch (_) { if (!latestFX) { latestFX = '💱 환율 조회 지연'; render(); } }
   }
   async function onPosition(pos) {
@@ -142,7 +147,7 @@ document.head.append(liveStatusCSS);
     watchId=null;
     try { localStorage.removeItem(KEY); } catch (_) {}
     button.textContent='📍 내 위치 켜기'; button.setAttribute('aria-pressed','false');
-    title.textContent='🌎 여행 중 어디에 있나요?';details.textContent='위치 공유 없음 · 날씨·현지 환율';
+    title.textContent='🌎 여행 중 어디에 있나요?';details.textContent='위치 공유 없음 · 날씨·현지 환율';publish();
   }
   function start() {
     if (!navigator.geolocation || !window.isSecureContext) {
@@ -152,7 +157,7 @@ document.head.append(liveStatusCSS);
     enabled=true;
     try { localStorage.setItem(KEY,'1'); } catch (_) {}
     button.textContent='📍 위치 끄기'; button.setAttribute('aria-pressed','true');
-    title.textContent='📍 위치 확인 중…';details.textContent='위치 허용을 눌러 주세요';
+    title.textContent='📍 위치 확인 중…';details.textContent='위치 허용을 눌러 주세요';publish();
     watchId=navigator.geolocation.watchPosition(
       p=>void onPosition(p),
       e=>{
@@ -163,7 +168,7 @@ document.head.append(liveStatusCSS);
           enabled=false;
           if (watchId!==null) navigator.geolocation.clearWatch(watchId);
           watchId=null;
-          button.textContent='📍 다시 시도';button.setAttribute('aria-pressed','false');
+          button.textContent='📍 다시 시도';button.setAttribute('aria-pressed','false');publish();
           try {localStorage.removeItem(KEY);}catch(_){}
         }
       },

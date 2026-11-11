@@ -36,7 +36,7 @@ const eventEmoji=(e)=>e.emoji||({food:'🍜',move:'🚆',flight:'✈️',hotel:'
 const compactCountry=(code)=>countryInfo(code)?.name||code;
 function directionsUrl(start,end){return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(start)+'&destination='+encodeURIComponent(end);}
 function safeUrl(url){try{const u=new URL(url);return ['https:','http:'].includes(u.protocol)?u.href:'';}catch{return '';}}
-function showScreen(screen){for(const name of ['auth','home','trip','feedback'])$(name+'Screen').hidden=name!==screen;}
+function showScreen(screen){for(const name of ['auth','home','trip','feedback'])$(name+'Screen').hidden=name!==screen;if(screen!=='home'&&$('newTripDialog')?.open)$('newTripDialog').close();}
 function isoDay(d){return new Date(d).toISOString().slice(0,10);}
 function daysBetween(start,end){if(!dateRE.test(start)||!dateRE.test(end))return [];
  const a=Date.parse(start+'T00:00:00Z'),b=Date.parse(end+'T00:00:00Z');if(!Number.isFinite(a)||!Number.isFinite(b)||b<a||b-a>=14*86400000)return [];
@@ -143,17 +143,55 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
  let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO&&!pendingInviteJoining){pendingInviteJoining=true;try{try{sessionStorage.setItem('tripkku-next-pending-invite',inv);}catch(_){}history.replaceState({},'',location.pathname);await joinTrip(inv);}finally{pendingInviteJoining=false;}}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }
+// 홈: 최근에 연 여행이 위로. 연 시각은 이 기기에만 기억한다.
+const OPENED_KEY='tripkku-next-opened';
+function openedMap(){try{return JSON.parse(localStorage.getItem(OPENED_KEY)||'{}')||{};}catch{return {};}}
+function markOpened(id){try{const m=openedMap();m[id]=Date.now();localStorage.setItem(OPENED_KEY,JSON.stringify(m));}catch{}}
+function localToday(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function tripPhase(t){const today=localToday(),day=s=>Date.parse(s+'T00:00:00Z'),live=window.tripkkuLive;
+ if(!dateRE.test(t.start_date||'')||!dateRE.test(t.end_date||''))return {cls:'',label:''};
+ if(today<t.start_date){const n=Math.round((day(t.start_date)-day(today))/86400000);return {cls:'soon',label:n===0?'오늘 출발':'D-'+n};}
+ if(today>t.end_date)return {cls:'done',label:'다녀온 여행'};
+ const n=Math.round((day(today)-day(t.start_date))/86400000)+1;
+ return {cls:'now',label:(live?.country&&live.country===t.country_code?'📍 지금 여기 · ':'여행 중 · ')+n+'일 차'};}
 function renderTripCard(t,hidden=false){
- const c=countryInfo(t.country_code),mine=t.owner_id===user?.id;
- const actions=hidden?`<button class="btn small" type="button" data-unhide-trip="${esc(t.id)}">↩ 다시 표시</button>${mine?`<button class="btn danger small" type="button" data-delete-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 영구 삭제">영구 삭제</button>`:`<button class="btn danger small" type="button" data-leave-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 나가기">나가기</button>`}`:`<button class="btn small" type="button" data-open-trip="${esc(t.id)}">열기</button>${mine?`<button class="btn small" type="button" data-share-trip="${esc(t.id)}">🔗 초대</button>`:''}<button class="btn small" type="button" data-hide-trip="${esc(t.id)}">🙈 숨기기</button>`;
- const flagHtml=renderCountryFlag(t.country_code,c.flag);return `<div class="trip-card" data-trip-id="${esc(t.id)}"><div class="trip-card-info"><strong>${flagHtml} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
+ const c=countryInfo(t.country_code),mine=t.owner_id===user?.id,phase=tripPhase(t);
+ const actions=hidden?`<button class="btn small" type="button" data-unhide-trip="${esc(t.id)}">↩ 다시 표시</button>${mine?`<button class="btn danger small" type="button" data-delete-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 영구 삭제">영구 삭제</button>`:`<button class="btn danger small" type="button" data-leave-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 나가기">나가기</button>`}`:`${mine?`<button class="btn small subtle" type="button" data-share-trip="${esc(t.id)}">🔗 초대</button>`:''}<button class="btn small subtle" type="button" data-hide-trip="${esc(t.id)}" aria-label="${esc(t.title)} 숨기기">숨기기</button>`;
+ const flagHtml=renderCountryFlag(t.country_code,c.flag);
+ const body=`<strong>${flagHtml} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${phase.label?`<span class="trip-phase ${phase.cls}">${esc(phase.label)}</span> `:''}${mine?'내가 만든 여행':'초대받은 여행'}</small>`;
+ return `<div class="trip-card ${hidden?'':'phase-'+(phase.cls||'none')}" data-trip-id="${esc(t.id)}"><div class="trip-card-info">${hidden?body:`<button class="trip-open" type="button" data-open-trip="${esc(t.id)}">${body}</button>`}</div><div class="trip-card-actions">${actions}</div></div>`;
 }
 function renderTripList(){
- const visible=trips.filter(t=>!hiddenTripIds.has(t.id)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
- $('tripList').innerHTML=visible.length?visible.map(t=>renderTripCard(t)).join(''):emptyMessage(trips.length?'모든 여행을 숨겼어요. 아래 숨긴 여행 목록에서 다시 표시할 수 있어요.':'아직 여행이 없어요. 왼쪽에서 첫 여행을 만들어 보세요.');
- $('hiddenTripCount').textContent=String(hidden.length);
+ const opened=openedMap(),rank=t=>Math.max(Number(opened[t.id])||0,Date.parse(t.updated_at||'')||0);
+ const visible=trips.filter(t=>!hiddenTripIds.has(t.id)).sort((a,b)=>rank(b)-rank(a)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
+ $('tripList').innerHTML=visible.length?visible.map(t=>renderTripCard(t)).join(''):emptyMessage(trips.length?'모든 여행을 숨겼어요. 아래 숨긴 여행 목록에서 다시 표시할 수 있어요.':'아직 여행이 없어요. 위의 ‘＋ 새 여행 만들기’로 첫 여행을 시작해 보세요.');
+ $('hiddenTripCount').textContent=String(hidden.length);$('hiddenTripPanel').hidden=!hidden.length;
  $('hiddenTripList').innerHTML=hidden.length?hidden.map(t=>renderTripCard(t,true)).join(''):emptyMessage('숨겨 둔 여행이 없어요.');
+ void renderHomeFx();const name=userName();$('homeGreeting').textContent=(name&&name!=='나'?name+'님, ':'')+'어디로 떠나볼까요?';renderHomeLive();
 }
+// 홈 환율 계산기: 현지 금액을 넣으면 바로 원화로. 통화는 지금 위치 → 여행 중인 여행 → 가장 최근 여행 순으로 고르고, 직접 바꿀 수도 있다.
+const homeFx={rates:new Map(),manual:false};
+function homeFxDefault(){const live=window.tripkkuLive;if(live?.cur&&MONEY.includes(live.cur)&&live.cur!=='KRW')return live.cur;
+ const today=localToday(),shown=trips.filter(t=>!hiddenTripIds.has(t.id)),opened=openedMap();
+ const pick=shown.find(t=>t.start_date<=today&&today<=t.end_date)||shown.sort((a,b)=>(Number(opened[b.id])||0)-(Number(opened[a.id])||0))[0];
+ const cur=pick&&BY_COUNTRY[pick.country_code]?.currency;return cur&&cur!=='KRW'&&MONEY.includes(cur)?cur:'USD';}
+async function homeFxRate(code){const live=window.tripkkuLive;if(live?.cur===code&&live.rate>0)return live.rate;
+ const hit=homeFx.rates.get(code);if(hit&&Date.now()-hit.when<6*3600*1000)return hit.rate;
+ const r=await fetch('https://api.frankfurter.dev/v2/rate/krw/'+code.toLowerCase(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+ const rate=Number((await r.json()).rate);if(!(rate>0))throw new Error('rate');homeFx.rates.set(code,{rate,when:Date.now()});return rate;}
+async function renderHomeFx(){const sel=$('fxCurrency'),out=$('fxResult');if(!sel)return;
+ if(!sel.options.length)sel.innerHTML=MONEY.filter(c=>c!=='KRW').map(c=>`<option>${c}</option>`).join('');
+ if(!homeFx.manual)sel.value=homeFxDefault();
+ const code=sel.value,amount=Number(String($('fxAmount').value).replace(/,/g,''));
+ if(!$('fxAmount').value.trim()){out.textContent='= ? 원';return;}
+ if(!Number.isFinite(amount)||amount<0){out.textContent='숫자만 입력해 주세요';return;}
+ try{const rate=await homeFxRate(code);if(sel.value!==code)return;out.textContent='≈ '+Math.round(amount/rate).toLocaleString('ko-KR')+'원';}
+ catch{out.textContent='환율을 불러오지 못했어요';}}
+// 홈 인사 카드: 위치를 켰으면 지금 있는 곳·날씨·환율을, 아니면 켜는 버튼을 보여 준다(위치는 이 기기에서만 쓰고 저장하지 않는다).
+function renderHomeLive(){const el=$('homeLive'),live=window.tripkkuLive;if(!el)return;
+ if(live?.country){let place=live.country;try{place=new Intl.DisplayNames(['ko'],{type:'region'}).of(live.country)||place;}catch{}
+  el.textContent='📍 지금 '+place+(live.city?' · '+live.city:'')+[live.temp,live.fx].filter(Boolean).map(x=>'  ·  '+x).join('');el.classList.add('on');}
+ else{el.textContent=live?.pending?'📍 위치 확인 중…':'📍 내 위치를 켜면 지금 있는 곳의 날씨·환율을 보여 줘요';el.classList.remove('on');}}
 async function setTripHidden(id,hide,button){
  if(!user||!trips.some(t=>t.id===id))return;
  setBusy(button,true);const snapshot=new Set(hiddenTripIds);
@@ -270,7 +308,7 @@ async function openTrip(id){if(!user)return;status('여행 데이터 불러오�
    if(evt.new?.id===trip?.id&&evt.new.revision>revision)void refreshTripFromCloud();}).subscribe();}
  if(!trip)throw new Error('여행을 찾을 수 없습니다.');normalizeDoc(trip.data);revision=trip.revision||0;
  activeDate=tripDates()[0]||'';window.tripkkuSetTravelCurrency?.(countryInfo(trip.country_code)?.currency||'USD');activeTab='schedule';pendingPlan=null;pendingChatActions=[];chatHistory=[];selectedBookingFile=null;bookingPendingForEvent=null;showScreen('trip');renderAll();chooseTab('schedule');
- localStorage.setItem('tripkku-next-last-trip',id);window.scrollTo({top:0,behavior:'auto'});status(DEMO?'체험 모드':'친구와 저장 연결됨 ✓');
+ localStorage.setItem('tripkku-next-last-trip',id);markOpened(id);window.scrollTo({top:0,behavior:'auto'});status(DEMO?'체험 모드':'친구와 저장 연결됨 ✓');
  }catch(e){toast('여행 열기 실패: '+e.message);showScreen('home');}}
 async function refreshTripFromCloud(){if(!trip||DEMO)return;
  const {data,error}=await client.from('tripkku_trips').select('*').eq('id',trip.id).single();
@@ -886,6 +924,10 @@ function bindHandlers(){
   if(target.dataset.openTrip)void openTrip(target.dataset.openTrip);
  };
  $('tripList').addEventListener('click',homeListAction);
+ $('openNewTrip').addEventListener('click',()=>{$('newTripDialog').showModal();});
+ $('homeLive').addEventListener('click',()=>{if(!window.tripkkuLive?.country)document.querySelector('.tripkku-live-toggle')?.click();});
+ $('fxAmount').addEventListener('input',()=>void renderHomeFx());$('fxCurrency').addEventListener('change',()=>{homeFx.manual=true;void renderHomeFx();});
+ document.addEventListener('tripkku-live',()=>{if(!$('homeScreen').hidden)renderTripList();else renderHomeLive();});
  $('hiddenTripList').addEventListener('click',homeListAction);
  document.querySelectorAll('#mainNav button').forEach(b=>b.addEventListener('click',()=>{chooseTab(b.dataset.tab);window.scrollTo({top:0,behavior:'smooth'});}));
  $('regeneratePlan').addEventListener('click',()=>void generatePlan());$('addEvent').addEventListener('click',()=>openEventDialog());

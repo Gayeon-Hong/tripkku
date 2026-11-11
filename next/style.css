@@ -197,3 +197,22 @@ body.night .plan-hint{background:#1e2b23;color:#a8c4b2;border-left-color:#5aa27c
 .plan-button.plan-add:hover{background:#f4f8f4}
 .plan-tools{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
 body.night .plan-button.plan-add{background:transparent;color:#9fd1b5}
+
+/* 홈: 인사 카드(내 캐릭터 + 새 여행 만들기) → 내 여행 목록 → 초대 참여 → 숨긴 여행 */
+.home-hero{align-items:center;gap:16px;padding:20px 22px}.home-hero-text{display:grid;gap:10px;justify-items:start;min-width:0}.home-hero h1{font-size:clamp(22px,4vw,32px);margin:0}
+.home-live{border:0;background:none;padding:0;color:var(--muted);font-size:12px;font-weight:700;text-align:left;line-height:1.5}.home-live.on{color:var(--forest);cursor:default}
+.home-new{min-height:48px;padding:12px 20px;font-size:15px;border-radius:14px}
+.hero-me~.hero-earth{display:none}.hero-me .tk-face{width:112px;height:112px}
+.home-main{display:grid;gap:12px;max-width:760px}.home-list .card-title{align-items:center;margin-bottom:8px}.home-list .card-title h2{margin:0}
+.trip-list{gap:10px}.trip-card{background:var(--card);border-radius:16px;padding:6px 12px 6px 6px;box-shadow:0 4px 16px #222a1f0a;align-items:center}
+.trip-open{display:grid;gap:3px;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:10px;border-radius:12px;min-height:64px}.trip-open:hover{background:var(--soft)}
+.trip-open strong{font-size:16px}.trip-open small{font-size:12px;color:var(--muted)}.trip-card .trip-faces{padding:0 10px 8px}
+.trip-phase{display:inline-block;padding:2px 8px;border-radius:20px;font-weight:800;font-size:11px;background:var(--soft);color:var(--forest)}.trip-phase.now{background:#285c4b;color:#fff}.trip-phase.soon{background:#fff2d6;color:#7a5200}.trip-phase.done{color:var(--muted)}
+.trip-card.phase-now{border-color:#285c4b;box-shadow:0 0 0 1px #285c4b,0 4px 16px #222a1f14}.trip-card.phase-done{opacity:.86}
+.trip-card-actions .btn.subtle{min-width:0;font-weight:700;color:var(--muted)}
+.join-panel{padding:14px 15px}.join-panel summary{cursor:pointer;font-weight:850;font-size:14px;list-style:none}.join-panel summary::after{content:'⌄';float:right;opacity:.7}.join-panel[open] summary::after{content:'⌃'}.join-panel[open] summary{margin-bottom:10px}
+.new-trip-dialog{width:min(96vw,640px);max-height:92dvh}.new-trip-dialog .planner-card{padding:20px;border:0;box-shadow:none;background:none}
+body.night .trip-phase.now{background:#3b7e61}body.night .trip-phase.soon{background:#5a4a22;color:#ffe2a0}body.night .trip-card.phase-now{border-color:#6ab089;box-shadow:0 0 0 1px #6ab089}
+@media(max-width:600px){.home-hero{padding:16px}.hero-me .tk-face{width:84px;height:84px}.home-new{width:100%}.trip-card{flex-wrap:nowrap}.trip-card-actions{flex-direction:column;align-items:flex-end;gap:2px}}
+.home-fx{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.home-fx input{width:110px;min-height:40px;padding:6px 10px}.home-fx select{width:auto;min-height:40px;padding:6px 8px}.home-fx output{font-weight:850;font-size:15px;color:var(--forest)}
+#tripList .trip-card{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center}#tripList .trip-card-actions{flex-direction:column;align-items:stretch;gap:4px;margin:0;width:auto}#tripList .trip-card-actions .btn{min-height:30px;padding:4px 9px;font-size:11px}
