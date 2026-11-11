@@ -385,7 +385,7 @@ function mountJourney(){
  <div class="jr-seg" role="group" aria-label="재생 범위"><button type="button" data-jr-mode="day">선택한 하루</button><button type="button" data-jr-mode="trip">여행 전체</button></div>
  <canvas id="jrCanvas" width="${W}" height="${H}" role="img" aria-label="캐릭터들이 지도 위에서 일정 순서대로 이동하는 애니메이션"></canvas>
  <div class="jr-controls"><button type="button" class="btn primary" data-jr="play">⏸ 멈춤</button><button type="button" class="btn" data-jr="restart">↺ 처음부터</button><button type="button" class="btn" data-jr="speed">속도 ×1</button><button type="button" class="btn" data-jr="rec">⬇ 영상 저장</button></div>
- <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 처음부터 끝까지 한 번 재생하며 녹화합니다.</p></div>`;
+ <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로 처음부터 끝까지 한 번 재생하며 녹화합니다.</p></div>`;
  document.body.append(dlg);
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
  const s={tl:null,members:[],t:0,playing:false,speed:1,raf:0,last:0,rec:null,chunks:[],job:0,busy:'',stage:null};
@@ -425,7 +425,7 @@ function mountJourney(){
   if(!mime)return api().toast?.('이 브라우저는 영상 저장을 지원하지 않아요. 기기의 화면 녹화를 이용해 주세요.');
   try{s.chunks=[];s.rec=new MediaRecorder(canvas.captureStream(30),{mimeType:mime,videoBitsPerSecond:5e6});s.rec.ondataavailable=e=>{if(e.data.size)s.chunks.push(e.data);};s.rec.start(500);}
   catch(e){s.rec=null;return api().toast?.('영상 저장을 시작하지 못했어요: '+e.message);}
-  s.speed=1;s.t=0;s.playing=true;paintButtons();});
+  s.t=0;s.playing=true;paintButtons();}); // 고른 배속 그대로 녹화한다
  return open;}
 
 function mountAvatar(){
