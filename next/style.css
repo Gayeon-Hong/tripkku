@@ -193,3 +193,7 @@ body.night .plan-hint{background:#1e2b23;color:#a8c4b2;border-left-color:#5aa27c
  .plan-button small{font-size:10.5px}
 }
 
+.plan-button.plan-add{border-style:dashed;background:transparent;color:#2f6d57}
+.plan-button.plan-add:hover{background:#f4f8f4}
+.plan-tools{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+body.night .plan-button.plan-add{background:transparent;color:#9fd1b5}
