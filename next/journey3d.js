@@ -240,6 +240,8 @@ const PROPS={
  ski:()=>group(flat(70,'#ffffff',0,0,0,1.2,.5,1),...[-12,12].map(x=>rot(mesh(G.box(10,3,150),'#e8323f',x,40,0),.9,0,x*.02)),...[-30,30].map(x=>rot(mesh(G.cyl(2,2,120,6),'#3a3f4b',x,70,0),.2,0,x*-.01))),
  fireworks:()=>{const g=group(mesh(G.cyl(4,4,40,6),'#8a5a3c',0,20,0));[['#ff5a6e',-30,140],['#ffd84a',30,120],['#6fb8ff',0,170]].forEach(([c,x,y])=>{for(let i=0;i<10;i++){const a=i/10*PI*2;
   g.add(mesh(G.sphere(4.5),c,x+Math.cos(a)*30,y+Math.sin(a)*30,0,{emissive:c,emissiveIntensity:.8}));}});return g;},
+ skyline:()=>{const g=group(mesh(G.box(190,6,80),'#3a4258',0,3,0));[[-70,90,40],[-36,150,34],[0,110,40],[34,180,30],[70,120,40]].forEach(([x,h,w])=>{g.add(mesh(G.box(w,h,40),'#4a5470',x,h/2,-6));
+  for(let y=18;y<h-8;y+=20)for(let c=-1;c<=1;c+=2)g.add(mesh(G.box(7,9,2),'#ffe68a',x+c*w/4,y,15));});g.add(mesh(G.cyl(1.4,1.4,30,6),'#c9cfd9',34,195,-6),mesh(G.sphere(4),'#ff5a6e',34,210,-6,{emissive:'#ff5a6e',emissiveIntensity:1}));return g;},
  camera:()=>group(mesh(G.box(84,56,34),'#3a3f4b',0,60,0),rot(mesh(G.cyl(22,24,26,24),'#2a2f3c',0,60,26),PI/2),rot(mesh(G.cyl(15,15,4,24),'#8fb7ea',0,60,40),PI/2),mesh(G.box(22,12,20),'#3a3f4b',-24,94,0),
   mesh(G.box(14,8,4),'#ffffff',26,78,18),mesh(G.cyl(4,4,10,10),'#ff5a6e',30,92,0)),
  hotel:()=>{const g=group(mesh(G.box(96,124,60),'#f6dcc8',0,62,0),mesh(G.box(104,9,68),'#c96f5a',0,128,0),mesh(G.box(22,30,3),'#8a5a3c',0,15,31),mesh(G.box(44,12,3),'#ffd84a',0,116,31));
@@ -261,7 +263,11 @@ function freeTree(o){o.traverse(n=>{n.geometry?.dispose();if(n.material){n.mater
 export function createStage(canvas){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.setSize(W,H,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  const scene=new THREE.Scene(),bg=new THREE.Color('#dfe9ee');scene.background=bg;scene.fog=new THREE.Fog(bg,1700,2600);
- const camera=new THREE.PerspectiveCamera(36,W/H,10,6000);lights(scene);
+ const camera=new THREE.PerspectiveCamera(36,W/H,10,6000),sun=lights(scene),hemi=scene.children.find(o=>o.isHemisphereLight);
+ // 밤에는 일행·소품 주변만 따뜻하게 비추는 가로등 같은 빛
+ const lamp=new THREE.PointLight('#ffd9a0',0,900,1.2);lamp.position.set(0,180,40);scene.add(lamp);
+ const GLOW=new Set(['8fd0f0','8fb7ea','6f8fc0','ffd84a','ffe68a','bfe8ff']);let glowMats=[];
+ const col=(a,b,t)=>new THREE.Color(a).lerp(new THREE.Color(b),Math.max(0,Math.min(1,t)));
  const shadow=rot(new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),new THREE.ShadowMaterial({opacity:.24})),-PI/2);shadow.position.y=3;shadow.receiveShadow=true;scene.add(shadow);
  const tileGeo=new THREE.PlaneGeometry(1,1),boxGeo=G.box(1,1,1),discGeo=G.cyl(1,1,1,28);
  const tiles=new Map(),tileGroup=new THREE.Group(),routeGroup=new THREE.Group(),dynamic=new THREE.Group();scene.add(tileGroup,routeGroup,dynamic);
@@ -274,16 +280,24 @@ export function createStage(canvas){
   const kinds=['',...new Set(tl.stops.map(s=>s.costume).filter(Boolean))];
   chars=members.map(m=>{const holder=new THREE.Group(),variants={};for(const k of kinds){const c=buildAvatar(m.av,k);c.visible=false;variants[k]=c;holder.add(c);}holder.userData.variants=variants;holder.userData.char=variants[''];dynamic.add(holder);return holder;});
   props=tl.stops.map(s=>{const p=buildProp(s.react.key);dynamic.add(p);return p;});
+  // 창문·전구는 밤에 불이 켜진 것처럼 빛나게
+  glowMats=[];for(const p of props)p.traverse(o=>{if(o.material?.color&&GLOW.has(o.material.color.getHexString()))glowMats.push(o.material);});
   stopMeshes=tl.stops.map(()=>{const d=new THREE.Mesh(discGeo,stopMat[0]);routeGroup.add(d);return d;});
   legMeshes=tl.stops.slice(1).map(()=>{const a=new THREE.Mesh(boxGeo,routeMat.white.clone()),b=new THREE.Mesh(boxGeo,routeMat.walk.clone());routeGroup.add(a,b);return [a,b];});}
  function render(f){
-  const night=!!f.night;bg.set(night?'#18222b':'#dfe9ee');
+  // 시간대·날씨: sky={night 0~1, dusk 0~1, weather}
+  const sk=f.sky||{},nt=sk.night||0,dk=sk.dusk||0,wx=sk.weather||'',grey=wx==='rain'||wx==='storm'?.55:wx==='cloud'||wx==='fog'?.35:wx==='snow'?.25:0;
+  bg.copy(col('#dfe9ee','#f4c9a6',dk).lerp(new THREE.Color('#0d1730'),nt).lerp(new THREE.Color(wx==='snow'?'#e8eef4':'#9aa6b2'),grey*(1-nt*.7)));scene.fog.color.copy(bg);
+  hemi.intensity=1.55*(1-.72*nt)*(1-grey*.3);hemi.color.copy(col('#ffffff','#ffc9a0',dk).lerp(new THREE.Color('#7f95d8'),nt));
+  sun.intensity=1.9*(1-.85*nt)*(1-grey*.6);sun.color.copy(col('#fff6e8','#ff9a5a',dk*1.2).lerp(new THREE.Color('#9fb4ff'),nt));
+  lamp.intensity=nt*2.2;for(const m of glowMats){m.emissive.copy(m.color);m.emissiveIntensity=nt*1.1;}
+  const tileTint=col('#ffffff','#ffe2c4',dk*.45).lerp(new THREE.Color('#4a5878'),nt*.85).lerp(new THREE.Color('#c4cbd2'),grey*(1-nt));
   const d=f.dolly||1;camera.position.set(0,800*d,960*d);camera.lookAt(0,96,0);shadow.visible=!f.vehicle||f.vehicle.kind!=='plane'||f.vehicle.lift<.5;
   // 지도 타일
   const used=new Set();
   for(const t of f.tiles){used.add(t.key);let m=tiles.get(t.key);
    if(!m){const tex=new THREE.Texture(t.img);tex.colorSpace=THREE.SRGBColorSpace;tex.needsUpdate=true;m=rot(new THREE.Mesh(tileGeo,new THREE.MeshBasicMaterial({map:tex})),-PI/2);tiles.set(t.key,m);tileGroup.add(m);}
-   m.material.color.set(night?'#7c8894':'#ffffff');m.position.set(t.x+t.size/2,t.y||0,t.z+t.size/2);m.scale.set(t.size+.5,t.size+.5,1);m.visible=true;}
+   m.material.color.copy(tileTint);m.position.set(t.x+t.size/2,t.y||0,t.z+t.size/2);m.scale.set(t.size+.5,t.size+.5,1);m.visible=true;}
   for(const [k,m] of tiles)if(!used.has(k)){m.visible=false;if(tiles.size>260){tileGroup.remove(m);m.material.map.dispose();m.material.dispose();tiles.delete(k);}}
   // 동선과 장소 표시
   f.legs.forEach((l,i)=>{const [a,b]=legMeshes[i],dx=l.bx-l.ax,dz=l.bz-l.az,len=Math.hypot(dx,dz),far=Math.min(Math.hypot(l.ax,l.az),Math.hypot(l.bx,l.bz))>9000||len<1;

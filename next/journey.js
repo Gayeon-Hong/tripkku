@@ -117,7 +117,8 @@ const RULES=[
  [/다리|브리지|브릿지|bridge|br[uü]cke/i,['bridge'],'pose',['찰칵!','경치 좋다!']],
  [/유람선|크루즈|보트|페리|곤돌라|cruise|boat|ferry/i,['boat'],'wave',['출항!','바람 좋다~']],
  [/등산|하이킹|트레킹|알프스|융프라우|후지산|산맥|전망대 등반|hiking/i,['mountain'],'cheer',['야호!','정상이다!']],
- [/전망|타워|야경|스카이|루프탑|tower|view/i,['tower'],'pose',['찰칵!','다 보인다!']],
+ [/야경|나이트|밤 ?풍경|night ?view/i,['skyline'],'cheer',['반짝반짝!','야경 최고!']],
+ [/전망|타워|스카이|루프탑|tower|view/i,['tower'],'pose',['찰칵!','다 보인다!']],
  [/박물관|미술관|갤러리|전시|기념관|museum|gallery/i,['museum'],'relax',['오…','멋지다…']],
  [/분수|fountain/i,['fountain'],'pose',['찰칵!']],
  [/광장|동상|기념비|기념탑|구시가|올드타운|square|platz/i,['statue','fountain'],'pose',['찰칵!','여기가 중심이구나']],
@@ -178,6 +179,10 @@ export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a
     q:fly?(ends[1]||String(e.place||'')):String(e.place||e.title||''),fromQ:fly?ends[0]:'',local:!fly,react:reactionFor(e,String(country||'').toUpperCase(),seen)});});});
  const places=stops.length-(mode==='trip'?1:0);
  if(mode==='trip'&&places>0)stops.push({title:'집 도착',time:'',date:want.at(-1),dayIdx:dates.indexOf(want.at(-1)),firstOfDay:false,via:'walk',home:true,react:{key:'house',act:'cheer',say:'다녀왔습니다!'}});
+ const hr=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])+Number(m[2])/60:null;};
+ stops.forEach(s=>{s.hour=hr(s.time);});
+ for(let i=0;i<stops.length;i++)if(stops[i].hour==null){const prev=stops.slice(0,i).reverse().find(x=>x.hour!=null&&x.date===stops[i].date),next=stops.slice(i+1).find(x=>x.hour!=null&&x.date===stops[i].date);
+  stops[i].hour=stops[i].home&&i===0?(next?Math.max(6,next.hour-1.5):9):prev?Math.min(23.5,prev.hour+1.5):next?Math.max(6,next.hour-1):12;}
  const segs=[];
  stops.forEach((s,i)=>{if(i>0)segs.push({type:'move',from:i-1,to:i,plane:s.via==='plane',jump:s.via==='plane'});segs.push({type:'dwell',i});});
  if(mode==='trip'&&places>0)segs.push({type:'end',i:stops.length-1});
@@ -224,6 +229,19 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  // 걸어서 보여 주기엔 먼 구간은 "화면 전환 + 멀리서 본 지도"로 처리
  for(const g of tl.segs)if(g.type==='move'){const A=S[g.from],B=S[g.to],d=apart(A,B),zMin=Math.min(A.z,B.z);g.px=d*256*2**zMin;g.jump=g.plane||g.px>3400;g.zMid=d<1e-9?zMin:clamp(Math.log2(520/(d*256)),1.8,zMin);}
  return retime(tl);}
+
+/* ---------- 그날 날씨: 날짜·도시별로 Open-Meteo 에서 받아 온다(좌표는 여행 장소, 내 위치가 아님) ---------- */
+const WX=c=>c==null?'':c<=1?'clear':c<=3?'cloud':c===45||c===48?'fog':c>=95?'storm':(c>=71&&c<=77)||c===85||c===86?'snow':c>=51?'rain':'cloud';
+export async function fetchWeather(tl){tl.weather={};if(!tl.map)return;const today=new Date(),iso=d=>d.toISOString().slice(0,10),day=n=>iso(new Date(today.getTime()+n*86400000));
+ const groups=new Map();for(const s of tl.stops){if(s.home||!s.ll||!s.date)continue;const k=s.ll[0].toFixed(0)+','+s.ll[1].toFixed(0);let g=groups.get(k);if(!g)groups.set(k,g={ll:s.ll,dates:new Set()});
+  if(![...groups.values()].some(o=>o!==g&&o.dates.has(s.date)))g.dates.add(s.date);}
+ const jobs=[];for(const g of groups.values()){const dates=[...g.dates].sort(),old=dates.filter(d=>d<day(-60)),near=dates.filter(d=>d>=day(-60)&&d<=day(15));
+  const ask=(host,ds)=>{if(!ds.length)return;const q=new URLSearchParams({latitude:g.ll[0],longitude:g.ll[1],daily:'weather_code',timezone:'auto',start_date:ds[0],end_date:ds.at(-1)});
+   jobs.push(fetch(host+'?'+q).then(r=>r.ok?r.json():null).then(j=>{(j?.daily?.time||[]).forEach((d,i)=>{if(g.dates.has(d))tl.weather[d]=WX(j.daily.weather_code[i]);});}).catch(()=>{}));};
+  ask('https://archive-api.open-meteo.com/v1/archive',old);ask('https://api.open-meteo.com/v1/forecast',near);}
+ await Promise.race([Promise.all(jobs),new Promise(r=>setTimeout(r,6000))]);}
+// 시각 → 밤(0~1)·노을(0~1)
+function skyAt(h){h=((h%24)+24)%24;const night=h<5||h>=20?1:h<7?1-(h-5)/2:h>=17.5?(h-17.5)/2.5:0,dusk=Math.max(0,1-Math.abs(h-18)/1.4)*.9+Math.max(0,1-Math.abs(h-6.2)/1)*.5;return {night,dusk:Math.min(1,dusk)};}
 
 /* ---------- 지도 타일과 카메라 ---------- */
 const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -273,6 +291,7 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
   party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood},
   vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
+  sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h),weather:tl.weather?.[stop.date]||''};})(),
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
 
 /* ---------- 국기: 나라가 바뀌어 도착하면 한 번 크게 띄운다 ---------- */
@@ -292,7 +311,7 @@ const C={food:'#f28b30',cafe:'#b9772f',drink:'#c0478f',sight:'#12a39a',nature:'#
 const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
  sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
- castle:['🏰',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
+ castle:['🏰',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
  boat:['⛴️',C.move],mountain:['⛰️',C.nature],park:['🌳',C.nature],parasol:['🏖️',C.nature],onsen:['♨️',C.nature],ski:['🎿',C.nature],bag:['🛍️',C.shop],ferris:['🎡',C.fun],zoo:['🦒',C.fun],aquarium:['🐠',C.fun],concert:['🎵',C.fun],stadium:['⚽',C.fun],fireworks:['🎆',C.fun],
  hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move]};
 function drawPin(ctx,x,y,key,seen,r){const [glyph,color]=ICON[key]||ICON.pin,cy=y-r*2;ctx.save();ctx.globalAlpha=seen?1:.62;
@@ -304,11 +323,37 @@ function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT+(o.emoji?
  ctx.fillStyle=o.bg||'rgba(255,255,255,.96)';if(o.line){ctx.strokeStyle=o.line;ctx.lineWidth=2;}ctx.beginPath();rr(ctx,x,cy-h/2,tw,h,h/2);ctx.fill();if(o.line)ctx.stroke();
  ctx.fillStyle=o.fg||INK;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x+tw/2,cy+1);return {x,w:tw};}
 const nameTags=(ctx,stage,members)=>stage.heads().forEach((h,k)=>{if(h)pill(ctx,members[k].label,h.x,h.y,{font:'800 19px ',h:30,pad:24,bg:members[k].me?'#f6c945':'rgba(34,40,54,.86)',fg:members[k].me?INK:'#fff'});});
+// 이름표가 잘리지 않게: 괄호·부연 설명을 빼고 짧게, 그래도 길면 장소 이름이나 글자 크기를 줄인다
+function shortTitle(s){if(s.via==='plane'&&s.fromQ&&s.q)return s.fromQ+' → '+s.q;
+ let t=String(s.title||'').replace(/\([^)]*\)|\[[^\]]*\]/g,' ').replace(/\s+/g,' ').trim();
+ if(t.length>14)t=t.split(/\s[-–|·:]\s|,|\//)[0].trim();t=t.replace(/\s*(방문|구경|관광|투어|일정|둘러보기|가기|하기|즐기기)$/,'').trim();
+ const place=String(s.q||'').trim();if(t.length>14&&place&&place.length<t.length)t=place;
+ if(t.length>16){let out='';for(const w of t.split(' ')){if((out+' '+w).trim().length>13)break;out=(out+' '+w).trim();}t=out||t.slice(0,13)+'…';} // 앞의 몇 단어만
+ return t||place||'일정';}
+function placeLabel(ctx,s,cx,cy,night){const name=shortTitle(s),icon=(ICON[s.react.key]?.[0]||'📍')+' ',time=s.time||'';let size=26;
+ const width=()=>{ctx.font='800 '+size+'px '+FONT+EMOJI;const a=ctx.measureText(icon+name).width;ctx.font='800 '+(size-6)+'px '+FONT;return a+(time?ctx.measureText(time).width+22:0);};
+ while(size>18&&width()>W-90)size-=2;ctx.font='800 '+size+'px '+FONT+EMOJI;const nm=fit(ctx,icon+name,W-90-(time?90:0));
+ ctx.font='800 '+size+'px '+FONT+EMOJI;const nw=ctx.measureText(nm).width;ctx.font='800 '+(size-6)+'px '+FONT;const tw=time?ctx.measureText(time).width+22:0,h=size+22,bw=nw+tw+38,x=clamp(cx-bw/2,12,W-12-bw);
+ ctx.fillStyle=night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)';ctx.strokeStyle=night?'#52685d':'#dfe5d6';ctx.lineWidth=2;ctx.beginPath();rr(ctx,x,cy-h/2,bw,h,h/2);ctx.fill();ctx.stroke();
+ ctx.textBaseline='middle';ctx.textAlign='left';if(time){ctx.fillStyle='#285c4b';ctx.fillText(time,x+19,cy+1);}
+ ctx.font='800 '+size+'px '+FONT+EMOJI;ctx.fillStyle=night?'#eef5ef':'#243d34';ctx.fillText(nm,x+19+tw,cy+1);return {x,w:bw};}
+const WX_TEXT={clear:'☀️ 맑음',cloud:'☁️ 흐림',fog:'🌫️ 안개',rain:'🌧️ 비',snow:'❄️ 눈',storm:'⛈️ 뇌우'};
+function drawSky(ctx,f,t){const {night:nt,dusk:dk,weather:wx}=f.sky||{};
+ if(dk>0){const g=ctx.createLinearGradient(0,0,0,H*.4);g.addColorStop(0,'rgba(255,140,90,'+(dk*.38).toFixed(2)+')');g.addColorStop(1,'rgba(255,170,120,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.4);}
+ if(nt>0){const g=ctx.createLinearGradient(0,0,0,H*.42);g.addColorStop(0,'rgba(10,18,44,'+(nt*.9).toFixed(2)+')');g.addColorStop(1,'rgba(10,18,44,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.42);
+  if(wx!=='rain'&&wx!=='storm'&&wx!=='cloud'&&wx!=='fog'){for(let i=0;i<60;i++){const h=hash('s'+i),x=h%W,y=140+(h>>>9)%Math.round(H*.24),tw=.5+.5*Math.sin(t*2.2+i);ctx.globalAlpha=nt*(1-y/(H*.42))*tw;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,1+(h>>>20)%3*.7,0,PI*2);ctx.fill();}
+   ctx.globalAlpha=nt;ctx.fillStyle='#fff6d6';ctx.shadowColor='#fff3c0';ctx.shadowBlur=24;ctx.beginPath();ctx.arc(W-110,200,26,0,PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(10,18,44,.9)';ctx.beginPath();ctx.arc(W-98,192,22,0,PI*2);ctx.fill();ctx.globalAlpha=1;}}
+ if(wx==='cloud'||wx==='rain'||wx==='storm'||wx==='fog'){ctx.fillStyle=wx==='fog'?'rgba(235,240,244,.28)':'rgba(120,132,146,.16)';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<5;i++){const x=((i*173+t*14)%(W+260))-130,y=150+(i%3)*46;ctx.fillStyle=wx==='fog'?'rgba(255,255,255,.45)':'rgba(230,234,238,.75)';for(const [dx,dy,r] of [[0,0,34],[30,-12,28],[58,2,30],[28,10,26]]){ctx.beginPath();ctx.arc(x+dx,y+dy,r,0,PI*2);ctx.fill();}}}
+ if(wx==='rain'||wx==='storm'){ctx.strokeStyle='rgba(200,215,235,.6)';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<90;i++){const h=hash('r'+i),x=(h%W+t*60)%W,y=((h>>>8)%H+t*900)%H;ctx.moveTo(x,y);ctx.lineTo(x-8,y+26);}ctx.stroke();
+  if(wx==='storm'&&(t%4.1)<.12){ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(0,0,W,H);}}
+ if(wx==='snow'){ctx.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<80;i++){const h=hash('w'+i),x=(h%W+Math.sin(t+i)*24+W)%W,y=((h>>>8)%H+t*(60+h%50))%H;ctx.beginPath();ctx.arc(x,y,2+(h>>>16)%3,0,PI*2);ctx.fill();}}}
 export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night=f.night,n=members.length,dwell=seg.type==='dwell';
+ drawSky(ctx,f,t);
  if(seg.type!=='end')f.stops.forEach((sp,i)=>{if((i===f.cur&&f.here)||Math.abs(sp.x)>1500||Math.abs(sp.z)>2400)return;const q=stage.project(sp.x,0,sp.z);if(q.x<-30||q.x>W+30||q.y<150||q.y>H-70)return;drawPin(ctx,q.x,q.y,tl.stops[i].react.key,i<=f.cur,f.vehicle?18:27);});
  if(f.party.visible&&seg.type!=='end'){nameTags(ctx,stage,members);
   if(f.here&&!(dwell&&stop.flag&&p*seg.dur<1.5)){const sp=f.stops[f.cur],top=stage.project(sp.x,236,sp.z-120),ly=clamp(top.y,186,H-200);
-   ctx.font='800 24px '+FONT;const label=fit(ctx,(ICON[stop.react.key]?.[0]||'📍')+' '+(stop.time?stop.time+'  ':'')+stop.title,400),box=pill(ctx,label,top.x,ly,{font:'800 24px ',emoji:true,h:46,pad:36,bg:night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)',fg:night?'#eef5ef':'#243d34',line:night?'#52685d':'#dfe5d6'});
+   const box=placeLabel(ctx,stop,top.x,ly,night);
    if(stop.firstOfDay)pill(ctx,(stop.dayIdx+1)+'일 차',box.x+34,ly-40,{font:'800 19px ',h:28,pad:22,bg:'#285c4b',fg:'#fff'});
    if(dwell&&stop.react.say&&p>.12&&p<.92){const who=stage.heads()[f.cur%n]||stage.heads().find(Boolean);if(who)pill(ctx,stop.react.say,who.x+(who.x>W/2?-96:96),who.y-44,{h:44,pad:32,line:'#d9dee6'});}
    if(dwell&&tl.group==='couple'&&n>=2){const a=stage.heads()[0],b=stage.heads()[1];if(a&&b){const u=(t*.6)%1;ctx.globalAlpha=1-u;ctx.fillStyle='#ff5a7a';ctx.font='40px '+FONT;ctx.textAlign='center';ctx.fillText('♥',(a.x+b.x)/2,Math.min(a.y,b.y)-84-u*44);ctx.globalAlpha=1;}}
@@ -318,7 +363,7 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
  // 제목·날짜
  ctx.fillStyle=night?'rgba(36,46,41,.94)':'rgba(255,255,255,.94)';fillRR(ctx,24,24,W-48,104,26);
  ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=night?'#eef5ef':'#243d34';ctx.font='900 30px '+FONT;ctx.fillText(fit(ctx,tl.title,W-110),50,60);
- ctx.fillStyle=night?'#acc0b1':'#697c70';ctx.font='700 22px '+FONT;ctx.fillText(stop.dayIdx>=0?(stop.dayIdx+1)+'일 차 · '+(api().fmtDate?.(stop.date)||stop.date||''):'',50,100);
+ ctx.fillStyle=night?'#acc0b1':'#697c70';ctx.font='700 22px '+FONT;ctx.font='700 22px '+FONT+EMOJI;ctx.fillText(stop.dayIdx>=0?(stop.dayIdx+1)+'일 차 · '+(api().fmtDate?.(stop.date)||stop.date||'')+(f.sky?.weather?'  ·  '+WX_TEXT[f.sky.weather]:''):'',50,100);
  ctx.fillStyle='rgba(255,255,255,.8)';fillRR(ctx,24,H-42,W-48,12,6);ctx.fillStyle='#285c4b';fillRR(ctx,24,H-42,Math.max(12,(W-48)*Math.min(1,t/tl.total)),12,6);
  ctx.lineWidth=4;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.font='900 20px '+FONT;ctx.textAlign='right';ctx.strokeText('TRIPKKU',W-28,H-64);ctx.fillStyle='rgba(36,61,52,.75)';ctx.fillText('TRIPKKU',W-28,H-64);
  if(tl.map){ctx.font='600 15px '+FONT;ctx.textAlign='left';ctx.strokeText('© OpenStreetMap',28,H-64);ctx.fillStyle='rgba(36,61,52,.8)';ctx.fillText('© OpenStreetMap',28,H-64);}
@@ -344,7 +389,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_pins1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_sky2'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -374,8 +419,8 @@ function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip
  let strip=document.getElementById('tripParty');if(!strip){strip=el('div',{id:'tripParty',class:'trip-party',role:'group','aria-label':'함께 가는 사람들'});anchor.after(strip);}
  const members=party(),kind=tripKind(),sig=JSON.stringify([kind,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
  strip.replaceChildren(...members.map(m=>{const img=el('img',{src:BLANK,alt:'',width:'60',height:'60'}),name=el('span',{text:m.label});
-  const item=m.me?el('button',{type:'button',class:'trip-party-item me','aria-label':m.label+' · 내 캐릭터 꾸미기',title:'내 캐릭터 꾸미기'},[img,name]):el('div',{class:'trip-party-item'},[img,name]);
-  if(m.me)item.addEventListener('click',()=>void openAvatar());
+  const admin=api().isAdmin?.(),item=m.me||admin?el('button',{type:'button',class:'trip-party-item'+(m.me?' me':''),'aria-label':m.label+' · 캐릭터 꾸미기',title:m.me?'내 캐릭터 꾸미기':'관리자: 이 사람 캐릭터 바꾸기'},[img,name]):el('div',{class:'trip-party-item'},[img,name]);
+  if(m.me||admin)item.addEventListener('click',()=>void openAvatar(m.id));
   // 3D 는 화면이 한가할 때 불러와 그림만 채운다. 실패하면 동그란 빈칸으로 남는다.
   setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;}));}
 
@@ -409,7 +454,7 @@ function mountJourney(){
   s.busy='장소 위치를 찾는 중…';hint.textContent=s.busy;
   try{await locate(tl,(i,n)=>{if(job===s.job){s.busy='장소 위치를 찾는 중… '+i+'/'+n;hint.textContent=s.busy;}});}catch(e){console.error(e);}
   if(job!==s.job)return true;
-  if(tl.map){s.busy='지도를 불러오는 중…';hint.textContent=s.busy;await preloadTiles(tl);if(job!==s.job)return true;}
+  if(tl.map){s.busy='지도·날씨를 불러오는 중…';hint.textContent=s.busy;await Promise.all([preloadTiles(tl),fetchWeather(tl)]);if(job!==s.job)return true;}
   else api().toast?.('장소 위치를 찾지 못해 지도 없이 보여 드려요.');
   s.members=party();s.stage.setScene(tl,s.members);s.busy='';s.tl=tl;s.t=0;s.playing=true;paintButtons();return true;};
  const open=async mode=>{if(!dlg.open)dlg.showModal();cancelAnimationFrame(s.raf);s.last=performance.now();s.raf=requestAnimationFrame(tick);
@@ -435,8 +480,8 @@ function mountAvatar(){
  <div id="avParts" style="display:grid;gap:10px"></div>
  <footer class="modal-actions"><button type="button" class="btn" data-av="random">🎲 랜덤</button><button type="button" class="btn" data-av="cancel">취소</button><button type="button" class="btn primary" data-av="save">저장</button></footer></div>`;
  document.body.append(dlg);
- const canvas=dlg.querySelector('#avCanvas'),rel=dlg.querySelector('#avRel'),parts=dlg.querySelector('#avParts');
- const s={av:null,group:'friends',raf:0,preview:null};
+ const $title=dlg.querySelector('#avTitle'),canvas=dlg.querySelector('#avCanvas'),rel=dlg.querySelector('#avRel'),parts=dlg.querySelector('#avParts');
+ const s={av:null,group:'friends',raf:0,preview:null,target:''}; // target: 꾸미는 사람(관리자는 일행 누구든 고를 수 있다)
  const group=(title,chips)=>el('div',{class:'av-group'},[el('span',{text:title}),el('div',{class:'av-chips'},chips)]);
  const chip=(label,active,onClick,color)=>{const b=el('button',{type:'button',class:(color?'swatch ':'')+(active?'active':''),'aria-pressed':String(active)});
   if(color){b.style.background=color;b.setAttribute('aria-label',label);}else b.textContent=label;b.addEventListener('click',onClick);return b;};
@@ -446,8 +491,12 @@ function mountAvatar(){
   const custom=el('input',{maxlength:'8',placeholder:'역할 직접 입력 (예: 막내)','aria-label':'역할 직접 입력'});custom.value=ROLES[s.group].includes(s.av.role)?'':s.av.role;
   custom.addEventListener('input',()=>{s.av.role=custom.value.trim().slice(0,8);rel.querySelectorAll('[data-role]').forEach(b=>b.classList.remove('active'));});
   const roleChips=[chip('없음',!s.av.role,set('role','')),...ROLES[s.group].map(r=>{const b=chip(r,s.av.role===r,set('role',r));b.dataset.role=r;return b;})];
+  const a0=api(),me0=a0.getMyId?.(),others=a0.getTrip?.()&&a0.isAdmin?.()?(a0.getMembers?.()||[]):[];
+  const who=others.length>1?group('관리자 · 누구 캐릭터를 바꿀까요?',others.map(m=>chip((m.user_id===me0?'나':String(m.display_name||'친구').slice(0,8)),s.target===m.user_id,()=>{if(s.target!==m.user_id)load(m.user_id);}))):null;
+  const roleTitle=s.target&&s.target!==me0?'역할':'내 역할';
+  $title.textContent=s.target&&s.target!==me0?'🛠 '+String(others.find(m=>m.user_id===s.target)?.display_name||'친구')+' 캐릭터 바꾸기':'🧑‍🎨 내 캐릭터 꾸미기';
   if(!api().getTrip?.())rel.replaceChildren(el('p',{class:'muted',text:'우리 사이와 내 역할은 여행을 연 뒤에 정할 수 있어요. 여기서 꾸민 캐릭터는 여행을 열면 자동으로 적용돼요.'}));
-  else rel.replaceChildren(group('우리 사이 (이 여행 전체에 적용)',GROUPS.map(([k,l])=>chip(l,s.group===k,()=>{s.group=k;if(!ROLES[k].includes(s.av.role))s.av.role='';paint();}))),group('내 역할',roleChips),custom);
+  else rel.replaceChildren(...(who?[who]:[]),group('우리 사이 (이 여행 전체에 적용)',GROUPS.map(([k,l])=>chip(l,s.group===k,()=>{s.group=k;if(!ROLES[k].includes(s.av.role))s.av.role='';paint();}))),group(roleTitle,roleChips),custom);
   const names={skin:'피부색',hairColor:'머리색',outfit:'평소 옷 색',costumeColor:'전통의상 색'};
   const keyed=(title,k)=>group(title,OPT[k].map(([v,l])=>chip(l,s.av[k]===v,set(k,v))));
   const colored=k=>group(names[k],OPT[k].map((c,i)=>chip(names[k]+' '+(i+1),s.av[k]===c,set(k,c),c)));
@@ -463,13 +512,13 @@ function mountAvatar(){
  dlg.querySelector('[data-av="close"]').addEventListener('click',close);dlg.querySelector('[data-av="cancel"]').addEventListener('click',close);
  dlg.querySelector('[data-av="random"]').addEventListener('click',()=>{const role=s.av.role;const keep={size:s.av.size,gender:s.av.gender,costume:s.av.costume};s.av=defaultAvatar(String(Math.random()));Object.assign(s.av,keep);s.av.brows=OPT.brows[Math.floor(Math.random()*4)][0];s.av.acc=OPT.acc[Math.floor(Math.random()*OPT.acc.length)][0];s.av.role=role;paint();});
  dlg.querySelector('[data-av="save"]').addEventListener('click',async()=>{const a=api(),me=a.getMyId?.();if(!me)return a.toast?.('로그인한 뒤에 저장할 수 있어요.');
-  const av=cleanAvatar(s.av,me),g=s.group;try{localStorage.setItem(LOCAL_KEY,JSON.stringify(av));}catch{}
-  document.dispatchEvent(new Event('tripkku-avatar-saved'));
+  const target=s.target||me,mine=target===me;if(!mine&&!a.isAdmin?.())return a.toast?.('다른 사람의 캐릭터는 관리자만 바꿀 수 있어요.');
+  const av=cleanAvatar(s.av,target),g=s.group;if(mine){try{localStorage.setItem(LOCAL_KEY,JSON.stringify(av));}catch{}document.dispatchEvent(new Event('tripkku-avatar-saved'));}
   if(!a.getTrip?.()){a.toast?.('내 캐릭터를 저장했어요. 여행을 열면 자동으로 적용돼요.');return close();}
-  try{await a.saveTrip(d=>{d.avatars??={};d.avatars[me]=av;d.meta??={};d.meta.groupType=g;},'내 캐릭터를 저장했어요.');close();}catch(e){a.toast?.('캐릭터 저장 실패: '+e.message);}});
- return async()=>{const a=api(),me=a.getMyId?.(),doc=a.activeDoc?.()||{};
-  s.av=cleanAvatar(doc.avatars?.[me]||localAvatar(),me);s.group=GROUPS.some(g=>g[0]===doc.meta?.groupType)?doc.meta.groupType:'friends';
-  paint();dlg.showModal();
+  try{await a.saveTrip(d=>{d.avatars??={};d.avatars[target]=av;d.meta??={};d.meta.groupType=g;},mine?'내 캐릭터를 저장했어요.':'캐릭터를 바꿨어요.');close();}catch(e){a.toast?.('캐릭터 저장 실패: '+e.message);}});
+ const load=id=>{const a=api(),me=a.getMyId?.(),doc=a.activeDoc?.()||{};s.target=id&&(id===me||a.isAdmin?.())?id:me;
+  s.av=cleanAvatar(doc.avatars?.[s.target]||(s.target===me?localAvatar():null),s.target);s.group=GROUPS.some(g=>g[0]===doc.meta?.groupType)?doc.meta.groupType:'friends';paint();};
+ return async(id)=>{load(typeof id==='string'?id:'');dlg.showModal();
   try{if(!s.preview)s.preview=(await load3d()).createPreview(canvas);refresh();}catch(e){console.error(e);api().toast?.('이 기기에서는 3D 미리보기를 열 수 없어요.');}
   cancelAnimationFrame(s.raf);s.raf=requestAnimationFrame(tick);};}
 
