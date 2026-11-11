@@ -164,7 +164,7 @@ function flightEnds(e,doc){const b=e.bookingId&&(doc.bookings||[]).find(x=>x.id=
  const parts=String(e.title||'').split(/→|->|➜|➡|⇒|~/);if(parts.length>=2)return [cleanCity(parts[0]),cleanCity(parts.at(-1))];
  return ['',cleanCity(e.place||'')];}
 function retime(tl){const fast=tl.mode==='trip';let acc=0;
- for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2)+(s.flag?1.1:0):s.plane?(fast?3.2:4.2):s.jump?(fast?2:2.8):(fast?.6:1.4);s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
+ for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2)+(s.flag?1.1:0):s.plane?(fast?3.2:4.2):s.jump?(fast?2:2.8):(fast?.6:1.4)*(1+Math.min(1.6,(s.px||0)/900));s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
 export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a.getTrip?.()||{};
  const dates=(doc.days||[]).map(d=>d.date).filter(Boolean).sort();
  const want=mode==='trip'?dates:[a.getActiveDate?.()||dates[0]];
@@ -192,7 +192,7 @@ async function geocode(q,box){const params={format:'jsonv2',limit:'1','accept-la
 const merc=(lat,lon)=>({mx:(lon+180)/360,my:(1-Math.asinh(Math.tan(lat*PI/180))/PI)/2});
 const kmApart=(a,b)=>{const R=6371,dLat=(b[0]-a[0])*PI/180,dLon=(b[1]-a[1])*PI/180,h=Math.sin(dLat/2)**2+Math.cos(a[0]*PI/180)*Math.cos(b[0]*PI/180)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(h));};
 const apart=(A,B)=>Math.hypot(A.mx-B.mx,A.my-B.my);
-const Z_NEAR=12.5,Z_CLOSE=15.5; // 머무는 장면의 확대 범위(동네 ~ 골목)
+const Z_NEAR=14,Z_CLOSE=16.6; // 머무는 장면의 확대 범위(동네 ~ 골목)
 export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{},trip=a.getTrip?.()||{};
  const known={...(doc.geo||{})},fresh={};const dest=String(trip.destination||'').split(/[·,/]/)[0].trim();
  const need=[];const add=(q,local)=>{if(q&&!(geoKey(q) in known)&&!need.some(n=>geoKey(n.q)===geoKey(q)))need.push({q,local});};
@@ -222,7 +222,7 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  // 가까운 이웃이 화면에 들어오는 선에서 최대한 클로즈업
  S.forEach((s,i)=>{let z=Z_CLOSE;for(const j of [i-1,i+1]){const o=S[j];if(!o)continue;const d=apart(s,o);if(d<1e-9)continue;const f=Math.log2(380/(d*256));if(f>=Z_NEAR)z=Math.min(z,f);}s.z=s.home?Z_NEAR:clamp(z,Z_NEAR,Z_CLOSE);});
  // 걸어서 보여 주기엔 먼 구간은 "화면 전환 + 멀리서 본 지도"로 처리
- for(const g of tl.segs)if(g.type==='move'){const A=S[g.from],B=S[g.to],d=apart(A,B),zMin=Math.min(A.z,B.z);g.jump=g.plane||d*256*2**zMin>1500;g.zMid=d<1e-9?zMin:clamp(Math.log2(520/(d*256)),1.8,zMin);}
+ for(const g of tl.segs)if(g.type==='move'){const A=S[g.from],B=S[g.to],d=apart(A,B),zMin=Math.min(A.z,B.z);g.px=d*256*2**zMin;g.jump=g.plane||g.px>3400;g.zMid=d<1e-9?zMin:clamp(Math.log2(520/(d*256)),1.8,zMin);}
  return retime(tl);}
 
 /* ---------- 지도 타일과 카메라 ---------- */
@@ -241,7 +241,8 @@ function groundTiles(cam,fn){const zi=clamp(Math.floor(cam.z),0,19),k=Math.pow(2
 export function cameraAt(tl,t){const tt=clamp(t,0,tl.total-1e-4),seg=tl.segs.find(s=>tt>=s.start&&tt<s.start+s.dur)||tl.segs.at(-1),S=tl.stops;
  if(seg.type!=='move'){const s=S[seg.i];return {seg,p:(tt-seg.start)/seg.dur,cx:s.mx,cy:s.my,z:s.z,fade:0,phase:''};}
  const A=S[seg.from],B=S[seg.to],p=(tt-seg.start)/seg.dur;
- if(!seg.jump){const e=ease(p);return {seg,p,cx:A.mx+(B.mx-A.mx)*e,cy:A.my+(B.my-A.my)*e,z:A.z+(B.z-A.z)*e,fade:0,phase:''};}
+ if(!seg.jump){const e=ease(p),zl=A.z+(B.z-A.z)*e; // 걷는 동안 두 장소가 함께 보일 만큼만 살짝 멀어졌다가 다시 가까워진다
+  return {seg,p,cx:A.mx+(B.mx-A.mx)*e,cy:A.my+(B.my-A.my)*e,z:zl+(Math.min(seg.zMid??zl,zl)-zl)*Math.sin(PI*p),fade:0,phase:''};}
  if(seg.plane){const T=.26; // 앞뒤 26%: 제자리에서 지도 축소·확대, 가운데: 항로를 따라 이동
   if(p<T){const e=ease(p/T);return {seg,p,cx:A.mx,cy:A.my,z:A.z+(seg.zMid-A.z)*e,fade:0,phase:p<.04?'a':'mid',lift:e,fly:0};}
   if(p>1-T){const e=ease((1-p)/T);return {seg,p,cx:B.mx,cy:B.my,z:B.z+(seg.zMid-B.z)*e,fade:0,phase:p>.96?'b':'mid',lift:e,fly:1};}
@@ -268,9 +269,9 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
  const act=seg.type==='dwell'?stop.react.act:seg.type==='end'?'cheer':cam.phase==='a'?'wave':'';
  const mood=seg.type==='end'?'happy':seg.type==='dwell'?({cheer:p<.32?'wow':'happy',pose:p<.4?'smile':'wink',eat:'yum',relax:'relaxed',sleep:'sleepy',wave:'smile'})[act]||'normal':act==='wave'?'smile':'normal';
  return {t,cam,seg,p,cur,stop,moving,here,tiles,dolly:mid&&seg.plane?1+.22*(cam.lift??1):1-.17*edge,fade:cam.fade,
-  stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state>0&&Math.hypot(q.x,q.z)<1500};}),
+  stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state===2};}),
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
-  party:{visible:!mid,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood},
+  party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood},
   vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
 
@@ -285,15 +286,29 @@ function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.5;if(sec>show)return;co
  else{ctx.fillStyle='#eaf2eb';fillRR(ctx,-120,-116,240,160,16);ctx.fillStyle='#285c4b';ctx.font='900 64px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,0,-36);}
  ctx.fillStyle='#243d34';ctx.font='900 40px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(fit(ctx,countryName(code)+' 도착!',300),0,96);ctx.restore();}
 
+/* ---------- 장소 아이콘 핀: 지도 위 각 장소에 종류별 색·아이콘 핀을 꽂는다(지도 앱의 장소 핀처럼) ---------- */
+const EMOJI=",'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'";
+const C={food:'#f28b30',cafe:'#b9772f',drink:'#c0478f',sight:'#12a39a',nature:'#3f9e5a',shop:'#3f7fe0',fun:'#8a5fd6',stay:'#e0568a',move:'#4a6fb5',xmas:'#d63c4a'};
+const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
+ sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
+ grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
+ castle:['🏰',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],
+ boat:['⛴️',C.move],mountain:['⛰️',C.nature],park:['🌳',C.nature],parasol:['🏖️',C.nature],onsen:['♨️',C.nature],ski:['🎿',C.nature],bag:['🛍️',C.shop],ferris:['🎡',C.fun],zoo:['🦒',C.fun],aquarium:['🐠',C.fun],concert:['🎵',C.fun],stadium:['⚽',C.fun],fireworks:['🎆',C.fun],
+ hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move]};
+function drawPin(ctx,x,y,key,seen,r){const [glyph,color]=ICON[key]||ICON.pin,cy=y-r*2;ctx.save();ctx.globalAlpha=seen?1:.62;
+ ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-r*.72,cy+r*.7);ctx.arc(x,cy,r,PI*.76,PI*.24);ctx.closePath();ctx.stroke();ctx.fill();
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,cy,r*.76,0,PI*2);ctx.fill();ctx.font=Math.round(r*1.05)+'px '+FONT+EMOJI;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#243d34';ctx.fillText(glyph,x,cy+1);ctx.restore();}
+
 /* ---------- 3D 장면 위에 덧그리는 2D: 이름표·장소 이름·말풍선·제목·진행 막대 ---------- */
-function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT;const tw=ctx.measureText(text).width+(o.pad||30),h=o.h||42,x=clamp(cx-tw/2,12,W-12-tw);
+function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT+(o.emoji?EMOJI:'');const tw=ctx.measureText(text).width+(o.pad||30),h=o.h||42,x=clamp(cx-tw/2,12,W-12-tw);
  ctx.fillStyle=o.bg||'rgba(255,255,255,.96)';if(o.line){ctx.strokeStyle=o.line;ctx.lineWidth=2;}ctx.beginPath();rr(ctx,x,cy-h/2,tw,h,h/2);ctx.fill();if(o.line)ctx.stroke();
  ctx.fillStyle=o.fg||INK;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x+tw/2,cy+1);return {x,w:tw};}
 const nameTags=(ctx,stage,members)=>stage.heads().forEach((h,k)=>{if(h)pill(ctx,members[k].label,h.x,h.y,{font:'800 19px ',h:30,pad:24,bg:members[k].me?'#f6c945':'rgba(34,40,54,.86)',fg:members[k].me?INK:'#fff'});});
 export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night=f.night,n=members.length,dwell=seg.type==='dwell';
+ if(seg.type!=='end')f.stops.forEach((sp,i)=>{if((i===f.cur&&f.here)||Math.abs(sp.x)>1500||Math.abs(sp.z)>2400)return;const q=stage.project(sp.x,0,sp.z);if(q.x<-30||q.x>W+30||q.y<150||q.y>H-70)return;drawPin(ctx,q.x,q.y,tl.stops[i].react.key,i<=f.cur,f.vehicle?18:27);});
  if(f.party.visible&&seg.type!=='end'){nameTags(ctx,stage,members);
-  if(f.here&&!(dwell&&stop.flag&&p*seg.dur<1.5)){const sp=f.stops[f.cur],top=stage.project(sp.x,290,sp.z-195),ly=clamp(top.y,186,H-200);
-   ctx.font='800 24px '+FONT;const label=fit(ctx,(stop.time?stop.time+'  ':'')+stop.title,360),box=pill(ctx,label,top.x,ly,{font:'800 24px ',h:46,pad:36,bg:night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)',fg:night?'#eef5ef':'#243d34',line:night?'#52685d':'#dfe5d6'});
+  if(f.here&&!(dwell&&stop.flag&&p*seg.dur<1.5)){const sp=f.stops[f.cur],top=stage.project(sp.x,236,sp.z-120),ly=clamp(top.y,186,H-200);
+   ctx.font='800 24px '+FONT;const label=fit(ctx,(ICON[stop.react.key]?.[0]||'📍')+' '+(stop.time?stop.time+'  ':'')+stop.title,400),box=pill(ctx,label,top.x,ly,{font:'800 24px ',emoji:true,h:46,pad:36,bg:night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)',fg:night?'#eef5ef':'#243d34',line:night?'#52685d':'#dfe5d6'});
    if(stop.firstOfDay)pill(ctx,(stop.dayIdx+1)+'일 차',box.x+34,ly-40,{font:'800 19px ',h:28,pad:22,bg:'#285c4b',fg:'#fff'});
    if(dwell&&stop.react.say&&p>.12&&p<.92){const who=stage.heads()[f.cur%n]||stage.heads().find(Boolean);if(who)pill(ctx,stop.react.say,who.x+(who.x>W/2?-96:96),who.y-44,{h:44,pad:32,line:'#d9dee6'});}
    if(dwell&&tl.group==='couple'&&n>=2){const a=stage.heads()[0],b=stage.heads()[1];if(a&&b){const u=(t*.6)%1;ctx.globalAlpha=1-u;ctx.fillStyle='#ff5a7a';ctx.font='40px '+FONT;ctx.textAlign='center';ctx.fillText('♥',(a.x+b.x)/2,Math.min(a.y,b.y)-84-u*44);ctx.globalAlpha=1;}}
@@ -329,7 +344,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_react1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_pins1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */

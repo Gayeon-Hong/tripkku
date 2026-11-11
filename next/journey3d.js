@@ -12,7 +12,7 @@
  */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js';
 const W=720,H=1280,PI=Math.PI;
-export const PROP_BACK=195,PROP_SCALE=1.4; // 머무는 곳의 소품: 일행 뒤로 떨어진 거리, 크기
+export const PROP_BACK=120,PROP_SCALE=1.15; // 머무는 곳의 소품: 일행 뒤로 떨어진 거리, 크기
 const mat=(color,o={})=>new THREE.MeshStandardMaterial({color,roughness:.82,metalness:0,...o});
 function mesh(geo,color,x=0,y=0,z=0,o){const m=new THREE.Mesh(geo,color&&color.isMaterial?color:mat(color,o));m.position.set(x,y,z);m.castShadow=true;return m;}
 const G={sphere:(r,w=24,h=16)=>new THREE.SphereGeometry(r,w,h),capsule:(r,l)=>new THREE.CapsuleGeometry(r,l,6,16),cyl:(a,b,h,s=24)=>new THREE.CylinderGeometry(a,b,h,s),
@@ -296,16 +296,16 @@ export function createStage(canvas){
    // 지금 머무는 곳의 소품은 일행 뒤에 크게, 지나온 곳의 소품은 작게 남겨 둔다.
    if(p.visible){const here=s.state===2;p.scale.setScalar(here?PROP_SCALE:.6);p.position.set(s.x,0,s.z-(here?PROP_BACK:70));p.rotation.y=here?Math.sin(f.t*1.4)*.12:0;}});
   // 일행
-  const n=chars.length,sp=Math.min(90,400/Math.max(1,n));heads=[];
+  const n=chars.length,sp=Math.min(90,400/Math.max(1,n)),PS=f.party.scale||1,front=(f.party.front||0)*85;heads=[]; // 일행은 작게, 머무는 동안은 장소 표시 앞쪽에 선다
   chars.forEach((h,k)=>{h.visible=f.party.visible;if(!h.visible)return;const want=h.userData.variants[f.party.costume||'']||h.userData.variants[''];
    if(want!==h.userData.char||!want.visible){for(const c of Object.values(h.userData.variants))c.visible=c===want;h.userData.char=want;}
-   h.position.set((k-(n-1)/2)*sp,0,(k%2)*(n>4?60:24)-12);h.rotation.y=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0;
+   h.scale.setScalar(PS);h.position.set((k-(n-1)/2)*sp*PS,0,((k%2)*(n>4?60:24)-12)*PS+front);h.rotation.y=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0;
    poseAvatar(h.userData.char,{walking:f.party.walking,act:f.party.act,mood:f.party.mood,t:f.t,seed:k*1.7});});
   // 탈것(먼 이동)
   for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){const lift=f.vehicle.lift??1; // 이륙·착륙: 낮게 작게 → 높이 크게
    v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?.8+.7*lift:1.1);}}
   renderer.render(scene,camera);
-  chars.forEach((h,k)=>{heads[k]=h.visible?project(h.position.x,h.userData.char.position.y+h.userData.char.userData.tag,h.position.z):null;});}
+  chars.forEach((h,k)=>{heads[k]=h.visible?project(h.position.x,(h.userData.char.position.y+h.userData.char.userData.tag)*h.scale.y,h.position.z):null;});}
  const v3=new THREE.Vector3();
  function project(x,y,z){v3.set(x,y,z).project(camera);return {x:(v3.x+1)/2*W,y:(1-v3.y)/2*H};}
  return {setScene,render,project,heads:()=>heads,dispose(){freeTree(scene);renderer.dispose();}};}
