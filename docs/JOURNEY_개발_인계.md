@@ -36,7 +36,7 @@
 
 표정은 `frameAt` 이 장면마다 `mood` 를 정해 넘깁니다: `normal`(가끔 깜빡임) `smile` `happy` `wow` `wink` `yum` `relaxed` `sleepy`. 좋아하는 곳에서는 `wow` → `happy`, 사진 포즈는 `smile` → `wink` 순서로 바뀝니다. 표정을 늘리려면 `journey3d.js` 의 `poseAvatar` 와 얼굴 조각(눈 3종, 입 3종)을 추가하면 됩니다.
 
-여행 계획 화면에는 `renderPartyStrip` 이 여행 소개 카드(`.trip-intro`)의 칩 아래에 일행 캐릭터를 넣습니다. 그림은 `createPortraits` 가 3D를 한 번 그려 만든 이미지이고, 화면이 다시 그려질 때(`#activeTripTitle` 변경 감지)마다 설정이 바뀐 사람만 새로 그립니다. 초대 창의 참여자 목록, 예산의 결제자 등에는 아직 넣지 않았습니다.
+여행 계획 화면에는 `renderPartyStrip` 이 여행 소개 카드(`.trip-intro`)의 칩 아래에 일행 캐릭터를 넣습니다. 그림은 `createPortraits` 가 3D를 한 번 그려 만든 이미지이고, 화면이 다시 그려질 때(`#activeTripTitle` 변경 감지)마다 설정이 바뀐 사람만 새로 그립니다. 같은 그림을 홈 인사 카드(`renderHomeHero`, 내 캐릭터), 홈의 여행 카드(`decorateTripCards`, 그 여행에 저장된 일행 얼굴), 초대 창(`decorateInvite`)에도 넣습니다. 이를 위해 `app.js` 의 여행 카드에 `data-trip-id` 를 달고 `window.__tripkku.getTrips` 를 추가했습니다. 홈에서 꾸민 캐릭터는 `localStorage` 에만 저장되고, 내 캐릭터가 없는 여행을 열면 `autoApply` 가 한 번 자동으로 저장합니다(역할은 비움). 예산의 결제자 등에는 아직 넣지 않았습니다.
 
 ## 확인한 것 / 못 한 것
 

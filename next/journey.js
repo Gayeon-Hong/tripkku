@@ -9,7 +9,8 @@
  *                   걸어서 이동하고, 먼 곳(비행·도시 간)은 화면이 바뀌며 멀리서 본 지도 위를 탈것이 지나간다.
  *   4) 그리기       3D 장면은 journey3d.js(Three.js)가 그리고, 그 위에 이름표·말풍선·제목을 2D로 덧그린다.
  *   5) 영상 저장    합쳐진 캔버스를 녹화해 파일로 내려받는다.
- *   6) 여행 계획    여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다(내 캐릭터를 누르면 꾸미기).
+ *   6) 화면 곳곳    여행 소개 카드의 일행, 홈 인사 카드의 내 캐릭터, 여행 카드의 일행 얼굴, 초대 창의 참여자 얼굴.
+ *                   홈에서 꾸민 캐릭터는 이 기기에 저장해 두었다가 여행을 열 때 자동으로 적용한다.
  *
  * app.js 와는 window.__tripkku 로만 연결된다.
  */
@@ -237,6 +238,9 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .av-group{display:grid;gap:5px}.av-group>span{font-weight:740;font-size:12px}.av-chips{display:flex;gap:6px;flex-wrap:wrap}.av-chips button{min-height:36px;min-width:36px;padding:6px 11px;border-radius:18px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-size:12px;font-weight:750}
 .av-chips button.swatch{padding:0;width:36px;border-radius:50%}.av-chips button.active{border-color:#285c4b;box-shadow:0 0 0 2px #285c4b33}body.night .av-chips button.active{border-color:#92c6ac}
 .av-slider{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:11px;font-weight:600;color:var(--muted)}.av-slider input{min-height:28px;padding:0;border:0;background:none;accent-color:#285c4b}
+.hero-me{display:grid;justify-items:center;gap:3px;border:0;background:none;color:inherit;font-size:11px;font-weight:800;flex:none;padding:0}.hero-me .tk-face{width:96px;height:96px;background:#ffffff99;box-shadow:0 0 0 3px #f6c945}
+.tk-face{border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%;flex:none}.trip-faces{display:flex;margin-top:7px;padding-left:2px}.trip-faces .tk-face{width:34px;height:34px;box-shadow:0 0 0 2px var(--card);margin-right:-7px}
+.invite-member-row>.tk-face{width:44px;height:44px}.invite-member-row>.tk-face+div{flex:1;min-width:0}@media(max-width:600px){.hero-me .tk-face{width:66px;height:66px}}
 .trip-party{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.trip-party-item{display:grid;justify-items:center;gap:2px;border:0;background:none;color:var(--ink);font-size:11px;font-weight:750;padding:2px;min-width:64px;max-width:84px}.trip-party-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
@@ -249,6 +253,24 @@ const BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICT
 let portraits=null;const portraitCache=new Map();
 async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portraitCache.has(key))return portraitCache.get(key);
  if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
+function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
+ setTimeout(()=>portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),300);return img;}
+/* 홈 화면: 인사 카드에 내 캐릭터. 누르면 꾸미기(여행 밖에서는 이 기기에 저장해 두고, 여행을 열 때 자동으로 적용) */
+function renderHomeHero(openAvatar){const earth=document.querySelector('.home-hero .hero-earth'),me=api().getMyId?.();if(!earth||!me)return;
+ let b=document.getElementById('heroMe');if(!b){b=el('button',{id:'heroMe',type:'button',class:'hero-me','aria-label':'내 캐릭터 꾸미기'});earth.before(b);b.addEventListener('click',()=>void openAvatar());}
+ const saved=localAvatar(),av=cleanAvatar(saved,me),sig=JSON.stringify([av,!!saved]);if(b.dataset.sig===sig)return;b.dataset.sig=sig;
+ b.replaceChildren(face(av,'',96),el('span',{text:saved?'내 캐릭터':'내 캐릭터 만들기'}));}
+/* 홈 화면: 여행 카드마다 그 여행에 저장된 일행 캐릭터 */
+function decorateTripCards(){const trips=api().getTrips?.()||[];
+ document.querySelectorAll('.trip-card[data-trip-id]').forEach(card=>{if(card.querySelector('.trip-faces'))return;const t=trips.find(x=>x.id===card.dataset.tripId),list=Object.entries(t?.data?.avatars||{}).slice(0,6);if(!list.length)return;
+  const kind=costumeKind(t.country_code);card.querySelector('.trip-card-info')?.append(el('div',{class:'trip-faces','aria-hidden':'true'},list.map(([id,raw])=>face(cleanAvatar(raw,id),kind,34))));});}
+/* 초대 창: 참여자 이름 앞에 캐릭터 */
+function decorateInvite(){const ms=party(),kind=tripKind();
+ document.querySelectorAll('#inviteMemberList .invite-member-row').forEach((row,i)=>{if(!ms[i]||row.querySelector('.tk-face'))return;row.prepend(face(ms[i].av,kind,44));});}
+/* 이 기기에 저장해 둔 내 캐릭터를, 아직 캐릭터가 없는 여행에 한 번 자동으로 적용한다(역할은 여행마다 다르므로 비운다). */
+const applied=new Set();
+function autoApply(){const a=api(),t=a.getTrip?.(),me=a.getMyId?.(),saved=localAvatar();if(!t||!me||!saved||applied.has(t.id))return;applied.add(t.id);if(a.activeDoc?.().avatars?.[me])return;
+ const av={...cleanAvatar(saved,me),role:''};a.saveTrip?.(d=>{d.avatars??={};d.avatars[me]??=av;},'내 캐릭터를 이 여행에 적용했어요.').catch(()=>{});}
 function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip-intro .chip-row');if(!anchor||!api().getTrip?.())return;
  let strip=document.getElementById('tripParty');if(!strip){strip=el('div',{id:'tripParty',class:'trip-party',role:'group','aria-label':'함께 가는 사람들'});anchor.after(strip);}
  const members=party(),kind=tripKind(),sig=JSON.stringify([kind,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
@@ -325,14 +347,15 @@ function mountAvatar(){
   const custom=el('input',{maxlength:'8',placeholder:'역할 직접 입력 (예: 막내)','aria-label':'역할 직접 입력'});custom.value=ROLES[s.group].includes(s.av.role)?'':s.av.role;
   custom.addEventListener('input',()=>{s.av.role=custom.value.trim().slice(0,8);rel.querySelectorAll('[data-role]').forEach(b=>b.classList.remove('active'));});
   const roleChips=[chip('없음',!s.av.role,set('role','')),...ROLES[s.group].map(r=>{const b=chip(r,s.av.role===r,set('role',r));b.dataset.role=r;return b;})];
-  rel.replaceChildren(group('우리 사이 (이 여행 전체에 적용)',GROUPS.map(([k,l])=>chip(l,s.group===k,()=>{s.group=k;if(!ROLES[k].includes(s.av.role))s.av.role='';paint();}))),group('내 역할',roleChips),custom);
+  if(!api().getTrip?.())rel.replaceChildren(el('p',{class:'muted',text:'우리 사이와 내 역할은 여행을 연 뒤에 정할 수 있어요. 여기서 꾸민 캐릭터는 여행을 열면 자동으로 적용돼요.'}));
+  else rel.replaceChildren(group('우리 사이 (이 여행 전체에 적용)',GROUPS.map(([k,l])=>chip(l,s.group===k,()=>{s.group=k;if(!ROLES[k].includes(s.av.role))s.av.role='';paint();}))),group('내 역할',roleChips),custom);
   const names={skin:'피부색',hairColor:'머리색',outfit:'평소 옷 색',costumeColor:'전통의상 색'};
   const keyed=(title,k)=>group(title,OPT[k].map(([v,l])=>chip(l,s.av[k]===v,set(k,v))));
   const colored=k=>group(names[k],OPT[k].map((c,i)=>chip(names[k]+' '+(i+1),s.av[k]===c,set(k,c),c)));
   // 얼굴형은 고르는 게 아니라 동그라미에서 조금씩 조절한다.
   const face=el('div',{class:'av-group'},[el('span',{text:'얼굴형 (조금씩 조절)'}),...FACE.map(([k,label,lo,hi])=>{const input=el('input',{type:'range',min:'-1',max:'1',step:'0.1','aria-label':label+' ('+lo+' ~ '+hi+')'});input.value=String(s.av[k]);
    input.addEventListener('input',()=>{s.av[k]=Number(input.value);refresh();});return el('label',{class:'av-slider'},[el('span',{text:lo}),input,el('span',{text:hi})]);})]);
-  const kind=tripKind(),note=el('p',{class:'tiny',text:kind?'이 여행지에서는 '+COSTUME_NAME[kind]+'을(를) 입어요. 여/남 형태와 색만 고르면 됩니다.':'이 여행지는 아직 준비된 전통의상이 없어 평소 옷을 입어요. 다른 여행을 위해 미리 골라 둘 수 있어요.'});note.style.margin='0';
+  const kind=tripKind(),note=el('p',{class:'tiny',text:!api().getTrip?.()?'여행지에 도착하면 그 나라 전통의상으로 갈아입어요. 여/남 형태와 색만 골라 두세요.':kind?'이 여행지에서는 '+COSTUME_NAME[kind]+'을(를) 입어요. 여/남 형태와 색만 고르면 됩니다.':'이 여행지는 아직 준비된 전통의상이 없어 평소 옷을 입어요. 다른 여행을 위해 미리 골라 둘 수 있어요.'});note.style.margin='0';
   parts.replaceChildren(face,colored('skin'),keyed('머리 모양','hair'),keyed('앞머리','bangs'),colored('hairColor'),keyed('눈','eyes'),keyed('눈썹','brows'),keyed('키','size'),colored('outfit'),keyed('소품','acc'),
    keyed('여행지 전통의상','costume'),note,keyed('전통의상 형태','gender'),colored('costumeColor'));refresh();};
  const tick=now=>{s.preview?.render(now/1000);s.raf=requestAnimationFrame(tick);};
@@ -340,8 +363,10 @@ function mountAvatar(){
  dlg.addEventListener('close',()=>cancelAnimationFrame(s.raf));
  dlg.querySelector('[data-av="close"]').addEventListener('click',close);dlg.querySelector('[data-av="cancel"]').addEventListener('click',close);
  dlg.querySelector('[data-av="random"]').addEventListener('click',()=>{const role=s.av.role;const keep={size:s.av.size,gender:s.av.gender,costume:s.av.costume};s.av=defaultAvatar(String(Math.random()));Object.assign(s.av,keep);s.av.brows=OPT.brows[Math.floor(Math.random()*4)][0];s.av.acc=OPT.acc[Math.floor(Math.random()*OPT.acc.length)][0];s.av.role=role;paint();});
- dlg.querySelector('[data-av="save"]').addEventListener('click',async()=>{const a=api(),me=a.getMyId?.();if(!me||!a.saveTrip)return a.toast?.('여행을 연 뒤에 저장할 수 있어요.');
+ dlg.querySelector('[data-av="save"]').addEventListener('click',async()=>{const a=api(),me=a.getMyId?.();if(!me)return a.toast?.('로그인한 뒤에 저장할 수 있어요.');
   const av=cleanAvatar(s.av,me),g=s.group;try{localStorage.setItem(LOCAL_KEY,JSON.stringify(av));}catch{}
+  document.dispatchEvent(new Event('tripkku-avatar-saved'));
+  if(!a.getTrip?.()){a.toast?.('내 캐릭터를 저장했어요. 여행을 열면 자동으로 적용돼요.');return close();}
   try{await a.saveTrip(d=>{d.avatars??={};d.avatars[me]=av;d.meta??={};d.meta.groupType=g;},'내 캐릭터를 저장했어요.');close();}catch(e){a.toast?.('캐릭터 저장 실패: '+e.message);}});
  return async()=>{const a=api(),me=a.getMyId?.(),doc=a.activeDoc?.()||{};
   s.av=cleanAvatar(doc.avatars?.[me]||localAvatar(),me);s.group=GROUPS.some(g=>g[0]===doc.meta?.groupType)?doc.meta.groupType:'friends';
@@ -357,7 +382,12 @@ function init(){
  play.addEventListener('click',()=>void openJourney(ended()?'trip':'day'));
  edit.addEventListener('click',()=>void openAvatar());
  // 여행 마지막 날부터는 버튼이 '여행 영상 만들기'로 바뀐다.
- const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());renderPartyStrip(openAvatar);};
+ const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());renderPartyStrip(openAvatar);autoApply();};
  const title=document.getElementById('activeTripTitle');if(title)new MutationObserver(label).observe(title,{childList:true,characterData:true,subtree:true});
- label();}
+ label();
+ // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
+ const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
+ const home=()=>{renderHomeHero(openAvatar);decorateTripCards();};
+ watch('tripList',decorateTripCards);watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
+ document.addEventListener('tripkku-avatar-saved',()=>renderHomeHero(openAvatar));home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}

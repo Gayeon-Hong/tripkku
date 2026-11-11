@@ -60,7 +60,7 @@ function inferDayCountryCode(row, fallbackCode){
 
 function tripDates(){return daysBetween(trip?.start_date||'',trip?.end_date||'');}
 function activeDoc(){return trip?.data||{};}
-window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
+window.__tripkku = { saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
@@ -146,7 +146,7 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
 function renderTripCard(t,hidden=false){
  const c=countryInfo(t.country_code),mine=t.owner_id===user?.id;
  const actions=hidden?`<button class="btn small" type="button" data-unhide-trip="${esc(t.id)}">↩ 다시 표시</button>${mine?`<button class="btn danger small" type="button" data-delete-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 영구 삭제">영구 삭제</button>`:`<button class="btn danger small" type="button" data-leave-trip="${esc(t.id)}" aria-label="${esc(t.title)} 여행 나가기">나가기</button>`}`:`<button class="btn small" type="button" data-open-trip="${esc(t.id)}">열기</button>${mine?`<button class="btn small" type="button" data-share-trip="${esc(t.id)}">🔗 초대</button>`:''}<button class="btn small" type="button" data-hide-trip="${esc(t.id)}">🙈 숨기기</button>`;
- const flagHtml=renderCountryFlag(t.country_code,c.flag);return `<div class="trip-card"><div class="trip-card-info"><strong>${flagHtml} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
+ const flagHtml=renderCountryFlag(t.country_code,c.flag);return `<div class="trip-card" data-trip-id="${esc(t.id)}"><div class="trip-card-info"><strong>${flagHtml} ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(fmtDate(t.start_date))}~${esc(fmtDate(t.end_date))}</small><small>${mine?'👑 내가 만든 여행':'👥 초대받은 여행'}</small></div><div class="trip-card-actions">${actions}</div></div>`;
 }
 function renderTripList(){
  const visible=trips.filter(t=>!hiddenTripIds.has(t.id)),hidden=trips.filter(t=>hiddenTripIds.has(t.id));
