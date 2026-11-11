@@ -233,10 +233,7 @@ body.night .trip-phase.now{background:#3b7e61}body.night .trip-phase.soon{backgr
 .fx-swap{min-width:40px;min-height:40px;border-radius:999px;border:1px solid var(--border,#ddd);background:var(--card,#fff);font-size:18px;font-weight:800;color:var(--forest,#285c4b);cursor:pointer}
 .fx-swap:active{transform:rotate(180deg);transition:transform .2s}
 
-/* 일정 카드의 3D 소품 그림 */
-.event-card.tk-has-prop{position:relative;padding-right:92px;min-height:92px}
-.tk-prop{position:absolute;right:10px;top:10px;width:72px;height:72px;border-radius:18px;background:linear-gradient(160deg,#eef6f2,#e3eef5);opacity:0;transform:scale(.8);transition:opacity .3s,transform .3s;pointer-events:none}
-.tk-prop.on{opacity:1;transform:none}
-body.night .tk-prop{background:linear-gradient(160deg,#243244,#1c2836)}
-.event-card.tk-has-prop.tk-has-pieces{padding-bottom:46px}
-@media (prefers-reduced-motion:reduce){.tk-prop{transition:none}}
+/* 관리자: 새 여행·새 장소 알림 */
+.admin-news{border:1px solid var(--border,#ddd);border-radius:14px;padding:12px;margin:0 0 12px;background:var(--soft,#f4f1e8)}
+.admin-news h4{margin:0 0 6px}.admin-news ul{margin:6px 0 0;padding-left:18px}.admin-news li{margin:2px 0}
+.admin-badge{display:inline-block;min-width:18px;padding:0 6px;margin-left:4px;border-radius:999px;background:#e8323f;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}

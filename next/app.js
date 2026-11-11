@@ -847,7 +847,20 @@ async function loadAdminTripIndex(){if(!isBetaAdmin||DEMO||!user)return;
  const list=$('adminTripList');if(!list)return;list.innerHTML='<p class="muted">다른 사용자의 여행을 불러오는 중…</p>';
  const {data,error}=await client.rpc('tripkku_admin_trip_index');
  if(error){adminTripIndex=[];list.innerHTML=emptyMessage('관리자 여행 목록을 읽을 수 없어요. 관리자 조회 SQL 적용 여부를 확인해 주세요. ('+esc(error.message)+')');return;}
- adminTripIndex=(data||[]).filter(x=>x.owner_id!==user.id);renderAdminTripList();}
+ adminTripIndex=(data||[]).filter(x=>x.owner_id!==user.id);renderAdminTripList();void renderAdminNews();}
+// 관리자 알림: 지난번 확인 뒤 새로 생긴 여행 + 전용 3D가 아직 없는 장소(다음에 만들 것)
+const ADMIN_SEEN='tripkku-admin-seen-trips';
+function adminSeen(){try{const v=JSON.parse(localStorage.getItem(ADMIN_SEEN)||'null');return Array.isArray(v)?new Set(v):null;}catch{return null;}}
+function adminNewTrips(){const seen=adminSeen();return seen?adminTripIndex.filter(t=>!seen.has(t.id)):[];}
+function paintAdminBadge(){const b=$('adminFeedbackBtn');if(!b)return;b.querySelector('.admin-badge')?.remove();const n=adminNewTrips().length;if(n){const s=document.createElement('span');s.className='admin-badge';s.textContent=String(n);s.setAttribute('aria-label','새 여행 '+n+'개');b.append(s);}}
+async function renderAdminNews(){const list=$('adminTripList');if(!list)return;let box=$('adminNews');if(!box){box=document.createElement('div');box.id='adminNews';box.className='admin-news';list.before(box);}
+ if(!adminSeen()){try{localStorage.setItem(ADMIN_SEEN,JSON.stringify(adminTripIndex.map(t=>t.id)));}catch{}} // 처음에는 지금 목록을 기준으로 삼는다
+ const fresh=adminNewTrips();paintAdminBadge();
+ let places=[];try{const ids=adminTripIndex.slice(0,40).map(t=>t.id);if(ids.length&&window.__tripkkuPlaces){const {data}=await client.from('tripkku_trips').select('id,data').in('id',ids);places=window.__tripkkuPlaces((data||[]).map(x=>x.data)).slice(0,30);}}catch{}
+ box.innerHTML=`<h4>🆕 새로 등록된 여행 ${fresh.length}개</h4>${fresh.length?'<ul>'+fresh.map(t=>`<li>${esc(t.owner_name||'사용자')} · ${esc(t.title)} <small>(${esc(t.destination)} · ${esc(t.start_date)})</small></li>`).join('')+'</ul><button class="btn small" type="button" id="adminNewsSeen">확인했어요</button>':'<p class="tiny">지난번 확인 뒤 새로 생긴 여행이 없어요.</p>'}
+  <h4 style="margin-top:12px">🏗 전용 3D가 아직 없는 장소 ${places.length}곳</h4>${places.length?'<p class="tiny">지금은 도시·나라 대표 건물로 대신 나와요. 만들고 싶은 곳을 Claude에게 알려 주세요.</p><ul>'+places.map(x=>`<li>${esc(x.name)}${x.count>1?' ×'+x.count:''}</li>`).join('')+'</ul><button class="btn small" type="button" id="adminNewsCopy">목록 복사</button>':'<p class="tiny">모든 장소에 전용 3D가 있어요.</p>'}`;
+ $('adminNewsSeen')?.addEventListener('click',()=>{try{localStorage.setItem(ADMIN_SEEN,JSON.stringify(adminTripIndex.map(t=>t.id)));}catch{}void renderAdminNews();});
+ $('adminNewsCopy')?.addEventListener('click',()=>void copyTextSafe(places.map(x=>x.name).join('\n')).then(ok=>ok&&toast('장소 목록을 복사했어요.')));}
 function renderAdminTripList(){const list=$('adminTripList');if(!list)return;
  list.innerHTML=adminTripIndex.length?adminTripIndex.map(t=>`<div class="trip-card"><div><strong>🧳 ${esc(t.owner_name||'사용자')}의 여행 · ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)}</small></div><button class="btn small" type="button" data-admin-view-trip="${esc(t.id)}">👁 읽기 전용 보기</button></div>`).join(''):emptyMessage('현재 다른 사용자의 여행이 없습니다.');}
 async function openAdminTripPreview(id){if(!user||!isBetaAdmin||DEMO)return;
@@ -867,7 +880,7 @@ async function openAdminTripPreview(id){if(!user||!isBetaAdmin||DEMO)return;
 async function refreshBetaAdminRole(){
  if(DEMO||!user){isBetaAdmin=false;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;return;}
  const {data,error}=await client.from('tripkku_beta_admins').select('user_id').eq('user_id',user.id).maybeSingle();
- isBetaAdmin=!error&&!!data;$('adminFeedbackBtn').hidden=!isBetaAdmin;$('adminTripPanel').hidden=!isBetaAdmin;
+ isBetaAdmin=!error&&!!data;$('adminFeedbackBtn').hidden=!isBetaAdmin;$('adminTripPanel').hidden=!isBetaAdmin;if(isBetaAdmin)void loadAdminTripIndex(); // 로그인하자마자 새 여행 알림 배지를 띄운다
  if(error)console.warn('TRIPKKU admin role could not be verified:',error.message);
 }
 function feedbackFormTrips(){const select=$('feedbackTripSelect');const selected=select.value;

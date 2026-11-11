@@ -256,8 +256,8 @@ export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.p
  if(i<0&&e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
  if(i<0&&e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
  const city=CITY_SIGHTS.find(c=>c[0].test(text+' '+(e.city||'')));
- if(i<0&&city){const k='city:'+city[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:city[1][m%city[1].length],act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
- if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2]};}
+ if(i<0&&city){const k='city:'+city[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:city[1][m%city[1].length],act:'pose',say:['찰칵!','여기 좋다!'][m%2],generic:true};}
+ if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2],generic:true};}
  if(Array.isArray(RULES[i][1])&&RULES[i][1].includes('tree')&&RULES[i][1].includes('stall')){const cx=CITY_XMAS.find(c=>c[0].test(text+' '+(e.city||'')));
   if(cx){const k='xmas:'+cx[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:cx[1][m%cx[1].length],act:'cheer',say:['반짝반짝!','메리 크리스마스!','구경하자!','따뜻해~'][m%4]};}}
  const [,keys,act,says]=RULES[i],n=seen.get(i)||0;seen.set(i,n+1);
@@ -329,6 +329,14 @@ export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a
  stops.forEach((s,i)=>{if(i>0)segs.push({type:'move',from:i-1,to:i,plane:s.via==='plane',jump:s.via==='plane'});segs.push({type:'dwell',i});});
  if(mode==='trip'&&places>0)segs.push({type:'end',i:stops.length-1});
  return retime({mode,map:false,stops,segs,total:0,places,days:want.length,title:String(trip.title||trip.destination||'우리 여행'),group:doc.meta?.groupType||'friends'});}
+
+/** 관리자용: 여행 문서들에서 전용 3D가 없어 '도시·나라 대표 건물'로 대신 나오는 장소 이름을 모은다. */
+export function unknownPlaces(docs){const out=new Map();
+ for(const doc of docs||[])for(const day of doc?.days||[])for(const e of day.events||[]){if(!e||flightKind(e)||['food','hotel','move','flight'].includes(e.kind))continue;
+  const r=reactionFor({...e,city:day.title||''},String(day.countryCode||doc.meta?.countryCode||'').toUpperCase(),new Map());if(!r.generic)continue;
+  const name=String(e.place||e.title||'').trim().slice(0,40);if(name.length<2)continue;out.set(name,(out.get(name)||0)+1);}
+ return [...out].sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}));}
+if(typeof window!=='undefined')window.__tripkkuPlaces=unknownPlaces;
 
 /* ---------- 장소 좌표 찾기 ---------- */
 const GEO_URL='https://nominatim.openstreetmap.org/search';
@@ -584,17 +592,6 @@ async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portra
  if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);return url;}
 function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
  setTimeout(()=>portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),300);return img;}
-/* 일정표: 일정 카드마다 그 장소의 3D 소품 그림을 붙인다(동선 영상에 나오는 것과 같은 것). */
-const propCache=new Map();
-async function propThumb(key){if(propCache.has(key))return propCache.get(key);if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.prop(key);propCache.set(key,url);return url;}
-function decorateTimeline(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{},day=(doc.days||[]).find(d=>d.date===date);
- const cards=[...box.querySelectorAll(':scope > .event-card')];if(!day||!cards.length)return;
- const evs=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
- const country=String(a.dayCountry?.(day)||'').toUpperCase(),seen=new Map();
- evs.forEach((e,i)=>{const card=cards[i];if(!card)return;const key=flightKind(e)?'airport':reactionFor({...e,city:[day.title,day.city].filter(Boolean).join(' ')},country,seen).key;
-  if(card.querySelector('.tk-prop')?.dataset.key===key)return;card.querySelector('.tk-prop')?.remove();
-  const img=el('img',{src:BLANK,alt:'',class:'tk-prop',width:'72',height:'72'});img.dataset.key=key;card.classList.add('tk-has-prop');card.append(img);
-  setTimeout(()=>propThumb(key).then(url=>{img.src=url;img.classList.add('on');}).catch(()=>img.remove()),200+i*60);});}
 /* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
 const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
 function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
@@ -780,7 +777,7 @@ function init(){
  // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
  const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
  const home=()=>{renderHomeHero(openAvatar);decorateTripCards();};
- watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;if(b.querySelector('.event-card:not(.tk-has-prop)'))decorateTimeline();if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
+ watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
  watch('tripList',decorateTripCards);watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
  document.addEventListener('tripkku-avatar-saved',()=>renderHomeHero(openAvatar));home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}
