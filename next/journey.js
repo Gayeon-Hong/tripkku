@@ -586,7 +586,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_flag3'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_mood1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -599,12 +599,16 @@ let portraitDisk=null;const diskPortraits=()=>{if(!portraitDisk){try{portraitDis
 const savePortrait=(h,url)=>{const d=diskPortraits();delete d[h];d[h]=url;const keys=Object.keys(d);for(const k of keys.slice(0,Math.max(0,keys.length-PORTRAIT_KEEP)))delete d[k];
  try{localStorage.setItem(PORTRAIT_STORE,JSON.stringify(d));}catch{try{localStorage.removeItem(PORTRAIT_STORE);}catch{}portraitDisk={};}};
 const idle=()=>new Promise(r=>(window.requestIdleCallback||(f=>setTimeout(f,250)))(()=>r(),{timeout:1500}));
-async function portraitOf(av,kind){const key=JSON.stringify([av,kind]);if(portraitCache.has(key))return portraitCache.get(key);
+// 위쪽 지구 표정 버튼(😊🥰😴😡)을 누르면 캐릭터 얼굴도 같은 표정으로
+const MOOD_MAP={happy:'smile',love:'love',sleepy:'sleepy',angry:'angry'};
+const faceMood=()=>{try{return MOOD_MAP[localStorage.getItem('tripkku-next-mood')||'happy']||'smile';}catch{return 'smile';}};
+async function portraitOf(av,kind,mood=faceMood()){const key=JSON.stringify([av,kind,mood]);if(portraitCache.has(key))return portraitCache.get(key);
  const h=portraitHash(key),saved=diskPortraits()[h];if(saved){portraitCache.set(key,saved);return saved;}
  await idle(); // 첫 화면을 먼저 그린 뒤에 3D 엔진을 받는다
- if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);savePortrait(h,url);return url;}
-function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});
+ if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind,mood);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);savePortrait(h,url);return url;}
+function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});img._tk=[av,av.costume==='on'?kind:''];
  portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{});return img;}
+addEventListener('tripkku-mood',()=>{for(const img of document.querySelectorAll('img'))if(img._tk)portraitOf(...img._tk).then(url=>{img.src=url;}).catch(()=>{});});
 /* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
 const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
 function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
@@ -647,7 +651,7 @@ function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip
   const item=el('div',{class:'trip-party-item'+(m.me?' me':'')},[face]);
   // 여행 만든 사람과 트립꾸 관리자는 다른 사람을 내보낼 수 있다(만든 사람은 제외)
   if(manage&&!m.me&&m.id!==ownerId){const kick=el('button',{type:'button',class:'trip-party-kick','aria-label':m.label+' 내보내기'},[document.createTextNode('내보내기')]);kick.addEventListener('click',()=>void A.removeMember?.(m.id));item.append(kick);}
-  portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{});return item;});
+  img._tk=[m.av,m.av.costume==='on'?kind:''];portraitOf(...img._tk).then(url=>{img.src=url;}).catch(()=>{});return item;});
  // 초대받은 사람은 스스로 나갈 수 있다(만든 사람은 홈에서 여행을 삭제)
  if(!owner&&A.getTrip?.()&&!A.isDemo?.()){const leave=el('button',{type:'button',class:'trip-party-leave'},[document.createTextNode('🚪 이 여행 나가기')]);leave.addEventListener('click',()=>void A.leaveTrip?.(leave));items.push(leave);}
  strip.replaceChildren(...items);}

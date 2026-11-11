@@ -952,7 +952,7 @@ function bindHandlers(){
   if(r){editCountries=editCountries.filter(c=>c!==r.dataset.removeCountry);paintEditCountries();}
   if(u){editCountries=[u.dataset.firstCountry,...editCountries.filter(c=>c!==u.dataset.firstCountry)];paintEditCountries();}});
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
- $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();});
+ $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();dispatchEvent(new CustomEvent('tripkku-mood',{detail:next}));});
  $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());

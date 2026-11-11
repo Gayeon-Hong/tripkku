@@ -64,7 +64,7 @@ export function buildAvatar(av,kind=''){
  const bangs=av.hair==='buzz'?'none':(av.bangs||'full');
  const eyes=[],face=[]; // 눈은 쪽마다 뜬 눈(open)·웃는 눈(up)·감은 눈(down)을 만들어 두고 표정에 따라 바꿔 보여 준다
  // 눈썹: 앞머리가 있으면 앞머리 위로 살짝 비쳐 보이게 앞쪽에 둔다.
- const browR=bangs==='full'?45.2:40.8,browZ=Math.sqrt(browR*browR-14*14-9*9),browM=mat(tint(av.hairColor,.3,'#000000'),{roughness:.6});
+ const brows=[];const browR=bangs==='full'?45.2:40.8,browZ=Math.sqrt(browR*browR-14*14-9*9),browM=mat(tint(av.hairColor,.3,'#000000'),{roughness:.6});
  for(const s of [-1,1]){const open=new THREE.Group(),up=mesh(G.torus(6,1.5,PI),ink,s*14,-6,38.3),down=rot(mesh(G.torus(6,1.5,PI),ink,s*14,-2,38.3),0,0,PI);head.add(open,up,down);eyes.push({open,up,down});
   if(av.eyes==='dot')open.add(mesh(G.sphere(4.4),ink,s*14,-4,37.4));
   else if(av.eyes==='smile')open.add(mesh(G.torus(6,1.5,PI),ink,s*14,-6,38.3));
@@ -73,7 +73,7 @@ export function buildAvatar(av,kind=''){
   head.add(rot(mesh(new THREE.CircleGeometry(6.5,20),mat('#ff7f96',{transparent:true,opacity:.5}),s*24,-14,31),0,s*.62,0));
   const brow=av.brows==='soft'?rot(mesh(G.torus(8,1.2,PI*.5),browM,s*14,2,browZ),0,0,PI*.25):av.brows==='flat'?mesh(G.box(12,2.2,1.6),browM,s*14,9,browZ)
    :av.brows==='up'?rot(mesh(G.box(12,2.4,1.6),browM,s*14,10,browZ),0,0,s*.28):av.brows==='thick'?mesh(G.box(13,4,2),browM,s*14,9.5,browZ):null;
-  if(brow){head.add(brow);face.push(brow);}}
+  if(brow){head.add(brow);face.push(brow);brow.userData.base=brow.rotation.z;brow.userData.side=s;brows.push(brow);}}
  const mouthSmile=rot(mesh(G.torus(4.6,1.2,PI),ink,0,-14,37.6),0,0,PI),mouthOpen=scl(mesh(G.sphere(4.8),'#b8405a',0,-17,36.4),1,.9,.4),mouthO=scl(mesh(G.sphere(3.8),'#8f2f45',0,-16,36.9),1,1.2,.4);head.add(mouthSmile,mouthOpen,mouthO);
  for(const m of [...eyes.flatMap(e=>[...e.open.children,e.up,e.down]),mouthSmile,mouthOpen,mouthO,...face])m.castShadow=false;
  // 머리 모양
@@ -100,7 +100,7 @@ export function buildAvatar(av,kind=''){
  else if(av.acc==='ribbon'&&!C?.hat)head.add(rot(mesh(G.cone(8,15,14),'#ff7fa1',19,37,10),0,0,-PI/2),rot(mesh(G.cone(8,15,14),'#ff7fa1',35,37,10),0,0,PI/2),mesh(G.sphere(4.5),'#e85a84',27,37,10));
  // 키: 아이·아기는 몸을 작게, 머리는 상대적으로 크게
  const k=av.size==='baby'?.62:av.size==='kid'?.8:1,hk=av.size==='baby'?1.2:av.size==='kid'?1.08:1;head.scale.multiplyScalar(hk);root.scale.setScalar(k);
- root.userData={legs,arms,head,eyes,mouthSmile,mouthOpen,mouthO,fork,camera,tag:(108+44*hk)*k+18+(C?.hat?16*k:0)};
+ root.userData={legs,arms,head,eyes,brows,mouthSmile,mouthOpen,mouthO,fork,camera,tag:(108+44*hk)*k+18+(C?.hat?16*k:0)};
  return root;}
 
 /** state: {walking, act: ''|cheer|pose|wave|eat|relax|sleep, mood(표정, 없으면 행동에 맞춰 고름), t, seed} */
@@ -114,17 +114,18 @@ export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.a
   else if(act==='photo'){up=s===1?.05:.35;fwd=-1.55;}               // 카메라를 눈앞에
   else if(act==='point'&&s===1){up=.15;fwd=-2.3+Math.sin(t*2+sd)*.08;} // 저기 봐!
   else if(act==='look'&&s===1){up=.5;fwd=-2.55;}
-  else if(act==='flag'&&s===-1){up=2.2+Math.sin(t*6+sd)*.22;fwd=-.35;}          // 국기를 높이 들고 흔들기
+  else if(act==='flag'&&s===-1){up=2.5+Math.sin(t*6+sd)*.12;fwd=-.3;}          // 국기를 높이 들고 흔들기
   else if(act==='flag'){up=.6+Math.sin(t*7+sd)*.25;fwd=-.3;}                        // 손 그늘 만들고 올려다보기
   a.rotation.set(fwd,0,s*up);});
  // 표정: normal(가끔 깜빡임) · happy(웃는 눈+벌린 입) · wow(커진 눈+오 입) · yum(오물오물) · relaxed · sleepy · wink · smile
  const mood=o.mood||({cheer:'happy',pose:'wink',eat:'yum',relax:'relaxed',sleep:'sleepy',wave:'smile'})[act]||'normal',blink=mood==='normal'&&((t+sd*.37)%3.4)<.13;
  const eye=(e,kind,k)=>{e.open.visible=kind==='open';e.up.visible=kind==='up';e.down.visible=kind==='down';e.open.scale.setScalar(k);};
- const L=mood==='happy'||mood==='yum'||mood==='wink'?'up':mood==='relaxed'||mood==='sleepy'||blink?'down':'open',R=mood==='wink'?'open':L,big=mood==='wow'?1.2:1;
+ const L=mood==='happy'||mood==='yum'||mood==='wink'||mood==='love'?'up':mood==='relaxed'||mood==='sleepy'||blink?'down':'open',R=mood==='wink'?'open':L,big=mood==='wow'?1.2:mood==='angry'?.85:1;
+ for(const b of u.brows||[])b.rotation.z=b.userData.base+(mood==='angry'?-b.userData.side*.45:mood==='sleepy'?b.userData.side*.12:0); // 화나면 눈썹이 안쪽으로
  eye(u.eyes[0],L,big);eye(u.eyes[1],R,big);
- const mouth=mood==='wow'||mood==='sleepy'?'o':mood==='happy'||mood==='wink'||mood==='smile'?'open':mood==='yum'?(Math.sin(t*7+sd)>0?'o':'smile'):'smile';
+ const mouth=mood==='wow'||mood==='sleepy'||mood==='angry'?'o':mood==='happy'||mood==='wink'||mood==='smile'||mood==='love'?'open':mood==='yum'?(Math.sin(t*7+sd)>0?'o':'smile'):'smile';
  u.mouthOpen.visible=mouth==='open';u.mouthO.visible=mouth==='o';u.mouthSmile.visible=mouth==='smile';
- u.head.rotation.z=act==='sleep'?.24:act==='relax'?Math.sin(t*2+sd)*.07:0;u.head.rotation.x=act==='sleep'?.12:act==='look'||act==='point'?-.32:act==='eat'?.1:0;}
+ u.head.rotation.z=mood==='love'?.14:mood==='sleepy'&&!act?.18:act==='sleep'?.24:act==='relax'?Math.sin(t*2+sd)*.07:0;u.head.rotation.x=act==='sleep'?.12:act==='look'||act==='point'?-.32:act==='eat'?.1:0;}
 
 /* ---------- 장소 소품: 바닥 y=0 기준, 높이 약 120~180 ---------- */
 const steam=(x,y,z)=>[0,1,2].map(i=>mesh(G.sphere(9-i*2),mat('#ffffff',{transparent:true,opacity:.75}),x+i*6,y+i*16,z));
@@ -526,9 +527,9 @@ export function createStage(canvas){
  const stools=[];let pax=[];
  // 나라에 도착하면 대표(첫 번째 사람)가 들고 흔드는 국기
  const flagTex=new Map();
- const flagStick=(()=>{const g=group(mesh(G.cyl(1.6,1.6,96,8),'#8a5a3c',0,-70,0),mesh(G.sphere(3.4),'#f0c75e',0,-119,0));
-  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(60,40,8,1),new THREE.MeshStandardMaterial({color:'#ffffff',side:THREE.DoubleSide,roughness:.8}));cloth.position.set(-31,-96,0);cloth.rotation.z=PI;
-  g.add(cloth);g.userData.cloth=cloth;g.visible=false;g.scale.setScalar(1.6);return g;})();
+ const flagStick=(()=>{const g=group(mesh(G.cyl(1.6,1.6,110,8),'#8a5a3c',0,-58,0),mesh(G.sphere(3.4),'#f0c75e',0,-114,0));
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(60,40,8,1),new THREE.MeshStandardMaterial({color:'#ffffff',side:THREE.DoubleSide,roughness:.8}));cloth.position.set(-31,-90,0);cloth.rotation.z=PI;
+  g.add(cloth);g.userData.cloth=cloth;g.visible=false;g.scale.setScalar(1.35);return g;})();
  function flagTexture(fl){const key=fl.code+(fl.img?'1':'0');if(flagTex.has(key))return flagTex.get(key);const cv=document.createElement('canvas');cv.width=192;cv.height=128;const c=cv.getContext('2d');
   if(fl.img){try{c.drawImage(fl.img,0,0,192,128);}catch{}}else{c.fillStyle='#eaf2eb';c.fillRect(0,0,192,128);c.fillStyle='#285c4b';c.font='900 64px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(fl.code,96,68);}
   const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;flagTex.set(key,t);return t;}
@@ -605,7 +606,9 @@ export function createStage(canvas){
     flagStick.visible=true;const cl=flagStick.userData.cloth;cl.material.map=flagTexture(f.party.flag);cl.material.needsUpdate=!cl.material.userData.k||cl.material.userData.k!==f.party.flag.code;cl.material.userData.k=f.party.flag.code;
     const pos=cl.geometry.attributes.position;for(let i=0;i<pos.count;i++){const vx=pos.getX(i);pos.setZ(i,Math.sin(f.t*9-vx*.12)*(vx+30)*.12);}pos.needsUpdate=true;}
    h.position.set(x,0,z);h.rotation.y=ry;
-   poseAvatar(h.userData.char,{walking:f.party.walking||(w>.05&&w<.9),act,mood:f.party.mood,t:f.t,seed:k*1.7,sit});});
+   poseAvatar(h.userData.char,{walking:f.party.walking||(w>.05&&w<.9),act,mood:f.party.mood,t:f.t,seed:k*1.7,sit});
+   // 깃대는 팔 각도와 상관없이 거의 똑바로 세우고 좌우로 흔든다 → 국기가 바로 보인다
+   if(k===0&&flagStick.visible){const arm=flagStick.parent;flagStick.rotation.set(-arm.rotation.x,0,-PI-arm.rotation.z+Math.sin(f.t*6)*.2);}});
   // 탈것(먼 이동)
   for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){const lift=f.vehicle.lift??1; // 이륙·착륙: 낮게 작게 → 높이 크게
    v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?1+.9*lift:1.1);}}
@@ -634,8 +637,8 @@ export function createPortraits(size=176){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.setSize(size,size,false);
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,10,2000);lights(scene);
- return {render(av,kind=''){const c=buildAvatar(av,kind),k=c.scale.y;camera.position.set(0,100*k+8,250*k+20);camera.lookAt(0,96*k,0); // 키에 맞춰 머리와 윗몸이 들어오게
-  c.rotation.y=.28;poseAvatar(c,{act:'wave',mood:'smile',t:.16});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;},
+ return {render(av,kind='',mood='smile'){const c=buildAvatar(av,kind),k=c.scale.y;camera.position.set(0,100*k+8,250*k+20);camera.lookAt(0,96*k,0); // 키에 맞춰 머리와 윗몸이 들어오게
+  c.rotation.y=.28;poseAvatar(c,{act:mood==='sleepy'||mood==='angry'?'':'wave',mood,t:.16});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;},
   /** 장소 소품 한 개를 작은 그림으로(일정표 카드용). 소품 크기에 맞춰 카메라를 잡는다. */
   prop(key){const p=buildProp(key),box=new THREE.Box3().setFromObject(p),c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3()),r=Math.max(sz.x,sz.y,sz.z*.8)*.62+8;
    p.rotation.y=-.45;camera.position.set(c.x+r*.9,c.y+r*.75,c.z+r*3.4);camera.lookAt(c.x,c.y,c.z);scene.add(p);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(p);freeTree(p);return url;},
