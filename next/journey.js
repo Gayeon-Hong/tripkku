@@ -438,7 +438,7 @@ function tile(z,x,y){const k=z+'/'+x+'/'+y;let e=TILES.get(k);
   img.src=TILE_URL.replace('{z}',z).replace('{x}',x).replace('{y}',y);TILES.set(k,e);}
  return e;}
 // 기울어진 카메라에 보이는 바닥 범위(좌우 XR, 뒤쪽 FAR, 앞쪽 NEAR)를 덮는 타일들
-const XR=720,FAR=1500,NEAR=520; // 카메라가 장소 주변을 돌 때도 지도가 비지 않게 넉넉히
+const XR=480,FAR=1380,NEAR=440;
 function groundTiles(cam,fn){const zi=clamp(Math.floor(cam.z),0,19),k=Math.pow(2,cam.z-zi),n=2**zi,px=cam.cx*256*n,py=cam.cy*256*n;
  for(let ty=Math.floor((py-FAR/k)/256);ty<=Math.floor((py+NEAR/k)/256);ty++){if(ty<0||ty>=n)continue;
   for(let tx=Math.floor((px-XR/k)/256);tx<=Math.floor((px+XR/k)/256);tx++)fn(zi,((tx%n)+n)%n,ty,(tx*256-px)*k,(ty*256-py)*k,256*k,zi+'/'+tx+'/'+ty);}}
@@ -476,7 +476,7 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
  return {t,cam,seg,p,cur,stop,moving,here,tiles,dolly:mid&&seg.plane?1+.22*(cam.lift??1):1-.17*edge,fade:cam.fade,
   stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state===2};}),
   legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
-  party:{visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood,lay:seg.type==='dwell'?{kind:stop.react.act,w:clamp(Math.min(p/.16,(1-p)/.1),0,1),selfie:stop.react.act==='pose'&&p>.37&&p<.72}:null},
+  party:{flag:seg.type==='dwell'&&stop.flag&&p*seg.dur<3.2?{code:stop.flag,img:flagImage(stop.flag)?.ok?flagImage(stop.flag).img:null,name:countryName(stop.flag)}:null,visible:!mid,scale:seg.type==='end'?1:.62,front:seg.type==='end'?0:moving&&!seg.jump?Math.max(0,1-p*4,(p-.75)*4):1,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood,lay:seg.type==='dwell'?{kind:stop.react.act,w:clamp(Math.min(p/.16,(1-p)/.1),0,1),selfie:stop.react.act==='pose'&&p>.37&&p<.72}:null},
   camMove:seg.type==='dwell'?camMoveAt(stop.react.act,p):null,xmas:seg.type==='dwell'&&XMAS_KEYS.has(stop.react.key)&&santaToday(cur,stop.title)?Math.max(.001,p):0,
   vehicle:mid?{kind:seg.plane?'plane':S[seg.to].ground||'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
   sky:(()=>{let h=stop.hour??12;if(moving){const A=S[seg.from],B=S[seg.to];let hb=B.hour??h,ha=A.hour??h;h=B.date!==A.date?(p<.35?ha+p/.35*2:hb-(1-p)/.65*1.5):ha+(hb-ha)*p;}return {...skyAt(h,(moving&&p<.5?S[seg.from]:S[seg.to]||stop).sun||stop.sun),weather:tl.weather?.[stop.date]||''};})(),
@@ -553,7 +553,6 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
    if(dwell&&stop.react.say&&p>.12&&p<.92){const who=stage.heads()[f.cur%n]||stage.heads().find(Boolean);if(who)pill(ctx,stop.react.say,who.x+(who.x>W/2?-96:96),who.y-44,{h:44,pad:32,line:'#d9dee6'});}
    if(dwell&&tl.group==='couple'&&n>=2){const a=stage.heads()[0],b=stage.heads()[1];if(a&&b){const u=(t*.6)%1;ctx.globalAlpha=1-u;ctx.fillStyle='#ff5a7a';ctx.font='40px '+FONT;ctx.textAlign='center';ctx.fillText('♥',(a.x+b.x)/2,Math.min(a.y,b.y)-84-u*44);ctx.globalAlpha=1;}}
    if(dwell&&stop.react.act==='pose'&&p>.42&&p<.5){ctx.fillStyle='rgba(255,255,255,'+(1-Math.abs(p-.46)/.04).toFixed(2)+')';ctx.fillRect(0,0,W,H);}}}
- if(dwell&&stop.flag)drawFlag(ctx,stop.flag,p,seg.dur);
  if(f.fade>0){ctx.fillStyle='rgba(244,248,251,'+clamp(f.fade,0,1).toFixed(2)+')';ctx.fillRect(0,0,W,H);} // 먼 이동의 화면 전환
  // 제목·날짜
  ctx.fillStyle=night?'rgba(36,46,41,.94)':'rgba(255,255,255,.94)';fillRR(ctx,24,24,W-48,104,26);
@@ -587,7 +586,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_ui1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_flag3'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */

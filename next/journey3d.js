@@ -113,7 +113,9 @@ export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.a
   else if(act==='eat'){up=.25;fwd=-.55;}
   else if(act==='photo'){up=s===1?.05:.35;fwd=-1.55;}               // 카메라를 눈앞에
   else if(act==='point'&&s===1){up=.15;fwd=-2.3+Math.sin(t*2+sd)*.08;} // 저기 봐!
-  else if(act==='look'&&s===1){up=.5;fwd=-2.55;}                        // 손 그늘 만들고 올려다보기
+  else if(act==='look'&&s===1){up=.5;fwd=-2.55;}
+  else if(act==='flag'&&s===-1){up=2.2+Math.sin(t*6+sd)*.22;fwd=-.35;}          // 국기를 높이 들고 흔들기
+  else if(act==='flag'){up=.6+Math.sin(t*7+sd)*.25;fwd=-.3;}                        // 손 그늘 만들고 올려다보기
   a.rotation.set(fwd,0,s*up);});
  // 표정: normal(가끔 깜빡임) · happy(웃는 눈+벌린 입) · wow(커진 눈+오 입) · yum(오물오물) · relaxed · sleepy · wink · smile
  const mood=o.mood||({cheer:'happy',pose:'wink',eat:'yum',relax:'relaxed',sleep:'sleepy',wave:'smile'})[act]||'normal',blink=mood==='normal'&&((t+sd*.37)%3.4)<.13;
@@ -522,6 +524,14 @@ export function createStage(canvas){
  const stopMat=[mat('#ffffff'),mat('#f6c945'),mat('#f6c945')];
  const table=group(mesh(G.cyl(74,74,6,36),'#f4ece0',0,40,0),mesh(G.cyl(76,76,2,36),'#e9dccb',0,37,0),mesh(G.cyl(6,8,38,10),'#8a5a3c',0,19,0),mesh(G.cyl(26,26,3,20),'#8a5a3c',0,1.5,0));table.visible=false;scene.add(table);
  const stools=[];let pax=[];
+ // 나라에 도착하면 대표(첫 번째 사람)가 들고 흔드는 국기
+ const flagTex=new Map();
+ const flagStick=(()=>{const g=group(mesh(G.cyl(1.6,1.6,96,8),'#8a5a3c',0,-70,0),mesh(G.sphere(3.4),'#f0c75e',0,-119,0));
+  const cloth=new THREE.Mesh(new THREE.PlaneGeometry(60,40,8,1),new THREE.MeshStandardMaterial({color:'#ffffff',side:THREE.DoubleSide,roughness:.8}));cloth.position.set(-31,-96,0);cloth.rotation.z=PI;
+  g.add(cloth);g.userData.cloth=cloth;g.visible=false;g.scale.setScalar(1.6);return g;})();
+ function flagTexture(fl){const key=fl.code+(fl.img?'1':'0');if(flagTex.has(key))return flagTex.get(key);const cv=document.createElement('canvas');cv.width=192;cv.height=128;const c=cv.getContext('2d');
+  if(fl.img){try{c.drawImage(fl.img,0,0,192,128);}catch{}}else{c.fillStyle='#eaf2eb';c.fillRect(0,0,192,128);c.fillStyle='#285c4b';c.font='900 64px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(fl.code,96,68);}
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;flagTex.set(key,t);return t;}
  // 탈것마다 창문 자리: [첫 창 x, 창 간격, 머리 높이, 옆으로 내민 거리, 창 수, 크기]
  const SEATS={plane:[44,-20,4,18,6,.17],train:[20,-22,40,15,4,.16],bus:[36,-22,47,19.5,5,.17]};
  // 하늘을 나는 산타 썰매(크리스마스 장소에 머무는 동안)
@@ -584,12 +594,16 @@ export function createStage(canvas){
    return null;};
   const show=kind==='eat'&&w>.02;table.visible=show;if(show)table.position.set(cs.x,0,cs.z-60);
   stools.forEach((st,k)=>{st.visible=false;});
+  flagStick.visible=false;
   chars.forEach((h,k)=>{h.visible=f.party.visible;if(!h.visible)return;const want=h.userData.variants[f.party.costume||'']||h.userData.variants[''];
    if(want!==h.userData.char||!want.visible){for(const c of Object.values(h.userData.variants))c.visible=c===want;h.userData.char=want;}
    h.scale.setScalar(PS);let x=(k-(n-1)/2)*sp*PS,z=((k%2)*(n>4?60:24)-12)*PS+front,ry=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0,act=f.party.act,sit=false;
    const sp2=w>0?spot(k):null;
    if(sp2){const e=w*w*(3-2*w);x+=(sp2.x-x)*e;z+=(sp2.z-z)*e;ry+=(sp2.ry-ry)*e;if(w>.9){act=sp2.act;sit=!!sp2.sit;}
     if(sit){const st=stools[k];st.visible=true;st.position.set(x,0,z);st.scale.setScalar(PS);}}
+   if(k===0&&f.party.flag&&!f.party.walking){act='flag';const arm=h.userData.char.userData.arms[0];if(flagStick.parent!==arm){flagStick.parent?.remove(flagStick);arm.add(flagStick);}
+    flagStick.visible=true;const cl=flagStick.userData.cloth;cl.material.map=flagTexture(f.party.flag);cl.material.needsUpdate=!cl.material.userData.k||cl.material.userData.k!==f.party.flag.code;cl.material.userData.k=f.party.flag.code;
+    const pos=cl.geometry.attributes.position;for(let i=0;i<pos.count;i++){const vx=pos.getX(i);pos.setZ(i,Math.sin(f.t*9-vx*.12)*(vx+30)*.12);}pos.needsUpdate=true;}
    h.position.set(x,0,z);h.rotation.y=ry;
    poseAvatar(h.userData.char,{walking:f.party.walking||(w>.05&&w<.9),act,mood:f.party.mood,t:f.t,seed:k*1.7,sit});});
   // 탈것(먼 이동)
