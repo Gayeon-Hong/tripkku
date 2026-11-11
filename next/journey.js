@@ -486,8 +486,8 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
 const FLAGS=new Map();
 function flagImage(code){let e=FLAGS.get(code);if(!e&&typeof Image!=='undefined'){const img=new Image();img.crossOrigin='anonymous';e={img,ok:false};img.onload=()=>{e.ok=true;};img.src='https://purecatamphetamine.github.io/country-flag-icons/3x2/'+code+'.svg';FLAGS.set(code,e);}return e;}
 function countryName(code){try{return new Intl.DisplayNames(['ko'],{type:'region'}).of(code)||code;}catch{return code;}}
-function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.5;if(sec>show)return;const k=Math.min(1,sec/.22),out=Math.min(1,(show-sec)/.25),s=(.6+.4*ease(k))*(.9+.1*out),e=flagImage(code);
- ctx.save();ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,330);ctx.scale(s,s);
+function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.3;if(sec>show)return;const k=Math.min(1,sec/.22),out=Math.min(1,(show-sec)/.25),s=(.6+.4*ease(k))*(.9+.1*out),e=flagImage(code);
+ ctx.save();ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,262);ctx.scale(s*.55,s*.55);
  ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(20,34,28,.28)';ctx.shadowBlur=30;fillRR(ctx,-170,-150,340,300,34);ctx.shadowBlur=0;
  if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.clip();ctx.drawImage(e.img,-120,-116,240,160);ctx.restore();ctx.strokeStyle='rgba(36,61,52,.18)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.stroke();}
  else{ctx.fillStyle='#eaf2eb';fillRR(ctx,-120,-116,240,160,16);ctx.fillStyle='#285c4b';ctx.font='900 64px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,0,-36);}
