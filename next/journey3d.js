@@ -118,26 +118,133 @@ export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.a
 
 /* ---------- 장소 소품: 바닥 y=0 기준, 높이 약 120~180 ---------- */
 const steam=(x,y,z)=>[0,1,2].map(i=>mesh(G.sphere(9-i*2),mat('#ffffff',{transparent:true,opacity:.75}),x+i*6,y+i*16,z));
+const glass=(c,op=.45)=>mat(c,{transparent:true,opacity:op,roughness:.15});
+const half=(r,h,s=24)=>new THREE.CylinderGeometry(r,r,h,s,1,false,0,PI);
+// 접시 위 음식: 접시 + 포크·나이프를 깔고 그 위에 음식을 올린다.
+const plate=(...food)=>group(mesh(G.cyl(58,50,7,40),'#ffffff',0,4,0),rot(mesh(G.torus(54,3.5),'#e9eef3',0,8,0),PI/2),
+ mesh(G.box(5,3,62),'#c9cfd9',-70,4,0),...[-4,0,4].map(x=>mesh(G.box(1.6,3,14),'#c9cfd9',-70+x,4,-36)),mesh(G.box(7,3,66),'#c9cfd9',70,4,0),...food);
+const flat=(r,c,x,y,z,sx,sy,sz)=>scl(mesh(G.sphere(r,22,14),c,x,y,z),sx,sy,sz);
 const PROPS={
+ /* 크리스마스 */
  tree:()=>{const g=group(mesh(G.cyl(9,11,26),'#8a5a3c',0,13,0),mesh(G.cone(58,70),'#2f9e63',0,48,0),mesh(G.cone(46,60),'#37b071',0,88,0),mesh(G.cone(32,50),'#45c283',0,124,0),mesh(new THREE.OctahedronGeometry(13),'#ffd84a',0,160,0,{emissive:'#ffb400',emissiveIntensity:.7}));
-  ['#ff5a6e','#ffd84a','#6fb8ff','#ffffff','#ff5a6e','#6fb8ff','#ffd84a','#ffffff','#ff5a6e'].forEach((c,i)=>{const lvl=i%3,r=[40,30,19][lvl],a=i*2.3;g.add(mesh(G.sphere(5.5),c,Math.sin(a)*r,[40,82,118][lvl],Math.cos(a)*r,{emissive:c,emissiveIntensity:.4}));});return g;},
- castle:()=>group(mesh(G.box(76,70,50),'#ece5d3',0,35,0),mesh(G.cyl(17,17,104),'#f3eddc',-48,52,0),mesh(G.cyl(17,17,104),'#f3eddc',48,52,0),mesh(G.cone(23,38),'#5b8def',-48,123,0),mesh(G.cone(23,38),'#5b8def',48,123,0),
-  mesh(G.cyl(15,15,56),'#f3eddc',0,98,0),mesh(G.cone(21,36),'#e85a6e',0,144,0),mesh(G.box(20,32,4),'#8a5a3c',0,16,26),mesh(G.box(10,12,3),'#6f8fc0',-48,70,16),mesh(G.box(10,12,3),'#6f8fc0',48,70,16)),
+  ['#ff5a6e','#ffd84a','#6fb8ff','#ffffff','#ff5a6e','#6fb8ff','#ffd84a','#ffffff','#ff5a6e'].forEach((c,i)=>{const lvl=i%3,r=[40,30,19][lvl],a=i*2.3;g.add(mesh(G.sphere(5.5),c,Math.sin(a)*r,[40,82,118][lvl],Math.cos(a)*r,{emissive:c,emissiveIntensity:.4}));});
+  g.add(mesh(G.box(26,22,26),'#ff5a6e',-52,11,30),mesh(G.box(28,4,6),'#ffd84a',-52,22,30),mesh(G.box(20,18,20),'#5b8def',48,9,34));return g;},
+ santa:()=>group(mesh(G.cyl(30,44,70,28),'#e8323f',0,35,0),mesh(G.cyl(45,45,9,28),'#ffffff',0,4,0),mesh(G.cyl(31,31,7,28),'#2a2f3c',0,46,0),mesh(G.box(12,10,4),'#f0c75e',0,46,31),
+  mesh(G.sphere(28),'#ffd9c2',0,96,0),flat(24,'#ffffff',0,82,10,1,1.1,.8),flat(9,'#ffffff',0,92,26,1.4,.6,.6),mesh(G.sphere(5),'#ff8f8f',0,98,27),mesh(G.sphere(3),'#2a2f3c',-10,104,24),mesh(G.sphere(3),'#2a2f3c',10,104,24),
+  rot(mesh(G.cone(27,48),'#e8323f',6,136,0),0,0,-.3),mesh(G.torus(26,6),'#ffffff',0,118,0),mesh(G.sphere(8),'#ffffff',20,156,0),flat(34,'#a8794f',-52,40,-12,1,1.15,1),mesh(G.torus(9,4),'#7a5434',-52,80,-12)),
+ stall:()=>{const g=group(mesh(G.box(120,46,50),'#a8794f',0,23,0),mesh(G.box(126,6,56),'#8a5a3c',0,48,0),...[-56,56].map(x=>mesh(G.cyl(3.5,3.5,100,8),'#8a5a3c',x,98,24)),
+  ...[-56,56].map(x=>mesh(G.cyl(3.5,3.5,100,8),'#8a5a3c',x,98,-24)));
+  for(let i=0;i<6;i++)g.add(rot(mesh(G.box(22,4,64),i%2?'#ffffff':'#e8323f',-55+i*22,150,0),.35,0,0));
+  ['#ffd84a','#ff5a6e','#8fd0b8','#f2a07a','#b9a4e6'].forEach((c,i)=>g.add(mesh(G.sphere(9),c,-40+i*20,58,10)));
+  for(let i=0;i<9;i++)g.add(mesh(G.sphere(3.4),'#ffe68a',-56+i*14,138,30,{emissive:'#ffd84a',emissiveIntensity:.9}));return g;},
+ snowman:()=>group(mesh(G.sphere(40),'#ffffff',0,38,0),mesh(G.sphere(30),'#ffffff',0,96,0),mesh(G.sphere(22),'#ffffff',0,140,0),rot(mesh(G.cone(4.5,22),'#ff8a3d',0,140,30),PI/2),
+  mesh(G.sphere(3.5),'#2a2f3c',-8,148,19),mesh(G.sphere(3.5),'#2a2f3c',8,148,19),rot(mesh(G.torus(22,6),'#e8323f',0,120,0),PI/2),mesh(G.cyl(18,18,26),'#2a2f3c',0,168,0),mesh(G.cyl(27,27,3),'#2a2f3c',0,156,0),
+  ...[0,1,2].map(i=>mesh(G.sphere(4),'#2a2f3c',0,108-i*14,29))),
+ gluhwein:()=>group(mesh(G.cyl(32,30,64),'#c43a4a',0,32,0),mesh(G.cyl(28,28,2),'#7a1d2e',0,63,0),mesh(G.torus(15,5),'#c43a4a',36,34,0),mesh(new THREE.OctahedronGeometry(9),'#ffd84a',0,34,31),
+  ...steam(-6,82,0),mesh(G.cyl(3,3,40,8),'#8a5a3c',14,74,4)),
+ /* 먹고 마시기 */
  bowl:()=>group(mesh(G.cyl(22,26,10),'#e8604a',0,5,0),mesh(new THREE.SphereGeometry(50,28,14,0,PI*2,PI/2,PI/2),mat('#ff7a59',{side:THREE.DoubleSide}),0,58,0),rot(mesh(G.torus(50,4),'#ffffff',0,58,0),PI/2),mesh(G.cyl(45,45,6),'#ffe2a8',0,55,0),
   scl(mesh(G.sphere(13),'#ffffff',-16,60,6),1,.45,1),scl(mesh(G.sphere(6),'#ffb400',-16,63,6),1,.6,1),mesh(G.box(22,5,10),'#6fbf73',16,60,-10),rot(mesh(G.cyl(1.8,1.8,110,8),'#8a5a3c',26,92,0),0,0,-.7),rot(mesh(G.cyl(1.8,1.8,110,8),'#8a5a3c',34,90,8),0,0,-.7)),
+ dish:()=>group(mesh(G.cyl(22,26,10),'#f1ece4',0,5,0),mesh(new THREE.SphereGeometry(48,28,14,0,PI*2,PI/2,PI/2),mat('#f6f1e8',{side:THREE.DoubleSide}),0,56,0),rot(mesh(G.torus(48,4),'#5b8def',0,56,0),PI/2),
+  flat(42,'#ffffff',0,56,0,1,.3,1),...steam(-10,70,0),rot(mesh(G.capsule(3,70),'#c9cfd9',38,84,0),0,0,-.6),flat(9,'#c9cfd9',16,60,0,1,.4,1.4)),
+ steak:()=>plate(flat(34,'#7a3b22',0,18,0,1.25,.36,.95),...[-14,0,14].map(x=>rot(mesh(G.box(4,2,40),'#4a2414',x,30,0),0,.5,0)),mesh(G.sphere(8),'#6fbf73',-34,16,18),mesh(G.sphere(7),'#ff8a3d',30,14,24),
+  ...[0,1,2,3].map(i=>rot(mesh(G.box(6,6,26),'#f0c75e',22+i*6,12,-26),0,i*.4,0))),
+ pasta:()=>plate(...Array.from({length:12},(_,i)=>rot(mesh(G.torus(12+i%3*7,2.6),'#f4d27a',(i%4-1.5)*10,12+Math.floor(i/4)*5,(i%3-1)*8),PI/2+(i%3)*.2,0,i)),flat(18,'#d9402e',0,26,0,1,.45,1),
+  mesh(G.sphere(6),'#d9402e',-12,26,10),mesh(G.sphere(6),'#d9402e',12,25,-8),flat(6,'#4fae7a',4,32,4,1.4,.4,1)),
+ pizza:()=>{const g=group(mesh(G.cyl(60,60,7,40),'#e9b864',0,4,0),mesh(G.cyl(53,53,3,40),'#e04a32',0,8,0),mesh(G.cyl(50,50,2,40),'#ffe08a',0,10,0));
+  [[-24,-14],[16,-28],[26,16],[-10,24],[-30,14],[6,0],[34,-6]].forEach(([x,z])=>g.add(mesh(G.cyl(8,8,3),'#c2352a',x,12,z)));[[-4,-30],[30,30],[-34,-4]].forEach(([x,z])=>g.add(flat(5,'#4fae7a',x,13,z,1.4,.4,1)));return g;},
+ burger:()=>group(mesh(G.cyl(40,36,12),'#e0a050',0,6,0),mesh(G.cyl(42,42,12),'#6b3a22',0,19,0),rot(mesh(G.box(70,3,70),'#ffd040',0,27,0),0,.78,0),mesh(G.cyl(44,44,4),'#6fbf73',0,31,0),
+  mesh(G.cyl(38,38,5),'#e8423a',0,36,0),scl(mesh(new THREE.SphereGeometry(42,28,14,0,PI*2,0,PI/2),'#e9a650'),1,.75,1),
+  ...[[-14,58,12],[10,62,4],[0,56,-20],[20,54,16],[-22,52,-10]].map(([x,y,z])=>flat(3,'#fff4c2',x,y+4,z,1.6,.6,1))),
+ sushi:()=>{const g=group(mesh(G.box(150,10,64),'#c9945a',0,5,0),...[-56,56].map(x=>mesh(G.box(12,10,60),'#a8794f',x,-2,0)));
+  [['#ff8a5c',-40],['#e8323f',0],['#ffd040',40]].forEach(([c,x])=>{g.add(scl(mesh(G.capsule(14,18),'#ffffff',x,22,0),1,.8,1),rot(scl(mesh(G.capsule(13,20),c,x,34,0),1,.35,1.05),0,0,PI/2));
+   if(c==='#ffd040')g.add(mesh(G.box(10,24,32),'#203a2a',x,26,0));});
+  g.add(flat(10,'#6fbf73',62,14,22,1,.6,1),mesh(G.cyl(9,9,10),'#ffffff',-62,14,24));return g;},
+ curry:()=>plate(flat(30,'#ffffff',-16,16,-4,1,.6,1),flat(34,'#d98b2a',18,13,6,1.1,.3,1),...[[12,6],[26,16],[18,-6]].map(([x,z])=>mesh(G.box(8,8,8),x%2?'#ff8a3d':'#f4d27a',x,20,z))),
+ sausage:()=>plate(...[-14,14].map(z=>rot(mesh(G.capsule(10,58),'#b3502c',0,18,z),0,0,PI/2)),...[-20,0,20].map(x=>mesh(G.sphere(3.5),'#ffd040',x,28,-14)),flat(16,'#f0d090',-34,14,26,1.3,.35,1),
+  rot(mesh(G.torus(14,6),'#a8693a',38,16,26),PI/2)),
+ pretzel:()=>group(mesh(G.cyl(46,46,6),'#c9945a',0,3,0),rot(mesh(G.torus(34,9),'#a0582a',-14,52,0),0,0,0),rot(mesh(G.torus(34,9),'#a0582a',14,52,0),0,0,0),rot(mesh(G.capsule(9,62),'#a0582a',0,40,0),0,0,.7),
+  rot(mesh(G.capsule(9,62),'#a0582a',0,40,0),0,0,-.7),...Array.from({length:8},(_,i)=>mesh(G.sphere(2.2),'#ffffff',Math.cos(i)*36,56+Math.sin(i*2)*24,9))),
+ schnitzel:()=>plate(flat(36,'#d9a04a',0,14,0,1.35,.22,1),...[[-12,-6],[10,8],[22,-10]].map(([x,z])=>mesh(G.sphere(5),'#c08030',x,22,z)),rot(mesh(half(12,8),'#ffe04a',30,20,24),0,0,PI/2),
+  flat(10,'#6fbf73',-34,14,24,1,.5,1)),
+ dumpling:()=>{const g=group(mesh(G.cyl(58,54,34,28),'#c9945a',0,17,0),mesh(G.cyl(52,52,2,28),'#f4ead2',0,34,0));
+  [[-20,-18],[20,-18],[-20,18],[20,18],[0,0]].forEach(([x,z])=>g.add(flat(16,'#fffaf0',x,42,z,1,.75,1),mesh(G.cone(6,10,8),'#fffaf0',x,54,z)));return g;},
+ taco:()=>group(...[-24,24].map(x=>group(rot(mesh(half(30,26,24),'#f0c050',x,30,0),0,0,PI/2),mesh(G.sphere(9),'#6fbf73',x,52,-6),mesh(G.sphere(8),'#e8423a',x+6,50,6),mesh(G.sphere(7),'#7a3b22',x-6,50,4))),
+  mesh(G.box(120,6,60),'#ffffff',0,3,0)),
+ fishchips:()=>group(mesh(G.box(92,40,56),'#e8e2d4',0,20,0),mesh(G.box(94,6,58),'#5b8def',0,40,0),...[-20,10].map(x=>rot(scl(mesh(G.capsule(14,40),'#e0a050',x,52,-6),1,.6,1),0,0,PI/2+.2)),
+  ...Array.from({length:7},(_,i)=>rot(mesh(G.box(7,46,7),'#ffd040',-30+i*10,58,16),0,0,(i%3-1)*.2))),
+ paella:()=>{const g=group(mesh(G.cyl(64,58,12,36),'#3a3f4b',0,6,0),...[-1,1].map(s=>rot(mesh(G.torus(9,3),'#3a3f4b',s*70,10,0),PI/2)),mesh(G.cyl(58,58,3,36),'#f2c03a',0,13,0));
+  [[-20,-20],[24,-14],[-6,26],[28,24]].forEach(([x,z])=>g.add(rot(mesh(G.torus(9,4,PI*1.4),'#ff7a59',x,16,z),PI/2,0,x)));g.add(rot(mesh(half(12,8),'#ffe04a',-30,18,10),0,0,PI/2),mesh(G.sphere(5),'#6fbf73',0,16,-30));return g;},
+ kebab:()=>group(mesh(G.cyl(40,40,6),'#c9cfd9',0,3,0),mesh(G.cyl(2.4,2.4,190,8),'#c9cfd9',0,95,0),mesh(G.cyl(22,34,120,18),'#9a5a32',0,78,0),...[0,1,2,3].map(i=>rot(mesh(G.torus(28-i*3,2),'#7a3b22',0,40+i*28,0),PI/2))),
+ bibimbap:()=>{const g=group(mesh(G.cyl(52,40,44,28),'#3a3f4b',0,22,0),mesh(G.cyl(48,48,3,28),'#ffffff',0,44,0));
+  ['#6fbf73','#ff8a3d','#c2352a','#8a5a3c','#f4d27a','#5fb565'].forEach((c,i)=>{const a=i/6*PI*2;g.add(flat(14,c,Math.sin(a)*28,47,Math.cos(a)*28,1,.35,1));});
+  g.add(flat(16,'#ffffff',0,48,0,1,.3,1),mesh(G.sphere(7),'#ffb400',0,50,0));return g;},
+ grill:()=>{const g=group(mesh(G.cyl(56,48,26,28),'#3a3f4b',0,13,0),mesh(G.cyl(52,52,2,28),'#ff6a2a',0,26,0,{emissive:'#ff4a00',emissiveIntensity:.5}));
+  for(let i=-2;i<=2;i++)g.add(mesh(G.box(100,2,2),'#c9cfd9',0,29,i*18));[[-18,-10],[16,8],[-4,22],[26,-18]].forEach(([x,z],i)=>g.add(rot(flat(16,'#b55a3a',x,32,z,1.5,.3,.9),0,i,0)));
+  g.add(...steam(-10,48,0));return g;},
+ chicken:()=>group(mesh(G.cyl(52,44,28,28),'#e8323f',0,14,0),mesh(G.cyl(48,48,2,28),'#ffffff',0,28,0),...[[-18,-6,.4],[14,-12,-.5],[0,16,.1],[-24,18,-.8]].map(([x,z,a])=>group(
+  rot(mesh(G.capsule(4,24),'#fffaf0',x+Math.sin(a)*24,48,z+Math.cos(a)*24),PI/2,a,0),flat(16,'#d98b2a',x,42,z,1,.9,1.3)))),
+ seafood:()=>group(mesh(G.cyl(60,54,8,32),'#ffffff',0,4,0),flat(34,'#e8423a',0,26,0,1.25,.55,1),...[-1,1].map(s=>group(mesh(G.sphere(13),'#e8423a',s*52,38,24),rot(mesh(G.capsule(4,20),'#e8423a',s*36,30,16),0,0,s*1.2))),
+  ...[-1,1].flatMap(s=>[0,1,2].map(i=>rot(mesh(G.capsule(3,24),'#d9352f',s*40,18,-14+i*14),0,0,s*1.9))),mesh(G.sphere(4),'#2a2f3c',-8,44,22),mesh(G.sphere(4),'#2a2f3c',8,44,22)),
+ breakfast:()=>plate(flat(26,'#ffffff',-12,12,6,1.2,.25,1),mesh(G.sphere(9),'#ffb400',-12,15,6),...[0,1].map(i=>rot(mesh(G.box(34,8,34),'#e0a050',26,14+i*9,-14+i*6),0,.3+i*.3,0)),
+  ...[0,1].map(i=>rot(mesh(G.box(46,3,9),'#c2453a',-14,16+i*2,-28+i*12),0,.2,0))),
+ cake:()=>group(mesh(G.cyl(56,56,6,32),'#ffffff',0,3,0),mesh(G.cyl(44,44,36,32),'#ffe0e8',0,24,0),mesh(G.cyl(46,46,6,32),'#ffffff',0,42,0),mesh(G.cyl(32,32,30,32),'#fff4d6',0,60,0),mesh(G.cyl(34,34,5,32),'#ffffff',0,76,0),
+  ...[0,1,2,3,4].map(i=>mesh(G.sphere(6),'#e8323f',Math.sin(i*1.26)*24,82,Math.cos(i*1.26)*24)),mesh(G.cyl(2.4,2.4,22,8),'#6fb8ff',0,90,0),mesh(G.sphere(4),'#ffb400',0,104,0,{emissive:'#ff9a00',emissiveIntensity:.9})),
+ bread:()=>group(mesh(G.box(130,8,70),'#c9945a',0,4,0),...[-1,-.4,.2].map((a,i)=>rot(mesh(G.torus(26,10,PI*1.1),'#d99a4a',-26,22,-6),PI/2,0,a+i)),rot(mesh(G.capsule(13,80),'#c98a3a',34,22,0),0,.5,PI/2),
+  ...[0,1,2].map(i=>rot(mesh(G.box(3,4,18),'#a0602a',22+i*13,34,-8+i*8),0,.5,0))),
+ icecream:()=>group(rot(mesh(G.cone(22,80,16),'#e0a050',0,40,0),PI),mesh(G.sphere(24),'#ffd6e8',0,90,0),mesh(G.sphere(22),'#fff4d6',-2,124,2),mesh(G.sphere(18),'#7a4a2a',2,152,0),mesh(G.sphere(6),'#e8323f',0,172,0)),
  cup:()=>group(mesh(G.cyl(44,48,5),'#f1ece4',0,3,0),mesh(G.cyl(31,25,58),'#ffffff',0,35,0),mesh(G.cyl(28,28,2),'#7a4a2a',0,64,0),rot(mesh(G.torus(14,4.5),'#ffffff',35,36,0),0,0,0),...steam(-8,84,0)),
- hotel:()=>{const g=group(mesh(G.box(96,124,60),'#f6dcc8',0,62,0),mesh(G.box(104,9,68),'#c96f5a',0,128,0),mesh(G.box(22,30,3),'#8a5a3c',0,15,31),mesh(G.box(44,12,3),'#ffd84a',0,116,31));
-  for(let r=0;r<3;r++)for(let c=-1;c<=1;c++)g.add(mesh(G.box(16,17,3),'#8fd0f0',c*29,48+r*24,31));return g;},
- museum:()=>group(mesh(G.box(126,12,74),'#e8e4da',0,6,0),mesh(G.box(104,62,40),'#f4f1e8',0,43,-10),...[-42,-14,14,42].map(x=>mesh(G.cyl(7,7,62),'#ffffff',x,43,22)),mesh(G.box(128,10,78),'#e8e4da',0,79,0),scl(rot(mesh(G.cone(66,30,4),'#d9d3c4',0,99,0),0,PI/4),1,1,.62)),
+ beer:()=>group(mesh(G.cyl(30,30,68),mat('#ffc93a',{transparent:true,opacity:.92}),0,36,0),rot(mesh(G.torus(16,5),'#fff4c2',36,38,0)),mesh(G.sphere(18),'#ffffff',-12,76,0),mesh(G.sphere(18),'#ffffff',12,78,4),mesh(G.sphere(15),'#ffffff',0,86,-8)),
+ wine:()=>group(mesh(G.cyl(18,18,3),glass('#ffffff',.6),-22,2,0),mesh(G.cyl(2.5,2.5,56,8),glass('#ffffff',.6),-22,30,0),mesh(new THREE.SphereGeometry(24,24,14,0,PI*2,PI*.35,PI*.65),glass('#ffffff',.35),-22,82,0),
+  flat(18,'#8a1d3a',-22,70,0,1,.6,1),mesh(G.cyl(14,14,90,20),'#2d4a35',36,45,-6),mesh(G.cyl(5,8,26,12),'#2d4a35',36,102,-6),mesh(G.box(29,30,1),'#f4ead2',36,46,8)),
+ cocktail:()=>group(mesh(G.cyl(18,18,3),glass('#ffffff',.6),0,2,0),mesh(G.cyl(2.5,2.5,60,8),glass('#ffffff',.6),0,32,0),rot(mesh(G.cone(38,46,24),glass('#ff7fa1',.75),0,84,0),PI),mesh(G.sphere(6),'#6fbf73',-10,96,4),
+  rot(mesh(G.cyl(1.6,1.6,70,6),'#ffffff',16,110,0),0,0,-.4),rot(mesh(G.cone(22,10,10),'#ffd84a',32,140,0),0,0,-.2)),
+ /* 관광 */
+ castle:()=>group(mesh(G.box(76,70,50),'#ece5d3',0,35,0),mesh(G.cyl(17,17,104),'#f3eddc',-48,52,0),mesh(G.cyl(17,17,104),'#f3eddc',48,52,0),mesh(G.cone(23,38),'#5b8def',-48,123,0),mesh(G.cone(23,38),'#5b8def',48,123,0),
+  mesh(G.cyl(15,15,56),'#f3eddc',0,98,0),mesh(G.cone(21,36),'#e85a6e',0,144,0),mesh(G.box(20,32,4),'#8a5a3c',0,16,26),mesh(G.box(10,12,3),'#6f8fc0',-48,70,16),mesh(G.box(10,12,3),'#6f8fc0',48,70,16)),
+ church:()=>group(mesh(G.box(70,70,96),'#efe6d4',0,35,-20),rot(mesh(G.cone(56,34,4),'#8a5a4a',0,87,-20),0,PI/4),mesh(G.box(36,130,36),'#efe6d4',0,65,30),mesh(G.cone(26,70,4),'#5a7a8a',0,165,30),
+  mesh(G.cyl(12,12,3,24),'#8fb7ea',0,96,49),mesh(G.box(16,24,3),'#8a5a3c',0,12,49),mesh(G.box(3,22,3),'#f0c75e',0,210,30),mesh(G.box(12,3,3),'#f0c75e',0,214,30)),
+ gate:()=>{const g=group(mesh(G.box(150,14,40),'#e8dfc8',0,7,0),mesh(G.box(150,22,42),'#e8dfc8',0,112,0),mesh(G.box(76,14,30),'#e8dfc8',0,130,0));for(let i=0;i<6;i++)g.add(mesh(G.cyl(6,7,90,12),'#f4ecd8',-60+i*24,59,14));
+  g.add(mesh(G.box(30,16,14),'#5a8a6a',0,145,0),...[-9,-3,3,9].map(x=>mesh(G.box(4,12,10),'#5a8a6a',x,158,0)),mesh(G.box(4,26,4),'#5a8a6a',0,166,-4));return g;},
+ eiffel:()=>group(mesh(G.cyl(14,46,70,4),'#8a6a4a',0,35,0),mesh(G.box(70,6,70),'#8a6a4a',0,72,0),mesh(G.cyl(6,15,70,4),'#8a6a4a',0,110,0),mesh(G.box(34,5,34),'#8a6a4a',0,146,0),mesh(G.cyl(2,6,50,4),'#8a6a4a',0,173,0),
+  mesh(G.cyl(1.4,1.4,20,6),'#8a6a4a',0,206,0),...[0,1,2,3].map(i=>rot(mesh(G.torus(18,3,PI),'#ffffff',Math.sin(i*PI/2)*30,0,Math.cos(i*PI/2)*30),0,i*PI/2,0))),
+ pagoda:()=>{const g=group(mesh(G.box(80,10,80),'#c9b28a',0,5,0));for(let i=0;i<4;i++){const s=1-i*.18,y=10+i*38;g.add(mesh(G.box(56*s,26,56*s),'#e8d8b8',0,y+13,0),scl(rot(mesh(G.cone(56*s,18,4),'#c2352a',0,y+34,0),0,PI/4,0),1.15,1,1.15));}
+  g.add(mesh(G.cyl(2,2,30,8),'#f0c75e',0,176,0));return g;},
+ torii:()=>group(...[-36,36].map(x=>mesh(G.cyl(6,7,130,14),'#e8323f',x,65,0)),mesh(G.box(108,10,12),'#2a2f3c',0,136,0),mesh(G.box(98,8,10),'#e8323f',0,128,0),mesh(G.box(84,7,9),'#e8323f',0,104,0),mesh(G.box(8,24,8),'#e8323f',0,116,0)),
+ bridge:()=>group(mesh(G.box(180,4,70),'#8fd0f0',0,1,0),mesh(G.box(180,8,30),'#c9b28a',0,62,0),rot(mesh(G.torus(66,7,PI),'#a88a68',0,0,0),0,0,0),...[-70,70].map(x=>mesh(G.box(14,62,32),'#a88a68',x,31,0)),
+  ...Array.from({length:9},(_,i)=>mesh(G.box(2.5,14,2.5),'#a88a68',-80+i*20,73,13))),
+ boat:()=>group(mesh(G.cyl(80,80,4,32),'#8fd0f0',0,2,0),scl(mesh(half(30,120,20),'#ffffff',0,22,0),1,1,1),rot(mesh(half(30,120,20),'#ffffff',0,22,0),PI/2,0,PI/2),mesh(G.box(60,28,36),'#5b8def',-6,46,0),
+  ...[-24,-6,12].map(x=>mesh(G.box(10,10,37),'#ffffff',x,48,0)),mesh(G.cyl(2,2,50,8),'#c9cfd9',30,70,0),mesh(G.box(22,14,2),'#ff5a6e',41,88,0)),
+ mountain:()=>group(mesh(G.cone(70,130,7),'#7a9a8a',0,65,0),mesh(G.cone(29,54,7),'#ffffff',0,103,0),mesh(G.cone(46,86,7),'#8fb09a',56,43,20),mesh(G.cone(18,34,7),'#ffffff',56,69,20),mesh(G.cone(36,60,7),'#6cc070',-50,30,30)),
  tower:()=>group(mesh(G.cyl(22,26,8),'#c9cfd9',0,4,0),mesh(G.cyl(6,15,150,14),'#e3e7ee',0,79,0),scl(mesh(G.sphere(21),'#ff6b8a',0,122,0),1,.8,1),mesh(G.cyl(1.6,1.6,44,8),'#c9cfd9',0,176,0)),
+ museum:()=>group(mesh(G.box(126,12,74),'#e8e4da',0,6,0),mesh(G.box(104,62,40),'#f4f1e8',0,43,-10),...[-42,-14,14,42].map(x=>mesh(G.cyl(7,7,62),'#ffffff',x,43,22)),mesh(G.box(128,10,78),'#e8e4da',0,79,0),scl(rot(mesh(G.cone(66,30,4),'#d9d3c4',0,99,0),0,PI/4),1,1,.62)),
+ fountain:()=>group(mesh(G.cyl(66,70,16,32),'#d9d3c4',0,8,0),mesh(G.cyl(60,60,3,32),'#8fd0f0',0,16,0),mesh(G.cyl(10,14,60,16),'#d9d3c4',0,46,0),mesh(G.cyl(30,24,8,24),'#d9d3c4',0,78,0),
+  mesh(G.cyl(4,8,46,10),glass('#bfe8ff',.7),0,104,0),...Array.from({length:8},(_,i)=>mesh(G.sphere(4),glass('#bfe8ff',.8),Math.sin(i*.8)*34,40+(i%3)*14,Math.cos(i*.8)*34))),
+ statue:()=>group(mesh(G.box(54,50,54),'#d9d3c4',0,25,0),mesh(G.box(62,8,62),'#c9c2b2',0,52,0),mesh(G.capsule(16,44),'#8aa69a',0,92,0),mesh(G.sphere(14),'#8aa69a',0,136,0),rot(mesh(G.capsule(5,40),'#8aa69a',22,130,0),0,0,-.5),
+  mesh(G.sphere(7),'#8aa69a',34,152,0)),
+ park:()=>group(mesh(G.cyl(8,10,60),'#8a5a3c',0,30,0),mesh(G.sphere(46),'#6cc070',0,98,0),mesh(G.sphere(30),'#7fd083',-36,76,10),mesh(G.sphere(26),'#5fb565',34,70,-6),scl(mesh(G.sphere(22),'#7fd083',58,14,26),1,.7,1)),
  parasol:()=>group(mesh(G.cyl(62,62,4),'#f4e2b0',0,2,0),mesh(G.cyl(2.6,2.6,112,10),'#ffffff',0,58,0),mesh(G.cone(64,30,12),'#ff7a59',0,122,0),mesh(G.sphere(15),'#6fb8ff',36,17,22),mesh(G.box(46,4,20),'#8fd0b8',-28,6,24)),
  bag:()=>group(mesh(G.box(70,82,34),'#ff8fb0',-8,45,0),mesh(G.torus(18,3.5,PI),'#e85a84',-8,86,0),mesh(G.box(44,54,24),'#ffd84a',44,29,16),mesh(G.torus(12,3,PI),'#e0a800',44,56,16)),
  onsen:()=>{const g=group(mesh(G.cyl(60,60,8),'#8fe0e8',0,5,0),...steam(-18,30,0),...steam(18,24,10));for(let i=0;i<9;i++){const a=i/9*PI*2;g.add(scl(mesh(G.sphere(17,10,8),i%2?'#9a9488':'#b0aa9c',Math.sin(a)*62,8,Math.cos(a)*62),1,.75,1));}return g;},
- house:()=>group(mesh(G.box(84,62,70),'#fff1d6',0,31,0),rot(mesh(G.cone(72,48,4),'#e8604a',0,86,0),0,PI/4),mesh(G.box(20,34,3),'#8a5a3c',0,17,36),mesh(G.box(18,18,3),'#8fd0f0',26,36,36),mesh(G.box(14,30,14),'#c96f5a',24,96,-10)),
- park:()=>group(mesh(G.cyl(8,10,60),'#8a5a3c',0,30,0),mesh(G.sphere(46),'#6cc070',0,98,0),mesh(G.sphere(30),'#7fd083',-36,76,10),mesh(G.sphere(26),'#5fb565',34,70,-6),scl(mesh(G.sphere(22),'#7fd083',58,14,26),1,.7,1)),
- beer:()=>group(mesh(G.cyl(30,30,68),mat('#ffc93a',{transparent:true,opacity:.92}),0,36,0),rot(mesh(G.torus(16,5),'#fff4c2',36,38,0)),mesh(G.sphere(18),'#ffffff',-12,76,0),mesh(G.sphere(18),'#ffffff',12,78,4),mesh(G.sphere(15),'#ffffff',0,86,-8)),
  ferris:()=>{const g=group(rot(mesh(G.cyl(3,3,110,8),'#c9cfd9',-22,52,0),0,0,-.22),rot(mesh(G.cyl(3,3,110,8),'#c9cfd9',22,52,0),0,0,.22),mesh(G.torus(62,3.5),'#ff8fb0',0,104,0),mesh(G.sphere(8),'#ffffff',0,104,0));
   ['#ff5a6e','#ffd84a','#6fb8ff','#8fd0b8','#b9a4e6','#f2a07a','#ffffff','#6cc070'].forEach((c,i)=>{const a=i/8*PI*2;g.add(mesh(G.box(15,15,12),c,Math.cos(a)*62,104+Math.sin(a)*62,0));});return g;},
+ zoo:()=>group(rot(mesh(G.capsule(22,40),'#f4c24a',0,62,0),0,0,PI/2),...[[-26,-12],[-26,12],[26,-12],[26,12]].map(([x,z])=>mesh(G.capsule(5,40),'#f4c24a',x,24,z)),rot(mesh(G.capsule(8,70),'#f4c24a',30,116,0),0,0,-.35),
+  scl(mesh(G.sphere(14),'#f4c24a',46,158,0),1.3,1,1),mesh(G.sphere(3),'#2a2f3c',54,164,10),...[0,1].map(i=>mesh(G.cyl(2,2,10,6),'#8a5a3c',40+i*8,174,0)),
+  ...[[-10,70,22],[12,60,22],[24,96,8],[-20,58,-20],[34,128,8]].map(([x,y,z])=>flat(6,'#b0702a',x,y,z,1,1,.4))),
+ aquarium:()=>group(mesh(G.box(150,110,40),glass('#8fd0f0',.55),0,55,0),mesh(G.box(156,8,46),'#5b6f8a',0,4,0),...[[-30,70,'#ff8a3d'],[30,44,'#ffd040'],[10,88,'#ff5a8a']].map(([x,y,c])=>group(
+  flat(14,c,x,y,0,1.5,1,.6),rot(mesh(G.cone(10,16,3),c,x-24,y,0),0,0,PI/2))),...[0,1,2].map(i=>mesh(G.sphere(3+i),glass('#ffffff',.8),-50+i*8,40+i*22,10))),
+ concert:()=>group(mesh(G.box(150,16,60),'#3a3f4b',0,8,0),mesh(G.cyl(2.4,2.4,90,8),'#c9cfd9',0,61,10),flat(9,'#3a3f4b',0,110,10,1,1.3,1),
+  ...[[-50,100],[46,130],[-20,150]].map(([x,y])=>group(mesh(G.sphere(10),'#5b5fd0',x,y,0),mesh(G.box(3,46,3),'#5b5fd0',x+9,y+23,0),mesh(G.box(14,6,3),'#5b5fd0',x+16,y+44,0)))),
+ stadium:()=>group(mesh(G.box(160,4,90),'#5fb565',0,2,0),...[-56,56].map(x=>mesh(G.cyl(2.5,2.5,60,8),'#ffffff',x,32,-36)),mesh(G.box(116,4,4),'#ffffff',0,62,-36),mesh(G.sphere(22),'#ffffff',0,26,10),
+  ...[[0,46,18],[16,30,26],[-16,30,26],[0,22,30]].map(([x,y,z])=>mesh(G.sphere(6),'#2a2f3c',x,y,z))),
+ ski:()=>group(flat(70,'#ffffff',0,0,0,1.2,.5,1),...[-12,12].map(x=>rot(mesh(G.box(10,3,150),'#e8323f',x,40,0),.9,0,x*.02)),...[-30,30].map(x=>rot(mesh(G.cyl(2,2,120,6),'#3a3f4b',x,70,0),.2,0,x*-.01))),
+ fireworks:()=>{const g=group(mesh(G.cyl(4,4,40,6),'#8a5a3c',0,20,0));[['#ff5a6e',-30,140],['#ffd84a',30,120],['#6fb8ff',0,170]].forEach(([c,x,y])=>{for(let i=0;i<10;i++){const a=i/10*PI*2;
+  g.add(mesh(G.sphere(4.5),c,x+Math.cos(a)*30,y+Math.sin(a)*30,0,{emissive:c,emissiveIntensity:.8}));}});return g;},
+ camera:()=>group(mesh(G.box(84,56,34),'#3a3f4b',0,60,0),rot(mesh(G.cyl(22,24,26,24),'#2a2f3c',0,60,26),PI/2),rot(mesh(G.cyl(15,15,4,24),'#8fb7ea',0,60,40),PI/2),mesh(G.box(22,12,20),'#3a3f4b',-24,94,0),
+  mesh(G.box(14,8,4),'#ffffff',26,78,18),mesh(G.cyl(4,4,10,10),'#ff5a6e',30,92,0)),
+ hotel:()=>{const g=group(mesh(G.box(96,124,60),'#f6dcc8',0,62,0),mesh(G.box(104,9,68),'#c96f5a',0,128,0),mesh(G.box(22,30,3),'#8a5a3c',0,15,31),mesh(G.box(44,12,3),'#ffd84a',0,116,31));
+  for(let r=0;r<3;r++)for(let c=-1;c<=1;c++)g.add(mesh(G.box(16,17,3),'#8fd0f0',c*29,48+r*24,31));return g;},
+ house:()=>group(mesh(G.box(84,62,70),'#fff1d6',0,31,0),rot(mesh(G.cone(72,48,4),'#e8604a',0,86,0),0,PI/4),mesh(G.box(20,34,3),'#8a5a3c',0,17,36),mesh(G.box(18,18,3),'#8fd0f0',26,36,36),mesh(G.box(14,30,14),'#c96f5a',24,96,-10)),
  pin:()=>group(mesh(G.sphere(28),'#ff5a4a',0,112,0),rot(mesh(G.cone(21,72),'#ff5a4a',0,52,0),PI),mesh(G.sphere(11),'#ffffff',0,114,21)),
  plane:()=>group(rot(mesh(G.capsule(14,74),'#ffffff'),0,0,PI/2),mesh(G.box(28,3.5,128),'#5b8def',4,0,0),mesh(G.box(18,24,3.5),'#5b8def',-44,13,0),mesh(G.box(14,3,46),'#5b8def',-44,2,0),mesh(G.sphere(8),'#8fd0f0',40,6,0)),
  train:()=>{const g=group(mesh(G.box(124,42,38),'#5bbf8a',0,31,0),mesh(G.box(124,6,40),'#ffffff',0,55,0),mesh(G.box(20,20,34),'#8fd0f0',52,36,0));for(const x of [-40,-10,20])g.add(mesh(G.box(20,16,40),'#8fd0f0',x,38,0));
@@ -171,17 +278,19 @@ export function createStage(canvas){
   legMeshes=tl.stops.slice(1).map(()=>{const a=new THREE.Mesh(boxGeo,routeMat.white.clone()),b=new THREE.Mesh(boxGeo,routeMat.walk.clone());routeGroup.add(a,b);return [a,b];});}
  function render(f){
   const night=!!f.night;bg.set(night?'#18222b':'#dfe9ee');
-  const d=f.dolly||1;camera.position.set(0,800*d,960*d);camera.lookAt(0,96,0);
+  const d=f.dolly||1;camera.position.set(0,800*d,960*d);camera.lookAt(0,96,0);shadow.visible=!f.vehicle||f.vehicle.kind!=='plane'||f.vehicle.lift<.5;
   // 지도 타일
   const used=new Set();
   for(const t of f.tiles){used.add(t.key);let m=tiles.get(t.key);
    if(!m){const tex=new THREE.Texture(t.img);tex.colorSpace=THREE.SRGBColorSpace;tex.needsUpdate=true;m=rot(new THREE.Mesh(tileGeo,new THREE.MeshBasicMaterial({map:tex})),-PI/2);tiles.set(t.key,m);tileGroup.add(m);}
-   m.material.color.set(night?'#7c8894':'#ffffff');m.position.set(t.x+t.size/2,0,t.z+t.size/2);m.scale.set(t.size+.5,t.size+.5,1);m.visible=true;}
+   m.material.color.set(night?'#7c8894':'#ffffff');m.position.set(t.x+t.size/2,t.y||0,t.z+t.size/2);m.scale.set(t.size+.5,t.size+.5,1);m.visible=true;}
   for(const [k,m] of tiles)if(!used.has(k)){m.visible=false;if(tiles.size>260){tileGroup.remove(m);m.material.map.dispose();m.material.dispose();tiles.delete(k);}}
   // 동선과 장소 표시
   f.legs.forEach((l,i)=>{const [a,b]=legMeshes[i],dx=l.bx-l.ax,dz=l.bz-l.az,len=Math.hypot(dx,dz),far=Math.min(Math.hypot(l.ax,l.az),Math.hypot(l.bx,l.bz))>9000||len<1;
    a.visible=b.visible=!far;if(far)return;b.material.color.set(l.fly?'#5b8def':'#ff6b4a');
-   for(const [m,w,y] of [[a,17,2],[b,10,3]]){m.position.set((l.ax+l.bx)/2,y,(l.az+l.bz)/2);m.scale.set(len,1.6,w);m.rotation.y=-Math.atan2(dz,dx);m.material.opacity=l.seen?1:.45;}});
+   // 비행 중인 구간은 지나온 만큼만 그린다(출발지에서 비행기까지).
+   const k=l.progress??1,ex=l.ax+dx*k,ez=l.az+dz*k,ln=len*k;if(ln<1){a.visible=b.visible=false;return;}
+   for(const [m,w,y] of [[a,17,2],[b,10,3]]){m.position.set((l.ax+ex)/2,y,(l.az+ez)/2);m.scale.set(ln,1.6,w);m.rotation.y=-Math.atan2(dz,dx);m.material.opacity=l.seen||l.progress!=null?1:.45;}});
   f.stops.forEach((s,i)=>{const m=stopMeshes[i],p=props[i],near=Math.abs(s.x)<3000&&Math.abs(s.z)<3000;m.visible=near;p.visible=near&&s.showProp;if(!near)return;
    const r=s.state===2?17:12;m.material=stopMat[s.state];m.position.set(s.x,3.5,s.z);m.scale.set(r,3,r);
    // 지금 머무는 곳의 소품은 일행 뒤에 크게, 지나온 곳의 소품은 작게 남겨 둔다.
@@ -193,7 +302,8 @@ export function createStage(canvas){
    h.position.set((k-(n-1)/2)*sp,0,(k%2)*(n>4?60:24)-12);h.rotation.y=f.party.walking?Math.max(-1.9,Math.min(1.9,f.party.heading)):0;
    poseAvatar(h.userData.char,{walking:f.party.walking,act:f.party.act,mood:f.party.mood,t:f.t,seed:k*1.7});});
   // 탈것(먼 이동)
-  for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){v.position.set(0,k==='plane'?150+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08:0);v.scale.setScalar(k==='plane'?1.25:1.1);}}
+  for(const [k,v] of Object.entries(vehicles)){v.visible=f.vehicle?.kind===k;if(v.visible){const lift=f.vehicle.lift??1; // 이륙·착륙: 낮게 작게 → 높이 크게
+   v.position.set(0,k==='plane'?40+150*lift+Math.sin(f.t*3)*6:0,0);v.rotation.set(0,-f.vehicle.heading,k==='plane'?Math.sin(f.t*2)*.08+(f.vehicle.climb||0):0);v.scale.setScalar(k==='plane'?.8+.7*lift:1.1);}}
   renderer.render(scene,camera);
   chars.forEach((h,k)=>{heads[k]=h.visible?project(h.position.x,h.userData.char.position.y+h.userData.char.userData.tag,h.position.z):null;});}
  const v3=new THREE.Vector3();

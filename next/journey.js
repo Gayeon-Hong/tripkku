@@ -67,30 +67,93 @@ export function party(){const a=api(),doc=a.activeDoc?.()||{},me=a.getMyId?.();
   const av=cleanAvatar(saved,m.user_id);const name=String(m.display_name||'친구').slice(0,8);
   return {id:m.user_id,me:m.user_id===me,av,label:av.role?av.role+' '+name:name};});}
 
-/* ---------- 장소에 맞는 소품·행동: [키워드, 소품(journey3d.js 의 PROPS 키), 행동, 말풍선] ---------- */
-const REACTIONS=[
- [/크리스마스|성탄|트리|christmas|weihnacht/i,'tree','cheer','우와, 트리다!'],
- [/놀이공원|테마파크|디즈니|유니버설|롯데월드|에버랜드|관람차/i,'ferris','cheer','한 번 더 타자!'],
- [/온천|스파|사우나|찜질|onsen/i,'onsen','relax','아, 좋다…'],
- [/숙소|호텔|체크인|료칸|게스트하우스|에어비앤비|hotel/i,'hotel','sleep','오늘도 수고했어'],
- [/공항|항공|비행|flight/i,'plane','wave','출발!'],
- [/카페|커피|디저트|베이커리|빵집|케이크|cafe/i,'cup','eat','한 잔의 여유'],
- [/맥주|와인|이자카야|펍|칵테일/i,'beer','cheer','짠!'],
- [/맛집|식당|저녁|점심|아침|조식|라멘|스시|초밥|레스토랑|브런치|식사|고기|먹|restaurant/i,'bowl','eat','맛있다!'],
- [/쇼핑|아울렛|백화점|시장|마켓|돈키|면세|market/i,'bag','cheer','이건 사야 해!'],
- [/박물관|미술관|갤러리|전시|museum/i,'museum','relax','오…'],
- [/전망|타워|야경|스카이|tower/i,'tower','pose','찰칵!'],
- [/성당|교회|사원|신사|궁|성$|성 |성곽|castle|cathedral|schloss/i,'castle','pose','찰칵!'],
- [/해변|바다|비치|섬|beach/i,'parasol','cheer','바다다!'],
- [/공원|정원|숲|산책|등산|트레킹|호수/i,'park','relax','공기 좋다'],
- [/역|열차|기차|버스|지하철|이동|렌터카|station/i,'train','wave','가자!']
+/* ---------- 일정 분석: 제목·장소·메모에서 무엇을 하는지 읽어 소품(journey3d.js 의 PROPS)·행동·말풍선을 고른다 ----------
+   규칙은 위에서부터 먼저 맞는 것을 쓴다. 소품·말풍선이 여러 개면 같은 종류가 다시 나올 때마다 차례로 바꾼다
+   (크리스마스 마켓 → 트리, 다음엔 산타, 그다음엔 가판대 …). */
+const RULES=[
+ // 크리스마스·겨울
+ [/글뤼바인|뱅쇼|gl[uü]hwein/i,['gluhwein'],'cheer',['따뜻해~','짠!']],
+ [/산타|santa/i,['santa'],'cheer',['산타다!','메리 크리스마스!']],
+ [/눈사람|눈썰매|snowman/i,['snowman'],'cheer',['눈사람이다!']],
+ [/크리스마스|성탄|트리|christmas|weihnacht|xmas/i,['tree','santa','stall','snowman','gluhwein'],'cheer',['우와, 트리다!','산타다!','구경하자!','메리 크리스마스!','따뜻해~']],
+ [/스키|스노보드|보드 타|ski/i,['ski'],'cheer',['야호!']],
+ // 특정된 음식
+ [/소시지|소세지|부어스트|wurst|핫도그/i,['sausage'],'eat',['맛있다!','이 맛이지!']],
+ [/프레첼|브레첼|pretzel/i,['pretzel'],'eat',['쫄깃해!']],
+ [/슈니첼|학센|돈까스|돈카츠|커틀릿|schnitzel/i,['schnitzel'],'eat',['바삭바삭!']],
+ [/스테이크|steak|립아이|티본/i,['steak'],'eat',['육즙 최고!','맛있다!']],
+ [/파스타|스파게티|라자냐|뇨끼|리조또|pasta/i,['pasta'],'eat',['본고장의 맛!','맛있다!']],
+ [/피자|pizza/i,['pizza'],'eat',['한 조각 더!']],
+ [/버거|burger/i,['burger'],'eat',['한입 가득!']],
+ [/스시|초밥|사시미|오마카세|회전초밥|sushi/i,['sushi'],'eat',['입에서 녹아!']],
+ [/라멘|라면|우동|소바|국수|쌀국수|짬뽕|짜장|탄탄|pho|ramen/i,['bowl'],'eat',['후루룩!','국물이 끝내줘!']],
+ [/카레|커리|curry/i,['curry'],'eat',['맛있다!']],
+ [/만두|딤섬|샤오롱|교자|dumpling/i,['dumpling'],'eat',['육즙 팡!']],
+ [/타코|부리토|부리또|나초|taco/i,['taco'],'eat',['올레!']],
+ [/피시\s?앤\s?칩스|피쉬\s?앤\s?칩스|fish ?(and|&|n) ?chips/i,['fishchips'],'eat',['바삭바삭!']],
+ [/파에야|빠에야|paella/i,['paella'],'eat',['맛있다!']],
+ [/케밥|되너|kebab|d[oö]ner/i,['kebab'],'eat',['든든해!']],
+ [/비빔밥|한식|백반|한정식/i,['bibimbap'],'eat',['역시 한식!']],
+ [/치킨|닭갈비|닭꼬치|야키토리|chicken/i,['chicken'],'eat',['바삭바삭!']],
+ [/고기|바베큐|바비큐|bbq|삼겹|갈비|야키니쿠|불고기|곱창|구이/i,['grill'],'eat',['지글지글!','고기는 진리!']],
+ [/해산물|랍스터|로브스터|대게|킹크랩|새우|굴 |조개|씨푸드|seafood|횟집/i,['seafood'],'eat',['싱싱해!']],
+ [/조식|아침 ?식사|아침밥|브런치|breakfast|brunch/i,['breakfast'],'eat',['든든한 아침!']],
+ [/아이스크림|젤라또|젤라토|빙수|gelato/i,['icecream'],'eat',['달콤해!']],
+ [/케이크|케익|디저트|마카롱|타르트|와플|크레페|초콜릿|cake|dessert/i,['cake'],'eat',['달콤해!']],
+ [/빵|베이커리|크루아상|크로와상|bakery/i,['bread'],'eat',['갓 구운 빵!']],
+ [/카페|커피|티타임|찻집|cafe|coffee/i,['cup'],'eat',['한 잔의 여유','향 좋다~']],
+ [/와인|와이너리|샴페인|wine/i,['wine'],'cheer',['짠!']],
+ [/칵테일|루프탑 바|재즈바|cocktail/i,['cocktail'],'cheer',['짠!']],
+ [/맥주|비어|펍|이자카야|호프|브루어리|beer|pub/i,['beer'],'cheer',['짠!','캬~']],
+ // 무엇을 먹는지 모르는 식사: 아래 foodFor 가 나라에 맞는 음식을 고른다
+ [/맛집|식당|저녁|점심|아침|레스토랑|식사|먹|밥|야시장|푸드|restaurant|dinner|lunch/i,null,'eat',['맛있다!','배부르다~','이 집 잘하네!','또 오자!']],
+ // 볼거리
+ [/에펠/i,['eiffel'],'pose',['찰칵!','진짜 에펠탑이다!']],
+ [/개선문|브란덴부르크|(^|\s)문(\s|$)|게이트|gate|tor$/i,['gate'],'pose',['찰칵!','웅장하다!']],
+ [/신사|도리이|이나리|shrine/i,['torii'],'pose',['찰칵!']],
+ [/사원|사찰|(^|\s)절(\s|$)|왓 |파고다|경복궁|창덕궁|temple/i,['pagoda'],'pose',['찰칵!','고즈넉하다']],
+ [/성당|교회|대성당|돔 |cathedral|church|dom$|basilica/i,['church'],'pose',['찰칵!','우와, 높다!']],
+ [/성$|성 |성곽|궁전|궁$|캐슬|castle|schloss|palace|ch[aâ]teau/i,['castle'],'pose',['찰칵!','동화 속 같아!']],
+ [/다리|브리지|브릿지|bridge|br[uü]cke/i,['bridge'],'pose',['찰칵!','경치 좋다!']],
+ [/유람선|크루즈|보트|페리|곤돌라|cruise|boat|ferry/i,['boat'],'wave',['출항!','바람 좋다~']],
+ [/등산|하이킹|트레킹|알프스|융프라우|후지산|산맥|전망대 등반|hiking/i,['mountain'],'cheer',['야호!','정상이다!']],
+ [/전망|타워|야경|스카이|루프탑|tower|view/i,['tower'],'pose',['찰칵!','다 보인다!']],
+ [/박물관|미술관|갤러리|전시|기념관|museum|gallery/i,['museum'],'relax',['오…','멋지다…']],
+ [/분수|fountain/i,['fountain'],'pose',['찰칵!']],
+ [/광장|동상|기념비|기념탑|구시가|올드타운|square|platz/i,['statue','fountain'],'pose',['찰칵!','여기가 중심이구나']],
+ [/동물원|사파리|zoo/i,['zoo'],'cheer',['기린이다!']],
+ [/수족관|아쿠아리움|aquarium/i,['aquarium'],'cheer',['물고기다!']],
+ [/공연|콘서트|뮤지컬|오페라|극장|라이브|concert|musical|opera/i,['concert'],'cheer',['브라보!']],
+ [/경기|축구|야구|농구|스타디움|직관|stadium/i,['stadium'],'cheer',['골!','가자!']],
+ [/불꽃|축제|페스티벌|퍼레이드|일루미|festival/i,['fireworks'],'cheer',['우와아!']],
+ [/놀이공원|테마파크|디즈니|유니버설|롯데월드|에버랜드|관람차/i,['ferris'],'cheer',['한 번 더 타자!']],
+ [/온천|스파|사우나|찜질|onsen/i,['onsen'],'relax',['아, 좋다…']],
+ [/해변|바다|비치|해수욕|섬 |beach/i,['parasol'],'cheer',['바다다!']],
+ [/쇼핑|아울렛|백화점|시장|마켓|돈키|면세|기념품|market|shopping/i,['bag','stall'],'cheer',['이건 사야 해!','득템!']],
+ [/공원|정원|숲|산책|호수|피크닉|park|garden/i,['park'],'relax',['공기 좋다','여유롭다~']],
+ [/숙소|호텔|체크인|체크아웃|료칸|게스트하우스|에어비앤비|호스텔|hotel/i,['hotel'],'sleep',['오늘도 수고했어','푹 쉬자']],
+ [/공항|항공|비행|flight/i,['plane'],'wave',['도착!','드디어 왔다!']],
+ [/역$|역 |열차|기차|버스|지하철|이동|렌터카|station/i,['train'],'wave',['가자!']],
+ [/사진|스냅|포토|투어|구경|관광/i,['camera'],'pose',['찰칵!']]
 ];
-export function reactionFor(e){const text=[e.title,e.place,e.note].filter(Boolean).join(' ');
- for(const [re,key,act,say] of REACTIONS)if(re.test(text))return {key,act,say};
- if(e.kind==='food')return {key:'bowl',act:'eat',say:'맛있다!'};
- if(e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
- if(e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
- return {key:'pin',act:'pose',say:'찰칵!'};}
+// 무엇을 먹는지 안 적힌 식사는 그 나라에서 흔히 먹는 음식으로. 모르는 나라는 평범한 그릇.
+const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitzel','sausage','cake'],CH:['schnitzel','steak','pasta'],IT:['pasta','pizza','steak'],FR:['steak','bread','pasta'],ES:['paella','steak','seafood'],PT:['seafood','steak'],
+ GB:['fishchips','steak','burger'],IE:['fishchips','steak'],US:['burger','steak','pizza'],CA:['burger','steak'],AU:['steak','burger','seafood'],NZ:['steak','seafood'],CZ:['sausage','schnitzel','steak'],PL:['dumpling','sausage','schnitzel'],HU:['sausage','schnitzel'],
+ NL:['steak','bread','pasta'],BE:['steak','bread'],GR:['kebab','seafood'],TR:['kebab','grill'],MX:['taco','grill'],JP:['bowl','sushi','grill','curry'],KR:['bibimbap','grill','chicken','bowl'],CN:['dumpling','bowl'],TW:['dumpling','bowl'],HK:['dumpling','bowl'],
+ TH:['bowl','curry','seafood'],VN:['bowl','seafood'],IN:['curry'],SG:['bowl','seafood'],MY:['curry','bowl'],ID:['grill','bowl'],PH:['grill','seafood']};
+const WESTERN=['steak','pasta','pizza','burger'],WEST=/^(SE|NO|DK|FI|IS|LU|SK|SI|HR|RO|BG|RS|EE|LV|LT|MT|CY|BR|AR|CL|ZA)$/;
+function foodFor(country,n){const list=FOOD_BY_COUNTRY[country]||(WEST.test(country)?WESTERN:['dish']);return list[n%list.length];}
+/** seen: 같은 규칙이 지금까지 몇 번 나왔는지(여행 하나를 재생하는 동안 유지) */
+export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.place,e.note].filter(Boolean).join(' ');
+ let i=RULES.findIndex(r=>r[0].test(text));
+ if(i<0&&e.kind==='food')i=RULES.findIndex(r=>r[1]===null);
+ if(i<0&&e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
+ if(i<0&&e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
+ if(i<0)return {key:'pin',act:'pose',say:'찰칵!'};
+ const [,keys,act,says]=RULES[i],n=seen.get(i)||0;seen.set(i,n+1);
+ if(keys)return {key:keys[n%keys.length],act,say:says[n%says.length]};
+ const fk='food:'+country,m=seen.get(fk)||0;seen.set(fk,m+1); // 나라별로 차례를 따로 센다
+ return {key:foodFor(country,m),act,say:says[n%says.length]};}
 const isFlight=e=>e.kind==='flight'||/항공|비행|✈|flight/i.test([e.title,e.note].join(' '));
 
 /* ---------- 타임라인 ---------- */
@@ -101,18 +164,18 @@ function flightEnds(e,doc){const b=e.bookingId&&(doc.bookings||[]).find(x=>x.id=
  const parts=String(e.title||'').split(/→|->|➜|➡|⇒|~/);if(parts.length>=2)return [cleanCity(parts[0]),cleanCity(parts.at(-1))];
  return ['',cleanCity(e.place||'')];}
 function retime(tl){const fast=tl.mode==='trip';let acc=0;
- for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2):s.jump?(fast?2:2.8):(fast?.6:1.4);s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
+ for(const s of tl.segs){s.dur=s.type==='end'?4:s.type==='dwell'?(fast?1.1:2.2)+(s.flag?1.1:0):s.plane?(fast?3.2:4.2):s.jump?(fast?2:2.8):(fast?.6:1.4);s.start=acc;acc+=s.dur;}tl.total=acc;return tl;}
 export function buildTimeline(mode){const a=api(),doc=a.activeDoc?.()||{},trip=a.getTrip?.()||{};
  const dates=(doc.days||[]).map(d=>d.date).filter(Boolean).sort();
  const want=mode==='trip'?dates:[a.getActiveDate?.()||dates[0]];
- const stops=[];
+ const stops=[],seen=new Map();
  if(mode==='trip')stops.push({title:'출발!',time:'',date:want[0],dayIdx:0,firstOfDay:false,via:'walk',home:true,react:{key:'house',act:'wave',say:'다녀오겠습니다!'}});
  want.forEach(date=>{const day=(doc.days||[]).find(d=>d.date===date);if(!day)return;
   const events=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
   const country=a.dayCountry?.(day)||day.countryCode||trip.country_code||doc.meta?.countryCode||'';
   events.forEach((e,k)=>{const fly=isFlight(e),ends=fly?flightEnds(e,doc):null;
-   stops.push({costume:costumeKind(country),title:String(e.title||e.place||'일정'),time:String(e.start||''),date,dayIdx:dates.indexOf(date),firstOfDay:k===0,via:fly?'plane':'walk',
-    q:fly?(ends[1]||String(e.place||'')):String(e.place||e.title||''),fromQ:fly?ends[0]:'',local:!fly,react:reactionFor(e)});});});
+   stops.push({country:String(country||'').toUpperCase(),costume:costumeKind(country),title:String(e.title||e.place||'일정'),time:String(e.start||''),date,dayIdx:dates.indexOf(date),firstOfDay:k===0,via:fly?'plane':'walk',
+    q:fly?(ends[1]||String(e.place||'')):String(e.place||e.title||''),fromQ:fly?ends[0]:'',local:!fly,react:reactionFor(e,String(country||'').toUpperCase(),seen)});});});
  const places=stops.length-(mode==='trip'?1:0);
  if(mode==='trip'&&places>0)stops.push({title:'집 도착',time:'',date:want.at(-1),dayIdx:dates.indexOf(want.at(-1)),firstOfDay:false,via:'walk',home:true,react:{key:'house',act:'cheer',say:'다녀왔습니다!'}});
  const segs=[];
@@ -149,7 +212,10 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  const ll=q=>{const v=q?known[geoKey(q)]:null;return Array.isArray(v)?v:null;};
  const S=tl.stops;for(const s of S){s.ll=ll(s.q);s.fromLL=ll(s.fromQ);}
  const home=S.find(s=>s.fromLL)?.fromLL||null;for(const s of S)if(s.home&&home)s.ll=home;
- for(const s of S)if(home&&s.ll&&kmApart(home,s.ll)<80)s.costume=''; // 집 근처(출발 공항 포함)에서는 평소 옷
+ for(const s of S)if(home&&s.ll&&kmApart(home,s.ll)<80){s.costume='';s.country='';}
+ // 나라가 바뀌어 처음 도착한 곳에서는 국기를 한 번 띄운다
+ let prevCountry='';for(const s of S){s.flag=s.country&&s.country!==prevCountry?s.country:'';if(s.flag)flagImage(s.flag);prevCountry=s.country||'';}
+ for(const g of tl.segs)if(g.type==='dwell')g.flag=!!S[g.i].flag; // 집 근처(출발 공항 포함)에서는 평소 옷
  tl.map=S.some(s=>s.ll);
  if(tl.map){for(let i=1;i<S.length;i++)if(!S[i].ll)S[i].ll=S[i-1].ll;for(let i=S.length-2;i>=0;i--)if(!S[i].ll)S[i].ll=S[i+1].ll;for(const s of S)Object.assign(s,merc(s.ll[0],s.ll[1]));}
  else{const step=300/(256*2**14);S.forEach((s,i)=>{s.mx=.5+Math.sin(i*1.15+.5)*step*.6;s.my=.5-i*step;});} // 좌표를 하나도 못 찾으면 지도 없이 줄지어 세운다
@@ -176,12 +242,16 @@ export function cameraAt(tl,t){const tt=clamp(t,0,tl.total-1e-4),seg=tl.segs.fin
  if(seg.type!=='move'){const s=S[seg.i];return {seg,p:(tt-seg.start)/seg.dur,cx:s.mx,cy:s.my,z:s.z,fade:0,phase:''};}
  const A=S[seg.from],B=S[seg.to],p=(tt-seg.start)/seg.dur;
  if(!seg.jump){const e=ease(p);return {seg,p,cx:A.mx+(B.mx-A.mx)*e,cy:A.my+(B.my-A.my)*e,z:A.z+(B.z-A.z)*e,fade:0,phase:''};}
+ if(seg.plane){const T=.26; // 앞뒤 26%: 제자리에서 지도 축소·확대, 가운데: 항로를 따라 이동
+  if(p<T){const e=ease(p/T);return {seg,p,cx:A.mx,cy:A.my,z:A.z+(seg.zMid-A.z)*e,fade:0,phase:p<.04?'a':'mid',lift:e,fly:0};}
+  if(p>1-T){const e=ease((1-p)/T);return {seg,p,cx:B.mx,cy:B.my,z:B.z+(seg.zMid-B.z)*e,fade:0,phase:p>.96?'b':'mid',lift:e,fly:1};}
+  const q=ease((p-T)/(1-2*T));return {seg,p,cx:A.mx+(B.mx-A.mx)*q,cy:A.my+(B.my-A.my)*q,z:seg.zMid,fade:0,phase:'mid',lift:1,fly:q};}
  if(p<.1)return {seg,p,cx:A.mx,cy:A.my,z:A.z,fade:p/.1,phase:'a'};
  if(p>.9)return {seg,p,cx:B.mx,cy:B.my,z:B.z,fade:1-(p-.9)/.1,phase:'b'};
  const q=ease((p-.1)/.8);return {seg,p,cx:A.mx+(B.mx-A.mx)*q,cy:A.my+(B.my-A.my)*q,z:seg.zMid,fade:p<.2?1-(p-.1)/.1:p>.8?(p-.8)/.1:0,phase:'mid'};}
 /** 재생에 필요한 타일을 미리 받아 둔다(녹화 중 빈 지도가 찍히지 않게). */
-export async function preloadTiles(tl,maxMs=8000){if(!tl.map)return;const asked=new Set();
- for(let t=0;t<=tl.total;t+=.15)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y)));
+export async function preloadTiles(tl,maxMs=12000){if(!tl.map)return;const asked=new Set();
+ for(let t=0;t<=tl.total;t+=.06)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y)));
  const until=Date.now()+maxMs;while(Date.now()<until&&[...asked].some(e=>!e.done))await new Promise(r=>setTimeout(r,120));}
 
 /** 3D 장면(journey3d.js)에 넘길 한 장면의 상태 */
@@ -190,17 +260,30 @@ export function frameAt(tl,t){const cam=cameraAt(tl,t),{seg,p}=cam,S=tl.stops,sc
  const cur=!moving?seg.i:seg.jump?(cam.phase==='a'?seg.from:seg.to):(p<.5?seg.from:seg.to),stop=S[cur];
  const here=!moving||cam.phase==='a'||cam.phase==='b'; // 일행이 어떤 장소 위에 서 있는가
  let heading=0;if(moving){const A=L(seg.from),B=L(seg.to);heading=Math.atan2(B.x-A.x,B.z-A.z);}
- const tiles=[];if(tl.map)groundTiles(cam,(z,x,y,lx,lz,size,key)=>{const e=tile(z,x,y);if(e.ok)tiles.push({key,img:e.img,x:lx,z:lz,size});});
+ const tiles=[],used=new Set();if(tl.map)groundTiles(cam,(z,x,y,lx,lz,size,key)=>{const e=tile(z,x,y);if(e.ok){tiles.push({key,img:e.img,x:lx,z:lz,size});return;}
+  for(let up=1;up<=6&&z-up>=0;up++){const f=2**up,px=x>>up,py=y>>up,pe=TILES.get((z-up)+'/'+px+'/'+py);if(!pe?.ok)continue; // 아직 못 받은 칸은 받아 둔 넓은 타일로 채운다
+   const pk='p'+(z-up)+'/'+px+'/'+py+'@'+z;if(!used.has(pk)){used.add(pk);tiles.push({key:pk,img:pe.img,x:lx-(x-px*f)*size,z:lz-(y-py*f)*size,size:size*f,y:-up});}return;}});
  const edge=seg.type==='dwell'?Math.min(1,p*5,(1-p)*5):seg.type==='end'?Math.min(1,p*5):0;
  // 표정: 좋아하는 곳에서는 먼저 놀란 얼굴(wow)이었다가 활짝 웃고, 먹을 땐 오물오물, 사진 찍을 땐 윙크 …
  const act=seg.type==='dwell'?stop.react.act:seg.type==='end'?'cheer':cam.phase==='a'?'wave':'';
  const mood=seg.type==='end'?'happy':seg.type==='dwell'?({cheer:p<.32?'wow':'happy',pose:p<.4?'smile':'wink',eat:'yum',relax:'relaxed',sleep:'sleepy',wave:'smile'})[act]||'normal':act==='wave'?'smile':'normal';
- return {t,cam,seg,p,cur,stop,moving,here,tiles,dolly:1-.17*edge,fade:cam.fade,
+ return {t,cam,seg,p,cur,stop,moving,here,tiles,dolly:mid&&seg.plane?1+.22*(cam.lift??1):1-.17*edge,fade:cam.fade,
   stops:S.map((s,i)=>{const q=L(i),state=i===cur&&here?2:i<=cur?1:0;return {...q,state,showProp:!mid&&state>0&&Math.hypot(q.x,q.z)<1500};}),
-  legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1);return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:i+1<=cur};}),
+  legs:S.slice(1).map((s,i)=>{const a=L(i),b=L(i+1),flying=moving&&seg.plane&&seg.to===i+1;return {ax:a.x,az:a.z,bx:b.x,bz:b.z,fly:s.via==='plane',seen:flying?false:i+1<=cur,progress:flying?cam.fly:null};}),
   party:{visible:!mid,costume:stop.costume||'',walking:moving&&!seg.jump,heading,act,mood},
-  vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2}:null,
+  vehicle:mid?{kind:seg.plane?'plane':'train',heading:heading-PI/2,lift:cam.lift??1,climb:seg.plane?(p<.26?.22*(1-cam.lift):p>.74?-.22*(1-cam.lift):0):0}:null,
   night:typeof document!=='undefined'&&document.body.classList.contains('night')};}
+
+/* ---------- 국기: 나라가 바뀌어 도착하면 한 번 크게 띄운다 ---------- */
+const FLAGS=new Map();
+function flagImage(code){let e=FLAGS.get(code);if(!e&&typeof Image!=='undefined'){const img=new Image();img.crossOrigin='anonymous';e={img,ok:false};img.onload=()=>{e.ok=true;};img.src='https://purecatamphetamine.github.io/country-flag-icons/3x2/'+code+'.svg';FLAGS.set(code,e);}return e;}
+function countryName(code){try{return new Intl.DisplayNames(['ko'],{type:'region'}).of(code)||code;}catch{return code;}}
+function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.5;if(sec>show)return;const k=Math.min(1,sec/.22),out=Math.min(1,(show-sec)/.25),s=(.6+.4*ease(k))*(.9+.1*out),e=flagImage(code);
+ ctx.save();ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,330);ctx.scale(s,s);
+ ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(20,34,28,.28)';ctx.shadowBlur=30;fillRR(ctx,-170,-150,340,300,34);ctx.shadowBlur=0;
+ if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.clip();ctx.drawImage(e.img,-120,-116,240,160);ctx.restore();ctx.strokeStyle='rgba(36,61,52,.18)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,-120,-116,240,160,16);ctx.stroke();}
+ else{ctx.fillStyle='#eaf2eb';fillRR(ctx,-120,-116,240,160,16);ctx.fillStyle='#285c4b';ctx.font='900 64px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,0,-36);}
+ ctx.fillStyle='#243d34';ctx.font='900 40px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(fit(ctx,countryName(code)+' 도착!',300),0,96);ctx.restore();}
 
 /* ---------- 3D 장면 위에 덧그리는 2D: 이름표·장소 이름·말풍선·제목·진행 막대 ---------- */
 function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT;const tw=ctx.measureText(text).width+(o.pad||30),h=o.h||42,x=clamp(cx-tw/2,12,W-12-tw);
@@ -209,12 +292,13 @@ function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT;const tw=
 const nameTags=(ctx,stage,members)=>stage.heads().forEach((h,k)=>{if(h)pill(ctx,members[k].label,h.x,h.y,{font:'800 19px ',h:30,pad:24,bg:members[k].me?'#f6c945':'rgba(34,40,54,.86)',fg:members[k].me?INK:'#fff'});});
 export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night=f.night,n=members.length,dwell=seg.type==='dwell';
  if(f.party.visible&&seg.type!=='end'){nameTags(ctx,stage,members);
-  if(f.here){const sp=f.stops[f.cur],top=stage.project(sp.x,290,sp.z-195),ly=clamp(top.y,186,H-200);
+  if(f.here&&!(dwell&&stop.flag&&p*seg.dur<1.5)){const sp=f.stops[f.cur],top=stage.project(sp.x,290,sp.z-195),ly=clamp(top.y,186,H-200);
    ctx.font='800 24px '+FONT;const label=fit(ctx,(stop.time?stop.time+'  ':'')+stop.title,360),box=pill(ctx,label,top.x,ly,{font:'800 24px ',h:46,pad:36,bg:night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)',fg:night?'#eef5ef':'#243d34',line:night?'#52685d':'#dfe5d6'});
    if(stop.firstOfDay)pill(ctx,(stop.dayIdx+1)+'일 차',box.x+34,ly-40,{font:'800 19px ',h:28,pad:22,bg:'#285c4b',fg:'#fff'});
    if(dwell&&stop.react.say&&p>.12&&p<.92){const who=stage.heads()[f.cur%n]||stage.heads().find(Boolean);if(who)pill(ctx,stop.react.say,who.x+(who.x>W/2?-96:96),who.y-44,{h:44,pad:32,line:'#d9dee6'});}
    if(dwell&&tl.group==='couple'&&n>=2){const a=stage.heads()[0],b=stage.heads()[1];if(a&&b){const u=(t*.6)%1;ctx.globalAlpha=1-u;ctx.fillStyle='#ff5a7a';ctx.font='40px '+FONT;ctx.textAlign='center';ctx.fillText('♥',(a.x+b.x)/2,Math.min(a.y,b.y)-84-u*44);ctx.globalAlpha=1;}}
    if(dwell&&stop.react.act==='pose'&&p>.42&&p<.5){ctx.fillStyle='rgba(255,255,255,'+(1-Math.abs(p-.46)/.04).toFixed(2)+')';ctx.fillRect(0,0,W,H);}}}
+ if(dwell&&stop.flag)drawFlag(ctx,stop.flag,p,seg.dur);
  if(f.fade>0){ctx.fillStyle='rgba(244,248,251,'+clamp(f.fade,0,1).toFixed(2)+')';ctx.fillRect(0,0,W,H);} // 먼 이동의 화면 전환
  // 제목·날짜
  ctx.fillStyle=night?'rgba(36,46,41,.94)':'rgba(255,255,255,.94)';fillRR(ctx,24,24,W-48,104,26);
@@ -245,7 +329,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_react1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(a.getTrip?.()?.country_code||doc.meta?.countryCode||doc.meta?.countries?.[0]);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
