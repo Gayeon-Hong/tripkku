@@ -385,8 +385,9 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .hero-me{display:grid;justify-items:center;gap:3px;border:0;background:none;color:inherit;font-size:11px;font-weight:800;flex:none;padding:0}.hero-me .tk-face{width:96px;height:96px;background:#ffffff99;box-shadow:0 0 0 3px #f6c945}
 .tk-face{border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%;flex:none}.trip-faces{display:flex;margin-top:7px;padding-left:2px}.trip-faces .tk-face{width:34px;height:34px;box-shadow:0 0 0 2px var(--card);margin-right:-7px}
 .invite-member-row>.tk-face{width:44px;height:44px}.invite-member-row>.tk-face+div{flex:1;min-width:0}@media(max-width:600px){.hero-me .tk-face{width:66px;height:66px}}
-.trip-party{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.trip-party-item{display:grid;justify-items:center;gap:2px;border:0;background:none;color:var(--ink);font-size:11px;font-weight:750;padding:2px;min-width:64px;max-width:84px}.trip-party-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
+.trip-party{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.trip-party-item{display:grid;justify-items:center;gap:3px;min-width:64px;max-width:84px}.trip-party-face{display:grid;justify-items:center;gap:2px;border:0;background:none;color:var(--ink);font-size:11px;font-weight:750;padding:2px;width:100%}.trip-party-face span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.trip-party-item img{width:60px;height:60px;border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%}.trip-party-kick{border:0;background:none;color:var(--danger);font-size:10px;font-weight:800;padding:2px 4px;min-height:24px}.trip-party-leave{align-self:center;border:1px solid var(--border);background:var(--card);color:var(--muted);border-radius:16px;font-size:11px;font-weight:800;padding:6px 12px;min-height:34px;margin-left:auto}
+.trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
 let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261111_sky2'));
@@ -417,12 +418,17 @@ function autoApply(){const a=api(),t=a.getTrip?.(),me=a.getMyId?.(),saved=localA
  const av={...cleanAvatar(saved,me),role:''};a.saveTrip?.(d=>{d.avatars??={};d.avatars[me]??=av;},'내 캐릭터를 이 여행에 적용했어요.').catch(()=>{});}
 function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip-intro .chip-row');if(!anchor||!api().getTrip?.())return;
  let strip=document.getElementById('tripParty');if(!strip){strip=el('div',{id:'tripParty',class:'trip-party',role:'group','aria-label':'함께 가는 사람들'});anchor.after(strip);}
- const members=party(),kind=tripKind(),sig=JSON.stringify([kind,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
- strip.replaceChildren(...members.map(m=>{const img=el('img',{src:BLANK,alt:'',width:'60',height:'60'}),name=el('span',{text:m.label});
-  const admin=api().isAdmin?.(),item=m.me||admin?el('button',{type:'button',class:'trip-party-item'+(m.me?' me':''),'aria-label':m.label+' · 캐릭터 꾸미기',title:m.me?'내 캐릭터 꾸미기':'관리자: 이 사람 캐릭터 바꾸기'},[img,name]):el('div',{class:'trip-party-item'},[img,name]);
-  if(m.me||admin)item.addEventListener('click',()=>void openAvatar(m.id));
-  // 3D 는 화면이 한가할 때 불러와 그림만 채운다. 실패하면 동그란 빈칸으로 남는다.
-  setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;}));}
+ const A=api(),owner=!!A.isOwner?.(),admin=!!A.isAdmin?.(),members=party(),kind=tripKind(),sig=JSON.stringify([kind,owner,admin,members.map(m=>[m.id,m.label,m.av])]);if(strip.dataset.sig===sig)return;strip.dataset.sig=sig;
+ const items=members.map(m=>{const img=el('img',{src:BLANK,alt:'',width:'60',height:'60'}),name=el('span',{text:m.label});
+  const face=m.me||admin?el('button',{type:'button',class:'trip-party-face','aria-label':m.label+' · 캐릭터 꾸미기',title:m.me?'내 캐릭터 꾸미기':'관리자: 이 사람 캐릭터 바꾸기'},[img,name]):el('div',{class:'trip-party-face'},[img,name]);
+  if(m.me||admin)face.addEventListener('click',()=>void openAvatar(m.id));
+  const item=el('div',{class:'trip-party-item'+(m.me?' me':'')},[face]);
+  // 여행 만든 사람은 다른 사람을 내보낼 수 있다
+  if(owner&&!m.me){const kick=el('button',{type:'button',class:'trip-party-kick','aria-label':m.label+' 내보내기'},[document.createTextNode('내보내기')]);kick.addEventListener('click',()=>void A.removeMember?.(m.id));item.append(kick);}
+  setTimeout(()=>portraitOf(m.av,m.av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{}),400);return item;});
+ // 초대받은 사람은 스스로 나갈 수 있다(만든 사람은 홈에서 여행을 삭제)
+ if(!owner&&A.getTrip?.()&&!A.isDemo?.()){const leave=el('button',{type:'button',class:'trip-party-leave'},[document.createTextNode('🚪 이 여행 나가기')]);leave.addEventListener('click',()=>void A.leaveTrip?.(leave));items.push(leave);}
+ strip.replaceChildren(...items);}
 
 function mountJourney(){
  const dlg=el('dialog',{id:'journeyDialog','aria-labelledby':'jrTitle'});
