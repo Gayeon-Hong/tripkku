@@ -5,6 +5,7 @@
  *   buildProp(key)                              장소 소품(트리, 성, 그릇 …)
  *   createStage(canvas)                         기울어진 지도 바닥 + 동선 + 일행 + 소품을 한 장면으로 그린다
  *   createPreview(canvas)                       꾸미기 창의 미리보기
+ *   createPortraits()                           여행 계획 화면에 넣는 작은 캐릭터 그림
  *
  * 좌표 단위: journey.js 가 "지금 확대 정도에서 화면 1px ≈ 1" 인 값으로 바꿔서 넘겨준다.
  * 일행은 항상 원점(0,0)에 있고 지도가 그 아래에서 움직인다. x=동쪽, z=남쪽(카메라 쪽), y=위.
@@ -206,3 +207,12 @@ export function createPreview(canvas){
  return {set(av,kind=''){if(char){scene.remove(char);freeTree(char);}char=buildAvatar(av,kind);scene.add(char);},
   render(t){if(!char)return;char.rotation.y=Math.sin(t*.9)*.55;const moods=['normal','smile','happy','wow','wink','yum','relaxed'],i=Math.floor(t/1.8)%moods.length;poseAvatar(char,{act:moods[i]==='smile'?'wave':moods[i]==='happy'?'cheer':'',mood:moods[i],t});renderer.render(scene,camera);},
   dispose(){if(char)freeTree(char);renderer.dispose();}};}
+
+/** 여행 계획 화면에 넣는 작은 캐릭터 그림. 캔버스 하나를 돌려 쓰며 그림 주소(data URL)를 돌려준다. */
+export function createPortraits(size=176){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.setSize(size,size,false);
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,10,2000);lights(scene);
+ return {render(av,kind=''){const c=buildAvatar(av,kind),k=c.scale.y;camera.position.set(0,100*k+8,250*k+20);camera.lookAt(0,96*k,0); // 키에 맞춰 머리와 윗몸이 들어오게
+  c.rotation.y=.28;poseAvatar(c,{act:'wave',mood:'smile',t:.16});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;},
+  dispose(){renderer.dispose();}};}
