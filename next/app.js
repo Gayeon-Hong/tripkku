@@ -974,7 +974,12 @@ function bindHandlers(){
  $('openNewTrip').addEventListener('click',()=>{$('newTripDialog').showModal();});
  $('homeLive').addEventListener('click',()=>{if(!window.tripkkuLive?.country)document.querySelector('.tripkku-live-toggle')?.click();});
  // 서비스 워커: 다시 열 때 빠르게 + 오프라인에서도 화면이 뜨게(데이터는 캐시하지 않음)
- if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  // 새 버전이 올라오면 알아서 한 번 새로고침해 최신 화면을 보여 준다(영상 만드는 중에는 기다림)
+  const had=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||reloaded)return;const go=()=>{if(reloaded)return;if(document.querySelector('#journeyDialog[open]'))return setTimeout(go,5000);reloaded=true;location.reload();};go();});
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{
+   const check=()=>reg.update().catch(()=>{});document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});setInterval(check,30*60*1000);}).catch(()=>{}));}
  // 홈 화면 바로가기 '새 여행 만들기'
  if(new URLSearchParams(location.search).get('new')==='1')setTimeout(()=>{if(user||DEMO)$('openNewTrip')?.click();},1200);
  $('fxAmount').addEventListener('input',()=>void renderHomeFx());$('fxCurrency').addEventListener('change',()=>{homeFx.manual=true;void renderHomeFx();});
