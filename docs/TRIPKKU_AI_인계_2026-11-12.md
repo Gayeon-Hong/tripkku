@@ -137,7 +137,7 @@
 ## 8. 작업 방법
 
 - 커밋 전에 `(cd toss-miniapp && node sync-from-web.mjs)` 로 토스 복사본을 맞춘다.
-- 커밋은 `Gayeon-Hong` 이름으로 `main` 에 바로 올린다. 푸시 전에 `git fetch origin main && git rebase origin/main`. 다른 세션이 같은 파일을 고쳐 충돌할 수 있다(2026-11-12 에 실제로 있었다). 충돌하면 최신 `main` 위에 변경을 다시 적용한다.
+- 커밋은 `Gayeon-Hong` 이름, 이메일 `93218452+Gayeon-Hong@users.noreply.github.com`(GitHub 비공개 주소)으로 `main` 에 바로 올린다. 개인 이메일을 커밋에 쓰지 않는다(`git log -1 --format=%ae` 를 복사하지 말 것). 푸시 전에 `git fetch origin main && git rebase origin/main`. 다른 세션이 같은 파일을 고쳐 충돌할 수 있다(2026-11-12 에 실제로 있었다). 충돌하면 최신 `main` 위에 변경을 다시 적용한다.
 - 문법 확인: `node --check next/app.js` 등. 화면 확인은 저장소에서 `python3 -m http.server` 를 띄우고 헤드리스 크롬으로 본다. 실제 Supabase·토스·OSM·푸시는 샌드박스에서 확인할 수 없으므로 **확인 못 한 것은 못 했다고 말한다.**
 - Partner Center 조작 요령: 사용자 지정 드롭다운은 목록이 화면에 안 그려질 수 있다. 입력 칸을 누르고 키보드(글자 입력·아래 화살표)로 고른다. 파일 업로드는 내장 브라우저로 할 수 없어 사용자가 한다.
 
