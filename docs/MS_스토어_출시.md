@@ -14,9 +14,9 @@ MS 스토어용 앱은 웹앱 주소(`https://gayeon-hong.github.io/tripkku/next
 - `next/store/`: 스토어용 스크린샷(PC 1366×768 2장, 휴대폰 390×844 3장) — 데모 데이터로 찍은 것
 - `next/privacy.html`: 개인정보 처리방침 **초안** → 주소 `https://gayeon-hong.github.io/tripkku/next/privacy.html`
 
-## 직접 해야 하는 순서 (계정·결제가 필요해 대신 할 수 없음)
+## 직접 해야 하는 순서 (본인 계정 로그인이 필요해 대신 할 수 없음)
 
-1. **개발자 계정 만들기**: https://partner.microsoft.com/dashboard → 개인 Microsoft 계정으로 가입(Windows 개발자 프로그램, 개인은 1회 등록비).
+1. **개발자 계정 만들기**: https://partner.microsoft.com/dashboard → 이미 쓰고 있는 개발자 계정으로 로그인(다른 앱을 출시한 계정 그대로 사용, 등록비 없음).
 2. **앱 이름 예약**: Partner Center → 앱 및 게임 → 새 제품 → 앱 → 이름 `트립꾸` 또는 `TRIPKKU`.
 3. **값 3개 복사**: 제품 관리 → 제품 ID 에서 `Package ID`, `Publisher ID`, `Publisher display name`.
 4. **패키지 만들기**: https://www.pwabuilder.com 에 `https://gayeon-hong.github.io/tripkku/next/` 입력 → Package For Stores → Windows → 위 값 3개 붙여넣기 → 내려받기.
