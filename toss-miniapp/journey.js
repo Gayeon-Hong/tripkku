@@ -731,7 +731,7 @@ function mountJourney(){
  <button type="button" class="jr-detail" data-jr="detail" hidden></button>
  <div class="jr-actions"><button type="button" class="jr-save" data-jr="rec">⬇ 영상 저장</button><button type="button" class="jr-again" data-jr="restart">↺ 처음부터</button></div>
  <div class="jr-done" hidden><button type="button" class="btn primary" data-jr="savefile">📥 영상 받기</button></div>
- <p class="tiny" id="jrCoupon" hidden></p>
+ <p class="tiny" id="jrCoupon" hidden></p><button type="button" class="jr-buy" data-jr="buy" hidden>쿠폰 1장 사기 · 1,000원</button>
  <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로, 재생을 기다리지 않고 빠르게 만들어요.</p></div>`;
  document.body.append(dlg);
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
@@ -807,8 +807,9 @@ function mountJourney(){
  // 저장 쿠폰: 미리보기는 무료, 파일로 만들 때 1장(관리자·이미 받은 영상은 무료). 체험 모드·토스판은 서버가 없어 그대로 둔다.
  const couponLine=dlg.querySelector('#jrCoupon');
  const paintCoupon=async()=>{const a=api();if(a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.coupon){couponLine.hidden=true;return;}
-  const c=await a.coupon.balance().catch(()=>null);s.wm=!!c&&!c.admin;if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;
+  const c=await a.coupon.balance().catch(()=>null);s.wm=!!c&&!c.admin;if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;btn('buy').hidden=!(a.coupon.canBuy?.()&&!c.admin);
   couponLine.textContent=c.admin?'관리자 · 영상 저장 무제한':'영상 저장 쿠폰 '+c.balance+'장 · 저장한 파일에는 "미리보기" 글자가 없어요 (같은 영상은 다시 받아도 무료)';};
+ btn('buy').addEventListener('click',()=>{if(confirm('영상 저장 쿠폰 1장을 1,000원에 살까요?\n결제가 끝나면 이 화면으로 돌아와요.'))api().coupon.buy('coupon1').catch(e=>api().toast?.(e?.message||'결제를 시작하지 못했어요.'));});
  btn('rec').addEventListener('click',async()=>{s.file=null;
   const a0=api();if(s.tl&&a0.coupon&&!a0.isDemo?.()&&window.TRIPKKU_PLATFORM!=='toss'){btn('rec').disabled=true;
    const r=await a0.coupon.unlock(s.tl.mode==='trip'?'trip':'day|'+(a0.getActiveDate?.()||'')).catch(e=>({ok:false,why:'error',message:e.message}));btn('rec').disabled=false;

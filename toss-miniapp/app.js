@@ -69,6 +69,24 @@ const couponMissing=e=>e&&(e.code==='PGRST202'||/could not find the function|doe
 const coupon={async balance(){if(DEMO||!user)return null;const {data,error}=await client.rpc('tripkku_coupon_balance');return error?null:data;},
  async unlock(key){if(DEMO||!user||!trip)return {ok:true,why:'local'};const {data,error}=await client.rpc('tripkku_video_unlock',{p_trip:trip.id,p_key:key});
   if(error)return couponMissing(error)?{ok:true,why:'unset'}:{ok:false,why:'error',message:error.message};return data;}};
+// 쿠폰 결제(토스페이먼츠 결제창). 클라이언트 키는 공개해도 되는 값이고, 시크릿 키는 Supabase Edge Function 비밀 값에만 둔다.
+// 키가 비어 있으면 결제 버튼이 보이지 않는다. 테스트 키(test_ck_…)로 먼저 확인한 뒤 라이브 키(live_ck_…)로 바꾼다.
+const PAY={clientKey:''};
+coupon.canBuy=()=>!!PAY.clientKey&&!DEMO&&!!user;
+coupon.buy=async(product='coupon1')=>{if(!coupon.canBuy())return;
+ const {data:order,error}=await client.rpc('tripkku_order_create',{p_product:product});if(error||!order?.orderId){toast('주문을 만들지 못했어요. '+(error?.message||''));return;}
+ if(!window.TossPayments)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://js.tosspayments.com/v2/standard';sc.onload=ok;sc.onerror=()=>no(new Error('결제 모듈을 불러오지 못했어요.'));document.head.append(sc);});
+ const base=location.origin+location.pathname;
+ await window.TossPayments(PAY.clientKey).payment({customerKey:user.id}).requestPayment({method:'CARD',amount:{currency:'KRW',value:order.amount},orderId:order.orderId,orderName:order.orderName,successUrl:base+'?pay=success',failUrl:base+'?pay=fail'});};
+let payReturnDone=false;
+async function handlePayReturn(){if(payReturnDone||DEMO||!user)return;const q=new URLSearchParams(location.search),state=q.get('pay');if(!state)return;payReturnDone=true;
+ const clean=()=>history.replaceState(null,'',location.pathname);
+ if(state!=='success'){clean();toast('결제가 취소되었거나 실패했어요.'+(q.get('message')?' ('+q.get('message')+')':''));return;}
+ const body={paymentKey:q.get('paymentKey'),orderId:q.get('orderId'),amount:Number(q.get('amount'))};clean();
+ if(!body.paymentKey||!body.orderId)return;toast('결제를 확인하는 중…');
+ try{const {data,error}=await client.functions.invoke('tripkku-pay-confirm',{body});
+  if(error||!data?.ok)toast('결제 확인에 실패했어요. 돈이 빠져나갔다면 자동으로 취소돼요. 계속되면 문의해 주세요.');
+  else toast('쿠폰 '+data.coupons+'장이 들어왔어요! 지금 '+data.balance+'장 있어요.');}catch(e){toast('결제 확인 실패: '+e.message);}}
 window.__tripkku = { coupon, saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, isAdmin: () => isBetaAdmin, isOwner: () => isTripOwner(), canManage: () => canManageTrip(), ownerId: () => trip?.owner_id, isDemo: () => DEMO, removeMember: id => removeTripMember(id), leaveTrip: btn => trip && removeTripFromHome(trip.id, trip.owner_id === user?.id ? 'delete' : 'leave', btn), dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
@@ -148,7 +166,7 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
    else hiddenTripIds=new Set((rows||[]).map(row=>row.trip_id));
   }else hiddenTripIds=new Set();
  }
- renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');await refreshBetaAdminRole();
+ renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');void handlePayReturn();await refreshBetaAdminRole();
  let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO&&!pendingInviteJoining){pendingInviteJoining=true;try{try{sessionStorage.setItem('tripkku-next-pending-invite',inv);}catch(_){}history.replaceState({},'',location.pathname);await joinTrip(inv);}finally{pendingInviteJoining=false;}}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }

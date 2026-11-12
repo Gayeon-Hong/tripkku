@@ -394,3 +394,5 @@ body .trip-intro{display:block}
 .jr-detail:disabled{opacity:.7}
 
 body #journeyDialog #jrCoupon{color:#ffd9cf;margin:0;font-weight:800}
+
+.jr-buy{min-height:48px;border-radius:16px;border:0;background:var(--accent);color:#1b1e2e;font-weight:900;font-size:14px;width:100%}
