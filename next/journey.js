@@ -806,7 +806,8 @@ function mountJourney(){
   return true;}
  // 저장 쿠폰: 미리보기는 무료, 파일로 만들 때 1장(관리자·이미 받은 영상은 무료). 체험 모드·토스판은 서버가 없어 그대로 둔다.
  const couponLine=dlg.querySelector('#jrCoupon');
- const paintCoupon=async()=>{const a=api();if(a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.coupon){couponLine.hidden=true;return;}
+ const paintCoupon=async()=>{const a=api();if(window.TRIPKKU_ADS?.ready?.()){s.wm=true;couponLine.hidden=false;couponLine.textContent='저장할 때 광고를 한 번 봐요 · 저장한 파일에는 "미리보기" 글자가 없어요';return;}
+  if(a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.coupon){couponLine.hidden=true;return;}
   const c=await a.coupon.balance().catch(()=>null);s.wm=!!c&&!c.admin;if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;btn('buy').hidden=!(a.coupon.canBuy?.()&&!c.admin);
   couponLine.textContent=c.admin?'관리자 · 영상 저장 무제한':'영상 저장 쿠폰 '+c.balance+'장 · 저장한 파일에는 "미리보기" 글자가 없어요 (같은 영상은 다시 받아도 무료)';};
  btn('buy').addEventListener('click',()=>{if(confirm('영상 저장 쿠폰 1장을 1,000원에 살까요?\n결제가 끝나면 이 화면으로 돌아와요.'))api().coupon.buy('coupon1').catch(e=>api().toast?.(e?.message||'결제를 시작하지 못했어요.'));});
@@ -815,6 +816,9 @@ function mountJourney(){
    const r=await a0.coupon.unlock(s.tl.mode==='trip'?'trip':'day|'+(a0.getActiveDate?.()||'')).catch(e=>({ok:false,why:'error',message:e.message}));btn('rec').disabled=false;
    if(!r?.ok){a0.toast?.(r?.why==='no_coupon'?'영상 저장 쿠폰이 없어요. 내 여행에 새 친구를 초대하면 1장을 받아요.':'저장 확인에 실패했어요. 잠시 뒤 다시 해 주세요.');void paintCoupon();return;}
    void paintCoupon();}
+  // 토스판: 저장 전에 보상형 광고 1번(끝까지 봐야 저장). 광고를 쓸 수 없으면 막지 않는다.
+  const ads=window.TRIPKKU_ADS;if(s.tl&&ads?.ready?.()){btn('rec').disabled=true;const r=await ads.reward().catch(()=>'error');btn('rec').disabled=false;
+   if(r==='skipped')return api().toast?.('광고를 끝까지 보면 영상이 저장돼요.');}
   if(await exportFast())return;
   const mime=window.MediaRecorder&&canvas.captureStream?['video/mp4;codecs=avc1.42E01E','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)):null;
   if(!mime)return api().toast?.('이 브라우저는 영상 저장을 지원하지 않아요. 기기의 화면 녹화를 이용해 주세요.');
