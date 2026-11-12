@@ -386,3 +386,5 @@ body #journeyDialog button:disabled{opacity:.5}
 body.night .trip-intro{background:none!important}
 body.night .event-card.tk-has-pieces{box-shadow:0 0 0 2px var(--accent)}
 @media(min-width:861px){#homeScreen{max-width:760px;margin:0 auto}}
+body .home-main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+body .trip-intro{display:block}
