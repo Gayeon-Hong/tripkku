@@ -849,17 +849,22 @@ async function loadAdminTripIndex(){if(!isBetaAdmin||DEMO||!user)return;
  if(error){adminTripIndex=[];list.innerHTML=emptyMessage('관리자 여행 목록을 읽을 수 없어요. 관리자 조회 SQL 적용 여부를 확인해 주세요. ('+esc(error.message)+')');return;}
  adminTripIndex=(data||[]).filter(x=>x.owner_id!==user.id);renderAdminTripList();void renderAdminNews();}
 // 관리자 알림: 지난번 확인 뒤 새로 생긴 여행 + 전용 3D가 아직 없는 장소(다음에 만들 것)
-const ADMIN_SEEN='tripkku-admin-seen-trips';
+const ADMIN_SEEN='tripkku-admin-seen-trips';let adminDetailCount=0;
 function adminSeen(){try{const v=JSON.parse(localStorage.getItem(ADMIN_SEEN)||'null');return Array.isArray(v)?new Set(v):null;}catch{return null;}}
 function adminNewTrips(){const seen=adminSeen();return seen?adminTripIndex.filter(t=>!seen.has(t.id)):[];}
-function paintAdminBadge(){const b=$('adminFeedbackBtn');if(!b)return;b.querySelector('.admin-badge')?.remove();const n=adminNewTrips().length;if(n){const s=document.createElement('span');s.className='admin-badge';s.textContent=String(n);s.setAttribute('aria-label','새 여행 '+n+'개');b.append(s);}}
+function paintAdminBadge(){const b=$('adminFeedbackBtn');if(!b)return;b.querySelector('.admin-badge')?.remove();const n=adminNewTrips().length+adminDetailCount;if(n){const s=document.createElement('span');s.className='admin-badge';s.textContent=String(n);s.setAttribute('aria-label','새 여행·디테일 요청 '+n+'건');b.append(s);}}
 async function renderAdminNews(){const list=$('adminTripList');if(!list)return;let box=$('adminNews');if(!box){box=document.createElement('div');box.id='adminNews';box.className='admin-news';list.before(box);}
  if(!adminSeen()){try{localStorage.setItem(ADMIN_SEEN,JSON.stringify(adminTripIndex.map(t=>t.id)));}catch{}} // 처음에는 지금 목록을 기준으로 삼는다
  const fresh=adminNewTrips();paintAdminBadge();
- let places=[];try{const ids=adminTripIndex.slice(0,40).map(t=>t.id);if(ids.length&&window.__tripkkuPlaces){const {data}=await client.from('tripkku_trips').select('id,data').in('id',ids);places=window.__tripkkuPlaces((data||[]).map(x=>x.data)).slice(0,30);}}catch{}
- box.innerHTML=`<h4>🆕 새로 등록된 여행 ${fresh.length}개</h4>${fresh.length?'<ul>'+fresh.map(t=>`<li>${esc(t.owner_name||'사용자')} · ${esc(t.title)} <small>(${esc(t.destination)} · ${esc(t.start_date)})</small></li>`).join('')+'</ul><button class="btn small" type="button" id="adminNewsSeen">확인했어요</button>':'<p class="tiny">지난번 확인 뒤 새로 생긴 여행이 없어요.</p>'}
+ let places=[],reqs=[];try{const ids=adminTripIndex.slice(0,60).map(t=>t.id);if(ids.length&&window.__tripkkuPlaces){const {data}=await client.from('tripkku_trips').select('id,data').in('id',ids);places=window.__tripkkuPlaces((data||[]).map(x=>x.data)).slice(0,30);
+   // 디테일 제작 요청: 아직 전용 3D가 없는 장소가 남은 여행
+   for(const row of data||[]){const st=window.__tripkkuDetail?.(row.data);if(st?.state==='pending'){const t=adminTripIndex.find(x=>x.id===row.id);reqs.push({title:t?.title||'여행',owner:t?.owner_name||'사용자',at:String(st.req.at||'').slice(0,10),left:st.left});}}}}catch{}
+ adminDetailCount=reqs.length;paintAdminBadge();
+ const reqHtml=`<h4>✨ 디테일 제작 요청 ${reqs.length}건</h4>${reqs.length?'<p class="tiny">아래 장소의 3D를 만들어 올리면 그 사용자의 버튼이 자동으로 "디테일 영상 받기"로 바뀌어요.</p><ul>'+reqs.map(r=>`<li><b>${esc(r.owner)} · ${esc(r.title)}</b> <small>(${esc(r.at)} 요청)</small><br>${r.left.map(esc).join(', ')}</li>`).join('')+'</ul><button class="btn small" type="button" id="adminReqCopy">요청 장소 복사</button>':'<p class="tiny">기다리는 요청이 없어요.</p>'}<div style="height:12px"></div>`;
+ box.innerHTML=reqHtml+`<h4>🆕 새로 등록된 여행 ${fresh.length}개</h4>${fresh.length?'<ul>'+fresh.map(t=>`<li>${esc(t.owner_name||'사용자')} · ${esc(t.title)} <small>(${esc(t.destination)} · ${esc(t.start_date)})</small></li>`).join('')+'</ul><button class="btn small" type="button" id="adminNewsSeen">확인했어요</button>':'<p class="tiny">지난번 확인 뒤 새로 생긴 여행이 없어요.</p>'}
   <h4 style="margin-top:12px">🏗 전용 3D가 아직 없는 장소 ${places.length}곳</h4>${places.length?'<p class="tiny">지금은 도시·나라 대표 건물로 대신 나와요. 만들고 싶은 곳을 Claude에게 알려 주세요.</p><ul>'+places.map(x=>`<li>${esc(x.name)}${x.count>1?' ×'+x.count:''}</li>`).join('')+'</ul><button class="btn small" type="button" id="adminNewsCopy">목록 복사</button>':'<p class="tiny">모든 장소에 전용 3D가 있어요.</p>'}`;
  $('adminNewsSeen')?.addEventListener('click',()=>{try{localStorage.setItem(ADMIN_SEEN,JSON.stringify(adminTripIndex.map(t=>t.id)));}catch{}void renderAdminNews();});
+ $('adminReqCopy')?.addEventListener('click',()=>void copyTextSafe(reqs.map(r=>'['+r.owner+' · '+r.title+']\n'+r.left.join('\n')).join('\n\n')).then(ok=>ok&&toast('요청 장소를 복사했어요.')));
  $('adminNewsCopy')?.addEventListener('click',()=>void copyTextSafe(places.map(x=>x.name).join('\n')).then(ok=>ok&&toast('장소 목록을 복사했어요.')));}
 function renderAdminTripList(){const list=$('adminTripList');if(!list)return;
  list.innerHTML=adminTripIndex.length?adminTripIndex.map(t=>`<div class="trip-card"><div><strong>🧳 ${esc(t.owner_name||'사용자')}의 여행 · ${esc(t.title)}</strong><small>${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)}</small></div><button class="btn small" type="button" data-admin-view-trip="${esc(t.id)}">👁 읽기 전용 보기</button></div>`).join(''):emptyMessage('현재 다른 사용자의 여행이 없습니다.');}

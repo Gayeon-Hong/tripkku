@@ -388,3 +388,7 @@ body.night .event-card.tk-has-pieces{box-shadow:0 0 0 2px var(--accent)}
 @media(min-width:861px){#homeScreen{max-width:760px;margin:0 auto}}
 body .home-main{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 body .trip-intro{display:block}
+
+.jr-detail{min-height:50px;border-radius:18px;border:1.5px dashed #ffffff66;background:none;color:#fff;font-weight:900;font-size:14px;width:100%}
+.jr-detail[data-state="done"]{border:0;background:var(--accent);color:#1b1e2e}
+.jr-detail:disabled{opacity:.7}

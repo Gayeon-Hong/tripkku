@@ -82,3 +82,8 @@
 - 꾸미기 창: 위쪽 무대 + 탭(얼굴·머리·옷·전통의상·관계). 동선 창: 어두운 화면, 속도 버튼(×0.5~×2.5), 큰 저장 버튼.
 - 전신·장소 그림은 `createPortraits().body()/.prop()` 으로 그리고 `localStorage`(`tripkku-bodies-v1`, `tripkku-props-v1`)에 저장.
 - 시안 캔버스: https://claude.ai/artifact/TrQReT98P81SaNjbWZfvHM (소유자만 열람)
+
+## 더 디테일하게 만들기 (2026-11-12, 결제 없이 흐름만)
+- 동선 영상 창의 `data-jr="detail"` 버튼. 상태는 `detailStatus(doc)` 가 계산: `can`(전용 3D 없는 장소 있음) → 요청하면 여행 문서에 `detailRequest={by,at,places[]}` 저장 → `pending`(버튼 잠김) → 요청한 장소에 전용 3D가 모두 생기면 자동으로 `done`("디테일 영상 받기").
+- 관리자 화면 맨 위 "디테일 제작 요청"에 요청자·여행·남은 장소가 뜨고 복사할 수 있다. 배지 숫자에도 포함. 만들 수 없는 장소는 `journey.js` 의 `DETAIL_SKIP` 에 이름을 넣으면 완료로 친다.
+- 체험 모드와 토스판(`TRIPKKU_PLATFORM==='toss'`)에서는 버튼을 숨긴다. 가격(여행당 3,000원 예정)·결제는 아직 없음.

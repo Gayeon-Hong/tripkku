@@ -336,7 +336,13 @@ export function unknownPlaces(docs){const out=new Map();
   const r=reactionFor({...e,city:day.title||''},String(day.countryCode||doc.meta?.countryCode||'').toUpperCase(),new Map());if(!r.generic)continue;
   const name=String(e.place||e.title||'').trim().slice(0,40);if(name.length<2)continue;out.set(name,(out.get(name)||0)+1);}
  return [...out].sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}));}
-if(typeof window!=='undefined')window.__tripkkuPlaces=unknownPlaces;
+// 디테일 제작 요청: 여행 문서의 detailRequest={by,at,places[]}. 요청한 장소에 전용 3D가 모두 생기면(코드가 올라오면) 자동으로 '완료'가 된다.
+// 만들 수 없어 대표 건물로 두기로 한 장소는 여기에 적어 완료로 친다.
+const DETAIL_SKIP=new Set([]);
+export function detailStatus(doc){const missing=unknownPlaces([doc]).map(x=>x.name).filter(n=>!DETAIL_SKIP.has(n)),req=doc?.detailRequest;
+ if(!req||!Array.isArray(req.places))return {state:missing.length?'can':'none',missing};
+ const left=req.places.filter(n=>missing.includes(n));return {state:left.length?'pending':'done',missing,left,req};}
+if(typeof window!=='undefined'){window.__tripkkuPlaces=unknownPlaces;window.__tripkkuDetail=detailStatus;}
 
 /* ---------- 장소 좌표 찾기 ---------- */
 const GEO_URL='https://nominatim.openstreetmap.org/search';
@@ -608,7 +614,7 @@ async function portraitOf(av,kind,mood=faceMood()){const key=JSON.stringify([av,
  if(!portraits)portraits=(await load3d()).createPortraits();const url=portraits.render(av,kind,mood);if(portraitCache.size>60)portraitCache.clear();portraitCache.set(key,url);savePortrait(h,url);return url;}
 function face(av,kind,size){const img=el('img',{src:BLANK,alt:'',width:String(size),height:String(size),class:'tk-face'});img._tk=[av,av.costume==='on'?kind:''];
  portraitOf(av,av.costume==='on'?kind:'').then(url=>{img.src=url;}).catch(()=>{});return img;}
-addEventListener('tripkku-mood',()=>{for(const img of document.querySelectorAll('img'))if(img._tk)portraitOf(...img._tk).then(url=>{img.src=url;}).catch(()=>{});});
+if(typeof addEventListener==='function')addEventListener('tripkku-mood',()=>{for(const img of document.querySelectorAll('img'))if(img._tk)portraitOf(...img._tk).then(url=>{img.src=url;}).catch(()=>{});});
 /* 일정표: 오늘이면 지금 시간대 일정 카드 위에 일행 캐릭터를 체스 말처럼 세운다(1분마다 다음 칸으로 이동). */
 const toMin=v=>{const m=/^(\d{1,2}):(\d{2})/.exec(v||'');return m?Number(m[1])*60+Number(m[2]):null;};
 function placePieces(){const box=document.getElementById('timeline');if(!box)return;const a=api(),date=a.getActiveDate?.(),doc=a.activeDoc?.()||{};
@@ -718,6 +724,7 @@ function mountJourney(){
  <div class="jr-seg" role="group" aria-label="재생 범위"><button type="button" data-jr-mode="day">오늘 하루</button><button type="button" data-jr-mode="trip">여행 전체</button></div><span class="jr-head-pad"></span></header>
  <canvas id="jrCanvas" width="${W}" height="${H}" role="img" aria-label="캐릭터들이 지도 위에서 일정 순서대로 이동하는 애니메이션"></canvas>
  <div class="jr-controls"><button type="button" class="jr-play" data-jr="play" aria-label="멈춤">⏸</button><div class="jr-speeds" role="group" aria-label="재생 속도">${[.5,1,1.5,2,2.5].map(v=>`<button type="button" data-sp="${v}">×${v}</button>`).join('')}</div><select data-jr="speed" aria-label="재생 속도(전체)" class="sr-only" tabindex="-1">${SPEEDS.map(v=>`<option value="${v}"${v===1?' selected':''}>×${v}</option>`).join('')}</select></div>
+ <button type="button" class="jr-detail" data-jr="detail" hidden></button>
  <div class="jr-actions"><button type="button" class="jr-save" data-jr="rec">⬇ 영상 저장</button><button type="button" class="jr-again" data-jr="restart">↺ 처음부터</button></div>
  <div class="jr-done" hidden><button type="button" class="btn primary" data-jr="savefile">📥 영상 받기</button></div>
  <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로, 재생을 기다리지 않고 빠르게 만들어요.</p></div>`;
@@ -725,8 +732,15 @@ function mountJourney(){
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
  const s={tl:null,members:[],t:0,playing:false,speed:1,raf:0,last:0,rec:null,chunks:[],job:0,busy:'',stage:null,exporting:false,file:null};
  const hint=dlg.querySelector('#jrHint'),HINT=hint.textContent;
+ // 더 디테일하게 만들기: 전용 3D가 없는 장소를 관리자에게 만들어 달라고 요청 → 만들어지면 버튼이 다시 열린다. (토스판·체험 모드에서는 숨김)
+ const paintDetail=busy=>{const b=btn('detail'),a=api(),doc=a.activeDoc?.();if(!doc||a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.getTrip?.()){b.hidden=true;return;}
+  const st=detailStatus(doc);b.dataset.state=st.state;b.hidden=st.state==='none';
+  if(st.state==='can'){b.disabled=!!busy;b.textContent='✨ 더 디테일하게 만들기 · '+st.missing.length+'곳';}
+  else if(st.state==='pending'){b.disabled=true;b.textContent='🛠 디테일 제작 중 · '+st.left.length+'곳 남음';}
+  else if(st.state==='done'){b.disabled=!!busy||!s.tl;b.textContent='🎁 디테일 영상 받기';}};
  const paintButtons=()=>{const busy=!!s.rec||s.exporting;btn('play').textContent=s.playing?'⏸':'▶';btn('play').setAttribute('aria-label',s.playing?'멈춤':'재생');btn('speed').value=String(s.speed);for(const b of dlg.querySelectorAll('[data-sp]')){b.classList.toggle('active',Number(b.dataset.sp)===s.speed);b.disabled=busy||!s.tl;}btn('rec').textContent=s.exporting?'● 만드는 중…':s.rec?'● 녹화 중…':'⬇ 영상 저장';
   for(const b of dlg.querySelectorAll('[data-jr-mode]')){b.classList.toggle('active',b.dataset.jrMode===s.tl?.mode);b.disabled=busy;}
+  paintDetail(busy);
   for(const k of ['play','restart','speed','rec'])btn(k).disabled=busy||!s.tl;dlg.querySelector('.jr-done').hidden=!s.file;hint.textContent=s.busy||HINT;};
  const finishRec=(save)=>{const r=s.rec;if(!r)return;s.rec=null;r.onstop=()=>{if(save&&s.chunks.length){const type=r.mimeType||'video/webm';s.file=new File(s.chunks,'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+(type.includes('mp4')?'.mp4':'.webm'),{type});api().toast?.('영상이 준비됐어요. ‘영상 받기’를 눌러 저장하세요.');paintButtons();}s.chunks=[];};
   try{r.stop();}catch{}paintButtons();};
@@ -753,6 +767,11 @@ function mountJourney(){
  btn('close').addEventListener('click',()=>dlg.close());
  btn('play').addEventListener('click',()=>{if(s.t>=s.tl.total)s.t=0;s.playing=!s.playing;paintButtons();});
  btn('restart').addEventListener('click',()=>{s.t=0;s.playing=true;paintButtons();});
+ btn('detail').addEventListener('click',async()=>{const a=api(),doc=a.activeDoc?.();if(!doc)return;const st=detailStatus(doc);
+  if(st.state==='done')return btn('rec').click();
+  if(st.state!=='can')return;const places=st.missing.slice(0,12);
+  if(!confirm('전용 3D가 아직 없는 장소 '+places.length+'곳을 직접 만들어 드려요.\n\n· '+places.join('\n· ')+'\n\n보통 1~2일 걸리고, 다 만들어지면 이 버튼이 "디테일 영상 받기"로 바뀌어요. 지금은 무료 체험 기간이에요.\n\n요청할까요?'))return;
+  try{await a.saveTrip(d=>{d.detailRequest={by:a.getMyId?.()||'',at:new Date().toISOString(),places};},'디테일 제작을 요청했어요. 만들어지면 알려 드릴게요.');}catch(e){a.toast?.('요청 실패: '+e.message);}paintButtons();});
  btn('speed').addEventListener('change',()=>{s.speed=Number(btn('speed').value)||1;paintButtons();});
  dlg.querySelector('.jr-speeds').addEventListener('click',e=>{const b=e.target.closest('[data-sp]');if(!b||b.disabled)return;s.speed=Number(b.dataset.sp)||1;paintButtons();});
  dlg.querySelectorAll('[data-jr-mode]').forEach(b=>b.addEventListener('click',()=>void load(b.dataset.jrMode)));
