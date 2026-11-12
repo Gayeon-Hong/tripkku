@@ -549,6 +549,10 @@ function drawSky(ctx,f,t){const {night:nt,dusk:dk,weather:wx}=f.sky||{};
  if(wx==='rain'||wx==='storm'){ctx.strokeStyle='rgba(200,215,235,.6)';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<90;i++){const h=hash('r'+i),x=(h%W+t*60)%W,y=((h>>>8)%H+t*900)%H;ctx.moveTo(x,y);ctx.lineTo(x-8,y+26);}ctx.stroke();
   if(wx==='storm'&&(t%4.1)<.12){ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(0,0,W,H);}}
  if(wx==='snow'){ctx.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<80;i++){const h=hash('w'+i),x=(h%W+Math.sin(t+i)*24+W)%W,y=((h>>>8)%H+t*(60+h%50))%H;ctx.beginPath();ctx.arc(x,y,2+(h>>>16)%3,0,PI*2);ctx.fill();}}}
+// 무료 미리보기 표시: 화면 전체에 비스듬히 깔린 글자. 쿠폰으로 저장하는 파일에는 넣지 않는다(화면 녹화로 피해 가도 남게).
+function drawWatermark(ctx){ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-.42);ctx.font='900 44px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';
+ for(let y=-H;y<=H;y+=300)for(let x=-W;x<=W;x+=560){const ox=(Math.round(y/300)%2)*280;ctx.fillStyle='rgba(255,255,255,.26)';ctx.fillText('TRIPKKU 미리보기',x+ox,y);ctx.strokeStyle='rgba(27,30,46,.16)';ctx.lineWidth=1.2;ctx.strokeText('TRIPKKU 미리보기',x+ox,y);}
+ ctx.restore();}
 export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night=f.night,n=members.length,dwell=seg.type==='dwell';
  drawSky(ctx,f,t);
  if(seg.type!=='end')f.stops.forEach((sp,i)=>{if((i===f.cur&&f.here)||Math.abs(sp.x)>1500||Math.abs(sp.z)>2400)return;const q=stage.project(sp.x,0,sp.z);if(q.x<-30||q.x>W+30||q.y<150||q.y>H-70)return;drawPin(ctx,q.x,q.y,tl.stops[i].react.key,i<=f.cur,f.vehicle?18:27);});
@@ -749,7 +753,7 @@ function mountJourney(){
   if(s.exporting)return; // 영상을 만드는 동안은 화면 재생을 멈춘다
   if(!s.tl){ctx.fillStyle='#f5f6fa';ctx.fillRect(0,0,W,H);ctx.fillStyle='#1b1e2e';ctx.font='800 30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.busy||'준비 중…',W/2,H/2);return;}
   if(s.playing)s.t+=dt*s.speed;
-  const f=frameAt(s.tl,s.t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
+  const f=frameAt(s.tl,s.t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);if(s.wm&&!s.rec)drawWatermark(ctx);
   if(s.playing&&s.t>=s.tl.total){s.t=s.tl.total;s.playing=false;paintButtons();if(s.rec)setTimeout(()=>finishRec(true),350);}};
  // 일정 → 3D 준비 → 장소 좌표 찾기 → 지도 타일 받기 → 재생
  const load=async mode=>{const tl=buildTimeline(mode);
@@ -803,8 +807,8 @@ function mountJourney(){
  // 저장 쿠폰: 미리보기는 무료, 파일로 만들 때 1장(관리자·이미 받은 영상은 무료). 체험 모드·토스판은 서버가 없어 그대로 둔다.
  const couponLine=dlg.querySelector('#jrCoupon');
  const paintCoupon=async()=>{const a=api();if(a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.coupon){couponLine.hidden=true;return;}
-  const c=await a.coupon.balance().catch(()=>null);if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;
-  couponLine.textContent=c.admin?'관리자 · 영상 저장 무제한':'영상 저장 쿠폰 '+c.balance+'장 · 저장할 때 1장 (이미 받은 영상은 다시 받아도 무료)';};
+  const c=await a.coupon.balance().catch(()=>null);s.wm=!!c&&!c.admin;if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;
+  couponLine.textContent=c.admin?'관리자 · 영상 저장 무제한':'영상 저장 쿠폰 '+c.balance+'장 · 저장한 파일에는 "미리보기" 글자가 없어요 (같은 영상은 다시 받아도 무료)';};
  btn('rec').addEventListener('click',async()=>{s.file=null;
   const a0=api();if(s.tl&&a0.coupon&&!a0.isDemo?.()&&window.TRIPKKU_PLATFORM!=='toss'){btn('rec').disabled=true;
    const r=await a0.coupon.unlock(s.tl.mode==='trip'?'trip':'day|'+(a0.getActiveDate?.()||'')).catch(e=>({ok:false,why:'error',message:e.message}));btn('rec').disabled=false;
