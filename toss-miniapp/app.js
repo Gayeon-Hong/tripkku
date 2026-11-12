@@ -88,7 +88,7 @@ async function handlePayReturn(){if(payReturnDone||DEMO||!user)return;const q=ne
   if(error||!data?.ok)toast('결제 확인에 실패했어요. 돈이 빠져나갔다면 자동으로 취소돼요. 계속되면 문의해 주세요.');
   else toast('쿠폰 '+data.coupons+'장이 들어왔어요! 지금 '+data.balance+'장 있어요.');}catch(e){toast('결제 확인 실패: '+e.message);}}
 // 푸시 알림. 공개 키(VAPID)는 공개해도 되는 값이고, 비밀 키는 Supabase Edge Function 비밀 값에만 둔다. 비어 있으면 알림 버튼이 보이지 않는다.
-const PUSH={publicKey:''};
+const PUSH={publicKey:'BL4H5GJK2fY374w2MZcKv6_pmz4qTXypAs9cPFsi1Mlw32v3d50jCTzMnq9ddVGP1Zs64j-Ke3i2k8ikviF_ygw'};
 const pushReady=()=>!!PUSH.publicKey&&!DEMO&&!!user&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
 const b64ToBytes=v=>{const t=(v+'='.repeat((4-v.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(t);return Uint8Array.from(raw,c=>c.charCodeAt(0));};
 const bytesToB64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
