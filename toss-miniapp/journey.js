@@ -727,6 +727,7 @@ function mountJourney(){
  <button type="button" class="jr-detail" data-jr="detail" hidden></button>
  <div class="jr-actions"><button type="button" class="jr-save" data-jr="rec">⬇ 영상 저장</button><button type="button" class="jr-again" data-jr="restart">↺ 처음부터</button></div>
  <div class="jr-done" hidden><button type="button" class="btn primary" data-jr="savefile">📥 영상 받기</button></div>
+ <p class="tiny" id="jrCoupon" hidden></p>
  <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로, 재생을 기다리지 않고 빠르게 만들어요.</p></div>`;
  document.body.append(dlg);
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
@@ -761,7 +762,7 @@ function mountJourney(){
   if(tl.map){s.busy='지도·날씨를 불러오는 중…';hint.textContent=s.busy;await Promise.all([preloadTiles(tl),fetchWeather(tl)]);if(job!==s.job)return true;}
   else api().toast?.('장소 위치를 찾지 못해 지도 없이 보여 드려요.');
   s.members=party();s.stage.setScene(tl,s.members);s.busy='';s.tl=tl;s.t=0;s.playing=true;paintButtons();return true;};
- const open=async mode=>{if(!dlg.open)dlg.showModal();cancelAnimationFrame(s.raf);s.last=performance.now();s.raf=requestAnimationFrame(tick);
+ const open=async mode=>{if(!dlg.open){dlg.showModal();void paintCoupon();}cancelAnimationFrame(s.raf);s.last=performance.now();s.raf=requestAnimationFrame(tick);
   if(!(await load(mode))&&!(await load(mode==='trip'?'day':'trip')))dlg.close();};
  dlg.addEventListener('close',()=>{cancelAnimationFrame(s.raf);finishRec(false);s.playing=false;s.job++;});
  btn('close').addEventListener('click',()=>dlg.close());
@@ -799,7 +800,16 @@ function mountJourney(){
   catch(e){if(e?.message!=='closed')api().toast?.('영상 만들기 실패: '+(e?.message||e));s.busy='';}
   finally{try{enc.close();}catch{}s.exporting=false;s.t=0;paintButtons();}
   return true;}
+ // 저장 쿠폰: 미리보기는 무료, 파일로 만들 때 1장(관리자·이미 받은 영상은 무료). 체험 모드·토스판은 서버가 없어 그대로 둔다.
+ const couponLine=dlg.querySelector('#jrCoupon');
+ const paintCoupon=async()=>{const a=api();if(a.isDemo?.()||window.TRIPKKU_PLATFORM==='toss'||!a.coupon){couponLine.hidden=true;return;}
+  const c=await a.coupon.balance().catch(()=>null);if(!c){couponLine.hidden=true;return;}couponLine.hidden=false;
+  couponLine.textContent=c.admin?'관리자 · 영상 저장 무제한':'영상 저장 쿠폰 '+c.balance+'장 · 저장할 때 1장 (이미 받은 영상은 다시 받아도 무료)';};
  btn('rec').addEventListener('click',async()=>{s.file=null;
+  const a0=api();if(s.tl&&a0.coupon&&!a0.isDemo?.()&&window.TRIPKKU_PLATFORM!=='toss'){btn('rec').disabled=true;
+   const r=await a0.coupon.unlock(s.tl.mode==='trip'?'trip':'day|'+(a0.getActiveDate?.()||'')).catch(e=>({ok:false,why:'error',message:e.message}));btn('rec').disabled=false;
+   if(!r?.ok){a0.toast?.(r?.why==='no_coupon'?'영상 저장 쿠폰이 없어요. 내 여행에 새 친구를 초대하면 1장을 받아요.':'저장 확인에 실패했어요. 잠시 뒤 다시 해 주세요.');void paintCoupon();return;}
+   void paintCoupon();}
   if(await exportFast())return;
   const mime=window.MediaRecorder&&canvas.captureStream?['video/mp4;codecs=avc1.42E01E','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)):null;
   if(!mime)return api().toast?.('이 브라우저는 영상 저장을 지원하지 않아요. 기기의 화면 녹화를 이용해 주세요.');
