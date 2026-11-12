@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>데일리앱스 · 매일 쓰는 작은 앱을 만듭니다</title>
+<meta name="description" content="데일리앱스는 여행 플래너 트립꾸 등 매일 쓰는 앱을 만드는 1인 개발 스튜디오입니다.">
+<link rel="icon" href="../assets/favicon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&amp;display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--ink:#1b1e2e;--muted:#5d6275;--line:#e4e6ee;--accent:#ff7a59;--accent-ink:#c2412a;--sky:#cfe3ff;--warm:#fff2e3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;line-height:1.65}
+a{color:var(--ink)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:8px}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.logo{font-family:'Jua',sans-serif;font-size:24px;text-decoration:none}
+.logo span{color:var(--accent-ink)}
+nav a{margin-left:18px;font-weight:700;font-size:14px;text-decoration:none;color:var(--muted)}
+nav a:hover{color:var(--ink)}
+.hero{padding:44px 0 36px}
+.hero h1{font-family:'Jua',sans-serif;font-weight:400;font-size:clamp(34px,7vw,58px);line-height:1.15;margin:0 0 14px}
+.hero p{font-size:17px;color:var(--muted);max-width:560px;margin:0}
+h2{font-family:'Jua',sans-serif;font-weight:400;font-size:28px;margin:44px 0 16px}
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.app{background:var(--card);border-radius:28px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.app.tripkku{background:var(--sky)}
+.app.soon{background:var(--warm)}
+.app h3{font-family:'Jua',sans-serif;font-weight:400;font-size:26px;margin:0}
+.tag{align-self:flex-start;font-size:12px;font-weight:900;background:#fff;color:var(--accent-ink);border-radius:999px;padding:4px 10px}
+.app p{margin:0;color:#33384d}
+.shots{display:flex;gap:10px;margin-top:4px}
+.shots img{width:calc(50% - 5px);border-radius:18px;display:block;box-shadow:0 8px 20px rgba(27,30,46,.14)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border-radius:999px;background:var(--ink);color:#fff;font-weight:900;text-decoration:none;align-self:flex-start}
+.btn.ghost{background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.info{background:var(--card);border-radius:24px;padding:22px}
+.info dl{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:0}
+.info dt{color:var(--muted);font-weight:700}
+.info dd{margin:0}
+.policy{background:var(--card);border-radius:24px;padding:22px}
+.policy ul{margin:8px 0 0;padding-left:20px}
+.draft{background:var(--warm);border-radius:14px;padding:10px 14px;font-weight:700;font-size:14px}
+footer{padding:36px 0 60px;color:var(--muted);font-size:13px}
+@media(max-width:560px){.info dl{grid-template-columns:1fr}.info dt{margin-top:8px}nav a{margin-left:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <a class="logo" href="./">데일리<span>앱스</span></a>
+ <nav aria-label="주요 메뉴"><a href="#apps">앱</a><a href="#policy">결제·환불</a><a href="#company">사업자 정보</a></nav>
+</header>
+
+<section class="hero">
+ <h1>매일 쓰는<br>작은 앱을 만듭니다</h1>
+ <p>데일리앱스는 여행, 일상처럼 자주 꺼내 쓰는 순간을 조금 더 즐겁게 만드는 앱을 하나씩 만들어 운영하는 1인 개발 스튜디오입니다.</p>
+</section>
+
+<section id="apps" aria-labelledby="appsTitle">
+ <h2 id="appsTitle">만들고 있는 앱</h2>
+ <div class="apps">
+  <!-- 앱을 추가할 때는 아래 <article class="app"> 한 덩어리를 복사해서 고치면 됩니다. -->
+  <article class="app tripkku">
+   <span class="tag">운영 중</span>
+   <h3>트립꾸 TRIPKKU</h3>
+   <p>친구·가족과 함께 여행 일정을 짜고, 나를 닮은 3D 캐릭터가 지도 위를 걷는 동선 영상으로 남기는 여행 플래너.</p>
+   <div class="shots"><img src="./tripkku-home.png" alt="트립꾸 홈 화면: 다가오는 여행 카드와 캐릭터" loading="lazy"><img src="./tripkku-trip.png" alt="트립꾸 여행 일정 화면" loading="lazy"></div>
+   <div class="row"><a class="btn" href="../next/">웹에서 열기</a><a class="btn ghost" href="../next/privacy.html">개인정보 처리방침</a></div>
+  </article>
+  <article class="app soon">
+   <span class="tag">준비 중</span>
+   <h3>싱크칩</h3>
+   <p>[싱크칩 한 줄 소개를 적어 주세요]</p>
+  </article>
+ </div>
+</section>
+
+<section id="policy" aria-labelledby="policyTitle">
+ <h2 id="policyTitle">결제·환불 안내</h2>
+ <div class="policy">
+  <p class="draft">초안입니다. 공개 전에 운영자가 내용을 확인해 주세요.</p>
+  <ul>
+   <li><b>판매 상품</b>: 트립꾸 영상 저장 쿠폰(1장 1,000원, 3장 3,000원). 디지털 상품이며 결제 즉시 계정에 지급됩니다.</li>
+   <li><b>이용 방법</b>: 쿠폰 1장으로 동선 영상 1개를 파일로 저장할 수 있습니다. 한 번 저장한 영상은 다시 받아도 쿠폰이 차감되지 않습니다.</li>
+   <li><b>환불</b>: 사용하지 않은 쿠폰은 결제일로부터 7일 이내에 아래 문의처로 요청하면 전액 환불됩니다. 이미 사용한 쿠폰은 환불되지 않습니다.</li>
+   <li><b>오류로 인한 결제</b>: 결제는 되었는데 쿠폰이 지급되지 않은 경우 문의처로 알려 주시면 확인 후 지급 또는 환불합니다.</li>
+  </ul>
+ </div>
+</section>
+
+<section id="company" aria-labelledby="companyTitle">
+ <h2 id="companyTitle">사업자 정보</h2>
+ <div class="info">
+  <dl>
+   <dt>상호</dt><dd>데일리앱스</dd>
+   <dt>대표자</dt><dd>홍가연</dd>
+   <dt>사업자등록번호</dt><dd>[사업자등록번호]</dd>
+   <dt>사업장 주소</dt><dd>[사업장 주소]</dd>
+   <dt>통신판매업 신고</dt><dd>[신고번호 또는 "신고 준비 중"]</dd>
+   <dt>문의</dt><dd>[문의 이메일 또는 전화]</dd>
+  </dl>
+ </div>
+</section>
+
+<footer>© 2026 데일리앱스</footer>
+</div>
+</body>
+</html>
