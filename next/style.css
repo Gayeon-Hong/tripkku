@@ -396,3 +396,6 @@ body .trip-intro{display:block}
 body #journeyDialog #jrCoupon{color:#ffd9cf;margin:0;font-weight:800}
 
 .jr-buy{min-height:48px;border-radius:16px;border:0;background:var(--accent);color:#1b1e2e;font-weight:900;font-size:14px;width:100%}
+
+.email-login{margin-top:10px;font-size:13px;color:var(--muted)}.email-login summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.email-login-form{display:grid;gap:10px;max-width:320px;margin-top:6px}

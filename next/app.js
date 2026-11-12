@@ -981,6 +981,10 @@ function bindHandlers(){
   if(u){editCountries=[u.dataset.firstCountry,...editCountries.filter(c=>c!==u.dataset.firstCountry)];paintEditCountries();}});
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();dispatchEvent(new CustomEvent('tripkku-mood',{detail:next}));});
+ // 이메일 로그인: 결제 심사 담당자·테스트용 계정(운영자가 Supabase에서 만든 계정만 가능, 여기서 가입은 받지 않는다)
+ $('emailLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),btn=e.currentTarget.querySelector('button');setBusy(btn,true);
+  try{const {error}=await client.auth.signInWithPassword({email:String(f.get('email')||'').trim(),password:String(f.get('password')||'')});if(error)$('authError').textContent='이메일 또는 비밀번호가 맞지 않아요.';}
+  catch(err){$('authError').textContent='로그인하지 못했어요. '+err.message;}finally{setBusy(btn,false);}});
  $('loginBtn').addEventListener('click',()=>void login('google'));$('kakaoLoginBtn').addEventListener('click',()=>void login('kakao'));$('logoutBtn').addEventListener('click',async()=>{if(DEMO){goHome();return;}await client.auth.signOut();user=null;trip=null;isBetaAdmin=false;$('feedbackTop').hidden=true;$('adminFeedbackBtn').hidden=true;$('adminTripPanel').hidden=true;showScreen('auth');});
  $('newTripForm').addEventListener('submit',e=>void createTripFromForm(e));$('refreshTrips').addEventListener('click',()=>void loadTrips());
  $('joinBtn').addEventListener('click',()=>void joinTrip($('joinCode').value));$('inviteTop').addEventListener('click',()=>void copyInvite());
