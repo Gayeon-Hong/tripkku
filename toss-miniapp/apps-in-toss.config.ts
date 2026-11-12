@@ -2,7 +2,7 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 // IMPORTANT: appName must be identical to the identifier in Apps in Toss Console.
 export default defineConfig({
-  appName: 'tripkku',
+  appName: 'tripggoo',
   brand: { primaryColor: '#365A54' },
   webView: {},
   permissions: [],

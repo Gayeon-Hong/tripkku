@@ -11,7 +11,7 @@
 ## 2. 필요한 준비
 
 1. 앱인토스 콘솔 https://apps-in-toss.toss.im/ 로그인 → 워크스페이스 → 앱(비게임) 등록.
-2. 콘솔에서 앱 영문 식별자(appName)를 확인. 이 템플릿에서는 임시로 `tripkku`입니다.
+2. 콘솔에서 앱 영문 식별자(appName)를 확인. 콘솔에 등록된 값은 `tripggoo`이고 설정 파일에도 그렇게 들어 있습니다.
 3. Node.js **22 LTS** 설치: https://nodejs.org/ (설치 후 Windows `cmd` 재실행).
 4. 본 폴더를 영어 경로(`C:\tripkku-toss`)에 압축 해제하면 편리합니다.
 
@@ -19,7 +19,7 @@
 
 ### 가장 쉬운 방법
 
-1. `apps-in-toss.config.ts` 파일을 메모장으로 열고 `appName: 'tripkku'`를 **콘솔의 실제 appName**으로 바꿔서 저장합니다.
+1. `apps-in-toss.config.ts` 파일을 메모장으로 열고 `appName: 'tripggoo'`(콘솔의 실제 appName)인지 확인합니다.
 2. `01_setup_windows.cmd`를 더블클릭합니다. `npm install` → `npx ait init`이 실행됩니다. 인터넷 연결이 필요합니다.
 3. `ait init` 화면에서 WebView/Vite 프레임워크를 선택하고 *등록된 appName*, 개발 명령(`vite --host`), 빌드 명령(`vite build`), 포트(`5173`)를 확인합니다. 버전에 따라 질문 항목이 다를 수 있습니다.
 4. 초기화가 설정 파일을 다시 작성했다면 `apps-in-toss.config.ts`의 `appName`, `webBundleDir: 'dist'` 값을 재확인합니다. SDK가 Vite 플러그인 설정을 삽입한 경우 그 설정을 보존해야 합니다.
