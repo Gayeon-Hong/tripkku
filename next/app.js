@@ -71,7 +71,7 @@ const coupon={async balance(){if(DEMO||!user)return null;const {data,error}=awai
   if(error)return couponMissing(error)?{ok:true,why:'unset'}:{ok:false,why:'error',message:error.message};return data;}};
 // 쿠폰 결제(토스페이먼츠 결제창). 클라이언트 키는 공개해도 되는 값이고, 시크릿 키는 Supabase Edge Function 비밀 값에만 둔다.
 // 키가 비어 있으면 결제 버튼이 보이지 않는다. 테스트 키(test_ck_…)로 먼저 확인한 뒤 라이브 키(live_ck_…)로 바꾼다.
-const PAY={clientKey:''};
+const PAY={clientKey:'test_ck_c19xUQx43WRZHSpZmG3r3BCimIh9VV35Uz'}; // 토스페이먼츠 클라이언트 키(공개 값). 지금은 테스트 키 — 가맹 심사 통과 후 live_ck 로 바꿀 것
 coupon.canBuy=()=>!!PAY.clientKey&&!DEMO&&!!user;
 coupon.buy=async(product='coupon1')=>{if(!coupon.canBuy())return;
  const {data:order,error}=await client.rpc('tripkku_order_create',{p_product:product});if(error||!order?.orderId){toast('주문을 만들지 못했어요. '+(error?.message||''));return;}
