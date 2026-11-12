@@ -87,7 +87,25 @@ async function handlePayReturn(){if(payReturnDone||DEMO||!user)return;const q=ne
  try{const {data,error}=await client.functions.invoke('tripkku-pay-confirm',{body});
   if(error||!data?.ok)toast('결제 확인에 실패했어요. 돈이 빠져나갔다면 자동으로 취소돼요. 계속되면 문의해 주세요.');
   else toast('쿠폰 '+data.coupons+'장이 들어왔어요! 지금 '+data.balance+'장 있어요.');}catch(e){toast('결제 확인 실패: '+e.message);}}
-window.__tripkku = { coupon, saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, isAdmin: () => isBetaAdmin, isOwner: () => isTripOwner(), canManage: () => canManageTrip(), ownerId: () => trip?.owner_id, isDemo: () => DEMO, removeMember: id => removeTripMember(id), leaveTrip: btn => trip && removeTripFromHome(trip.id, trip.owner_id === user?.id ? 'delete' : 'leave', btn), dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
+// 푸시 알림. 공개 키(VAPID)는 공개해도 되는 값이고, 비밀 키는 Supabase Edge Function 비밀 값에만 둔다. 비어 있으면 알림 버튼이 보이지 않는다.
+const PUSH={publicKey:''};
+const pushReady=()=>!!PUSH.publicKey&&!DEMO&&!!user&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const b64ToBytes=v=>{const t=(v+'='.repeat((4-v.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(t);return Uint8Array.from(raw,c=>c.charCodeAt(0));};
+const bytesToB64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function pushState(){if(!pushReady())return 'off';const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();return sub&&Notification.permission==='granted'?'on':'can';}
+async function paintPush(){const b=$('pushToggle');if(!b)return;if(!pushReady()){b.hidden=true;return;}b.hidden=false;const on=(await pushState().catch(()=>'can'))==='on';b.setAttribute('aria-pressed',String(on));b.textContent=on?'🔔 알림 받는 중':'🔕 알림 받기';}
+async function togglePush(){if(!pushReady())return;const reg=await navigator.serviceWorker.ready,cur=await reg.pushManager.getSubscription();
+ try{if(cur&&Notification.permission==='granted'){await client.rpc('tripkku_push_unsubscribe',{p_endpoint:cur.endpoint});await cur.unsubscribe();toast('이 기기의 알림을 껐어요.');}
+  else{const perm=await Notification.requestPermission();if(perm!=='granted'){toast('알림이 차단되어 있어요. 브라우저·기기 설정에서 알림을 허용해 주세요.');return;}
+   const sub=cur||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToBytes(PUSH.publicKey)}),j=sub.toJSON();
+   const {error}=await client.rpc('tripkku_push_subscribe',{p_endpoint:sub.endpoint,p_p256dh:j.keys?.p256dh||bytesToB64(sub.getKey('p256dh')),p_auth:j.keys?.auth||bytesToB64(sub.getKey('auth'))});
+   if(error){await sub.unsubscribe().catch(()=>{});throw error;}toast('이 기기로 알림을 보내 드릴게요.');}}
+ catch(e){toast('알림 설정 실패: '+(e?.message||e));}finally{void paintPush();}}
+// 일이 생겼다고 서버에 알린다(누구에게 무슨 글을 보낼지는 서버가 정함). 실패해도 앱 동작에는 영향 없음.
+const notifyAt=new Map();
+function notify(kind,tripId=trip?.id){if(!PUSH.publicKey||DEMO||!user||!tripId)return;const k=kind+':'+tripId,now=Date.now();if(kind==='trip_update'&&now-(notifyAt.get(k)||0)<10*60e3)return;notifyAt.set(k,now);
+ client.functions.invoke('tripkku-push',{body:{kind,tripId}}).catch(()=>{});}
+window.__tripkku = { notify, coupon, saveTrip, activeDoc, getTrip: () => trip, renderSchedule, getMembers: () => members, getMyId: () => DEMO ? MY_UID : user?.id, getActiveDate: () => activeDate, activeDayEvents, toast, fmtDate, eventEmoji, getTrips: () => trips, isAdmin: () => isBetaAdmin, isOwner: () => isTripOwner(), canManage: () => canManageTrip(), ownerId: () => trip?.owner_id, isDemo: () => DEMO, removeMember: id => removeTripMember(id), leaveTrip: btn => trip && removeTripFromHome(trip.id, trip.owner_id === user?.id ? 'delete' : 'leave', btn), dayCountry: day => inferDayCountryCode(day, tripCountryCode()) };
 function normalizeDoc(d){d.meta??={};d.meta.countries??=[tripCountryCode()];d.meta.countries=[...new Set(d.meta.countries.filter(x=>BY_COUNTRY[x]))];d.meta.countries.length||d.meta.countries.push(tripCountryCode());d.days??=[];d.todos??=[];d.notes??='';d.savedPlaces??=[];d.reels??=[];d.expenses??=[];d.bookings??=[];return d;}
 function newDoc(meta){return normalizeDoc({meta,days:daysBetween(meta.startDate,meta.endDate).map(date=>({date,title:'자유 일정',events:[]})),todos:[{id:uuid(),title:'항공편과 여권·출입국 서류 확인',done:false},{id:uuid(),title:'현지 인터넷·교통·숙소 예약 확인',done:false}],notes:'',savedPlaces:[],reels:[],expenses:[],bookings:[]});}
 const DEFAULT_DEMO_KEY='tripkku-next-demo-v1';
@@ -166,7 +184,7 @@ async function loadTrips(){if(!user)return;status(DEMO?'체험 모드':'여행 �
    else hiddenTripIds=new Set((rows||[]).map(row=>row.trip_id));
   }else hiddenTripIds=new Set();
  }
- renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');void handlePayReturn();await refreshBetaAdminRole();
+ renderTripList();status(DEMO?'체험 모드 · 서버 저장 안 됨':'여행 목록 준비 완료');void handlePayReturn();void paintPush();await refreshBetaAdminRole();
  let inv=new URLSearchParams(location.search).get('invite');try{inv=inv||sessionStorage.getItem('tripkku-next-pending-invite');}catch(_){} if(inv&&!DEMO&&!pendingInviteJoining){pendingInviteJoining=true;try{try{sessionStorage.setItem('tripkku-next-pending-invite',inv);}catch(_){}history.replaceState({},'',location.pathname);await joinTrip(inv);}finally{pendingInviteJoining=false;}}
  }catch(e){status('Supabase 설정 확인');$('tripList').innerHTML=emptyMessage('새 여행 테이블을 불러올 수 없어요. setup.sql을 SQL Editor에서 실행했는지 확인해 주세요. ('+e.message+')');}
 }
@@ -306,7 +324,7 @@ async function createTripFromForm(e){e.preventDefault();if(!user)return toast('�
  const title=destination+' '+dates.length+'일 여행',doc=newDoc(meta),btn=$('newTripSubmit');setBusy(btn,true);
  try{let id;
  if(DEMO){id=uuid();trips.unshift({id,owner_id:MY_UID,invite_code:'demo-only',title,country_code:country,destination,start_date:start,end_date:end,data:doc,revision:0,updated_at:new Date().toISOString()});setDemoTrips(trips);}
- else{const {data,error}=await client.rpc('tripkku_create_trip',{p_title:title,p_country:country,p_destination:destination,p_start:start,p_end:end,p_data:doc});if(error)throw error;id=data;await loadTrips();}
+ else{const {data,error}=await client.rpc('tripkku_create_trip',{p_title:title,p_country:country,p_destination:destination,p_start:start,p_end:end,p_data:doc});if(error)throw error;id=data;await loadTrips();notify('new_trip',id);}
  await openTrip(id);toast('여행이 생성되었습니다. 일정 추천을 시작합니다.');await generatePlan(true);
  }catch(err){toast('여행 생성 실패: '+err.message);}finally{setBusy(btn,false,'✨ 여행 만들고 추천 일정 받기');}}
 function inviteTokenFromInput(raw){
@@ -323,7 +341,7 @@ async function joinTrip(raw){
   const {data:id,error}=await client.rpc('tripkku_accept_share_link',{p_token:token,p_name:nickname||null});
   if(error)throw error;
   try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){}
-  toast('🎉 초대받은 여행에 참여했어요!');await loadTrips();if(id)await openTrip(id);
+  toast('🎉 초대받은 여행에 참여했어요!');await loadTrips();if(id){await openTrip(id);notify('member_joined',id);}
   return true;
  }catch(e){try{sessionStorage.removeItem('tripkku-next-pending-invite');}catch(_){}toast('초대 참여 실패: '+e.message+' · 새 링크를 요청하거나 카카오 로그인을 확인해 주세요.');return false;}
 }
@@ -355,7 +373,7 @@ async function saveTrip(update,success='저장 완료'){if(!trip)throw new Error
    if(JSON.stringify(draft).length>300000)throw new Error('여행 데이터가 너무 큽니다. 파일을 첨부함으로 옮기세요.');
    if(DEMO){trip.data=draft;trip.revision=(trip.revision||0)+1;revision=trip.revision;trip.updated_at=new Date().toISOString();const list=demoTrips().map(x=>x.id===trip.id?trip:x);setDemoTrips(list);renderAll();status('체험 저장됨');toast(success);return;}
    const {data:newRev,error}=await client.rpc('tripkku_save_trip',{p_id:trip.id,p_data:draft,p_revision:revision});
-   if(!error){trip.data=draft;revision=Number(newRev);trip.revision=revision;renderAll();status('공동 저장 완료 ✓');toast(success);return;}
+   if(!error){trip.data=draft;revision=Number(newRev);trip.revision=revision;renderAll();status('공동 저장 완료 ✓');toast(success);if(members.length>1)notify('trip_update');return;}
    if((error.message||'').includes('TRIPKKU_VERSION_CONFLICT')){
     // 다른 사람(또는 다른 탭)이 먼저 저장했다: 최신본을 다시 읽고 내 변경만 다시 적용한다.
     await new Promise(r=>setTimeout(r,90*(retry+1)));
@@ -982,6 +1000,7 @@ function bindHandlers(){
  $('themeToggle').addEventListener('click',()=>{localStorage.setItem('tripkku-next-night',document.body.classList.contains('night')?'no':'yes');applyTheme();});
  $('moodToggle').addEventListener('click',()=>{const old=localStorage.getItem('tripkku-next-mood')||'happy';const next=MOODS[(MOODS.findIndex(x=>x[0]===old)+1)%MOODS.length][0];localStorage.setItem('tripkku-next-mood',next);applyTheme();dispatchEvent(new CustomEvent('tripkku-mood',{detail:next}));});
  // 이메일 로그인: 결제 심사 담당자·테스트용 계정(운영자가 Supabase에서 만든 계정만 가능, 여기서 가입은 받지 않는다)
+ $('pushToggle')?.addEventListener('click',()=>void togglePush());
  $('emailLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.currentTarget),btn=e.currentTarget.querySelector('button');setBusy(btn,true);
   try{const {error}=await client.auth.signInWithPassword({email:String(f.get('email')||'').trim(),password:String(f.get('password')||'')});if(error)$('authError').textContent='이메일 또는 비밀번호가 맞지 않아요.';}
   catch(err){$('authError').textContent='로그인하지 못했어요. '+err.message;}finally{setBusy(btn,false);}});

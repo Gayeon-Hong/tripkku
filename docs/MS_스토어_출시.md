@@ -50,10 +50,7 @@ MS 스토어용 앱은 웹앱 주소(`https://gayeon-hong.github.io/tripkku/next
 - [ ] 카카오 로그인이 설치형 앱 창에서도 되는지 `.sideload.msix` 로 내 PC에서 먼저 확인
 - [ ] Supabase 에서 `sql/2026-11-12_admin_powers.sql` 실행
 
-## 아직 안 만든 것: 푸시 알림
+## 결제와 푸시 알림
 
-앱 쪽에서 알림을 받아 띄우는 부분은 `next/sw.js` 에 있다. 보내는 쪽이 없다. 필요한 것:
-1. 알림 키(VAPID) 한 쌍 만들기 — 공개 키는 앱에, 비밀 키는 Supabase 비밀 저장소에만
-2. Supabase 테이블 `tripkku_push_subscriptions`(user_id, endpoint, keys) + 본인만 쓰는 정책
-3. Supabase Edge Function: 새 여행 등록 → 관리자에게, 일정 변경·초대 → 일행에게 보내기
-4. 앱에 "알림 받기" 버튼
+- **결제**: MS 스토어 앱은 웹앱을 그대로 여는 것이라 웹의 토스페이먼츠 결제(`docs/결제_연동.md`)가 그대로 동작한다. 따로 연결할 것은 없다. (MS 스토어 자체 결제는 쓰지 않음)
+- **푸시 알림**: `docs/푸시_알림.md`. 윈도우에 설치한 앱에서도 같은 방식으로 온다.

@@ -776,7 +776,7 @@ function mountJourney(){
   if(st.state==='done')return btn('rec').click();
   if(st.state!=='can')return;const places=st.missing.slice(0,12);
   if(!confirm('전용 3D가 아직 없는 장소 '+places.length+'곳을 직접 만들어 드려요.\n\n· '+places.join('\n· ')+'\n\n보통 1~2일 걸리고, 다 만들어지면 이 버튼이 "디테일 영상 받기"로 바뀌어요. 지금은 무료 체험 기간이에요.\n\n요청할까요?'))return;
-  try{await a.saveTrip(d=>{d.detailRequest={by:a.getMyId?.()||'',at:new Date().toISOString(),places};},'디테일 제작을 요청했어요. 만들어지면 알려 드릴게요.');}catch(e){a.toast?.('요청 실패: '+e.message);}paintButtons();});
+  try{await a.saveTrip(d=>{d.detailRequest={by:a.getMyId?.()||'',at:new Date().toISOString(),places};},'디테일 제작을 요청했어요. 만들어지면 알려 드릴게요.');a.notify?.('detail_request');}catch(e){a.toast?.('요청 실패: '+e.message);}paintButtons();});
  btn('speed').addEventListener('change',()=>{s.speed=Number(btn('speed').value)||1;paintButtons();});
  dlg.querySelector('.jr-speeds').addEventListener('click',e=>{const b=e.target.closest('[data-sp]');if(!b||b.disabled)return;s.speed=Number(b.dataset.sp)||1;paintButtons();});
  dlg.querySelectorAll('[data-jr-mode]').forEach(b=>b.addEventListener('click',()=>void load(b.dataset.jrMode)));

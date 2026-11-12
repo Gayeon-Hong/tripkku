@@ -21,6 +21,7 @@
  <div class="h2-top"><div><span id="homeDate" class="h2-date"></span><h1 id="homeGreeting">어디로 떠나볼까요?</h1></div><button id="heroMe" class="h2-me" type="button" aria-label="내 캐릭터 꾸미기"></button></div>
  <div id="nextTrip" class="h2-next" aria-live="polite"></div>
  <div class="h2-tiles"><div class="h2-tile"><span class="h2-label">환율 계산</span><div class="home-fx" role="group" aria-label="환율 계산기"><input id="fxAmount" inputmode="decimal" maxlength="12" placeholder="금액" aria-label="현지 통화 금액"><span id="fxWon" class="fx-won" hidden>원</span><select id="fxCurrency" aria-label="통화"></select><button id="fxSwap" class="fx-swap" type="button" aria-label="원화로 입력하기로 바꾸기" title="방향 바꾸기">⇄</button><output id="fxResult" for="fxAmount fxCurrency" aria-live="polite">= ? 원</output></div></div><div class="h2-tile h2-warm"><span class="h2-label">지금 여기</span><button id="homeLive" class="home-live" type="button">내 위치 켜기</button></div></div>
+ <button id="pushToggle" class="h2-push" type="button" aria-pressed="false" hidden>🔕 알림 받기</button>
  <button id="openNewTrip" class="btn primary home-new" type="button" hidden>＋ 새 여행 만들기</button>
  <div class="home-main">
   <div class="home-list"><div class="card-title"><h2>내 여행</h2><button id="refreshTrips" class="btn small subtle" type="button">새로고침</button></div><div id="tripList" class="trip-list"><p class="muted">여행을 불러오는 중…</p></div></div>
