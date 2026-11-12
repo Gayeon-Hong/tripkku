@@ -74,3 +74,13 @@ const { authorizationCode, referrer } = await TossAuth.login();
 - [ ] 수익화와 별개로 이용 약관·저작권·외부 링크 가이드 재확인
 
 **비용:** 앱인토스 초기 개발과 등록은 일반적으로 시작 가능하지만 Supabase·AI API·호스팅 이용량에 따라 비용이 발생할 수 있습니다. SDK/검수 정책과 개인/사업자 조건은 콘솔의 최신 안내를 다시 확인하세요.
+
+---
+
+## 2026-11-12: 웹앱을 토스 미니앱 폴더로 그대로 옮김
+
+- `toss-miniapp/` 의 화면 파일(index.html, app.js, journey.js, journey3d.js, style.css 등)은 이제 **웹앱(`next/`)의 복사본**이다. 직접 고치지 말 것.
+- `toss-miniapp/sync-from-web.mjs` 가 복사한다. `npm run build`(=`ait build`)와 `npm run dev` 앞에 자동으로 돌기 때문에, **웹앱을 고친 뒤 토스판을 다시 빌드하면 같은 화면이 된다.** 깃 푸시만으로 토스 앱이 바뀌지는 않는다(토스는 `.ait` 를 콘솔에 올려 심사받아야 함).
+- 3D 엔진(three), Supabase, 영상 저장(mp4-muxer)은 CDN 대신 번들에 포함(`package.json` 의존성).
+- **로그인 없이 이 기기에만 저장하는 모드**(`window.TRIPKKU_LOCAL_ONLY`)로 열린다. 토스 안에서는 토스 로그인만 허용되고 서버(`/toss/session`) 연동이 아직 없기 때문. 그래서 토스판에서는 친구 초대·같이 편집·AI 추천이 안 된다.
+- 확인한 것: `vite build` 성공, 빌드 결과를 열어 홈과 3D 캐릭터가 뜨는 것. 확인 못 한 것: `ait build`(.ait 만들기)와 실제 토스 앱 안에서의 동작(지도 타일·날씨 등 외부 주소 허용, 영상 저장·공유).

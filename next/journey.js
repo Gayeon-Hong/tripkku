@@ -490,11 +490,11 @@ function countryName(code){try{return new Intl.DisplayNames(['ko'],{type:'region
 function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.6;if(sec>show)return;const k=ease(Math.min(1,sec/.3)),out=Math.min(1,(show-sec)/.3),e=flagImage(code);
  const text=countryName(code)+' 도착!';ctx.save();ctx.font='900 34px '+FONT;const tw=Math.min(300,ctx.measureText(text).width),w=tw+160,h=84;
  ctx.globalAlpha=Math.min(k,out);ctx.translate(W/2,196+(1-k)*-26);
- ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(20,34,28,.26)';ctx.shadowBlur=22;ctx.shadowOffsetY=6;fillRR(ctx,-w/2,-h/2,w,h,h/2);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+ ctx.fillStyle='rgba(255,255,255,.97)';ctx.shadowColor='rgba(22,24,39,.26)';ctx.shadowBlur=22;ctx.shadowOffsetY=6;fillRR(ctx,-w/2,-h/2,w,h,h/2);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
  const fx=-w/2+22,fw=84,fh=56;
- if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.clip();ctx.drawImage(e.img,fx,-fh/2,fw,fh);ctx.restore();ctx.strokeStyle='rgba(36,61,52,.2)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.stroke();}
- else{ctx.fillStyle='#eaf2eb';fillRR(ctx,fx,-fh/2,fw,fh,10);ctx.fillStyle='#285c4b';ctx.font='900 26px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,fx+fw/2,2);}
- ctx.fillStyle='#243d34';ctx.font='900 34px '+FONT;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(fit(ctx,text,300),fx+fw+18,2);ctx.restore();}
+ if(e?.ok){ctx.save();ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.clip();ctx.drawImage(e.img,fx,-fh/2,fw,fh);ctx.restore();ctx.strokeStyle='rgba(27,30,46,.2)';ctx.lineWidth=2;ctx.beginPath();rr(ctx,fx,-fh/2,fw,fh,10);ctx.stroke();}
+ else{ctx.fillStyle='#eceef5';fillRR(ctx,fx,-fh/2,fw,fh,10);ctx.fillStyle='#1b1e2e';ctx.font='900 26px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(code,fx+fw/2,2);}
+ ctx.fillStyle='#1b1e2e';ctx.font='900 34px '+FONT;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(fit(ctx,text,300),fx+fw+18,2);ctx.restore();}
 
 /* ---------- 장소 아이콘 핀: 지도 위 각 장소에 종류별 색·아이콘 핀을 꽂는다(지도 앱의 장소 핀처럼) ---------- */
 const EMOJI=",'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'";
@@ -511,7 +511,7 @@ const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],sno
  hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move]};
 function drawPin(ctx,x,y,key,seen,r){const [glyph,color]=ICON[key]||ICON.pin,cy=y-r*2;ctx.save();ctx.globalAlpha=seen?1:.62;
  ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-r*.72,cy+r*.7);ctx.arc(x,cy,r,PI*.76,PI*.24);ctx.closePath();ctx.stroke();ctx.fill();
- ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,cy,r*.76,0,PI*2);ctx.fill();ctx.font=Math.round(r*1.05)+'px '+FONT+EMOJI;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#243d34';ctx.fillText(glyph,x,cy+1);ctx.restore();}
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,cy,r*.76,0,PI*2);ctx.fill();ctx.font=Math.round(r*1.05)+'px '+FONT+EMOJI;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#1b1e2e';ctx.fillText(glyph,x,cy+1);ctx.restore();}
 
 /* ---------- 3D 장면 위에 덧그리는 2D: 이름표·장소 이름·말풍선·제목·진행 막대 ---------- */
 function pill(ctx,text,cx,cy,o={}){ctx.font=(o.font||'800 22px ')+FONT+(o.emoji?EMOJI:'');const tw=ctx.measureText(text).width+(o.pad||30),h=o.h||42,x=clamp(cx-tw/2,12,W-12-tw);
@@ -529,9 +529,9 @@ function placeLabel(ctx,s,cx,cy,night){const name=shortTitle(s),icon=(ICON[s.rea
  const width=()=>{ctx.font='800 '+size+'px '+FONT+EMOJI;const a=ctx.measureText(icon+name).width;ctx.font='800 '+(size-6)+'px '+FONT;return a+(time?ctx.measureText(time).width+22:0);};
  while(size>18&&width()>W-90)size-=2;ctx.font='800 '+size+'px '+FONT+EMOJI;const nm=fit(ctx,icon+name,W-90-(time?90:0));
  ctx.font='800 '+size+'px '+FONT+EMOJI;const nw=ctx.measureText(nm).width;ctx.font='800 '+(size-6)+'px '+FONT;const tw=time?ctx.measureText(time).width+22:0,h=size+22,bw=nw+tw+38,x=clamp(cx-bw/2,12,W-12-bw);
- ctx.fillStyle=night?'rgba(36,46,41,.95)':'rgba(255,255,255,.96)';ctx.strokeStyle=night?'#52685d':'#dfe5d6';ctx.lineWidth=2;ctx.beginPath();rr(ctx,x,cy-h/2,bw,h,h/2);ctx.fill();ctx.stroke();
- ctx.textBaseline='middle';ctx.textAlign='left';if(time){ctx.fillStyle='#285c4b';ctx.fillText(time,x+19,cy+1);}
- ctx.font='800 '+size+'px '+FONT+EMOJI;ctx.fillStyle=night?'#eef5ef':'#243d34';ctx.fillText(nm,x+19+tw,cy+1);return {x,w:bw};}
+ ctx.fillStyle=night?'rgba(34,37,58,.95)':'rgba(255,255,255,.96)';ctx.strokeStyle=night?'#52685d':'#dfe5d6';ctx.lineWidth=2;ctx.beginPath();rr(ctx,x,cy-h/2,bw,h,h/2);ctx.fill();ctx.stroke();
+ ctx.textBaseline='middle';ctx.textAlign='left';if(time){ctx.fillStyle='#1b1e2e';ctx.fillText(time,x+19,cy+1);}
+ ctx.font='800 '+size+'px '+FONT+EMOJI;ctx.fillStyle=night?'#f1f2f8':'#1b1e2e';ctx.fillText(nm,x+19+tw,cy+1);return {x,w:bw};}
 const WX_TEXT={clear:'☀️ 맑음',cloud:'☁️ 흐림',fog:'🌫️ 안개',rain:'🌧️ 비',snow:'❄️ 눈',storm:'⛈️ 뇌우'};
 function drawSky(ctx,f,t){const {night:nt,dusk:dk,weather:wx}=f.sky||{};
  if(dk>0){const g=ctx.createLinearGradient(0,0,0,H*.4);g.addColorStop(0,'rgba(255,140,90,'+(dk*.38).toFixed(2)+')');g.addColorStop(1,'rgba(255,170,120,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.4);}
@@ -549,24 +549,24 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
  if(f.party.visible&&seg.type!=='end'){nameTags(ctx,stage,members);
   if(f.here&&!(dwell&&stop.flag&&p*seg.dur<1.5)){const sp=f.stops[f.cur],top=stage.project(sp.x,236,sp.z-120),ly=clamp(top.y,186,H-200);
    const box=placeLabel(ctx,stop,top.x,ly,night);
-   if(stop.firstOfDay)pill(ctx,(stop.dayIdx+1)+'일 차',box.x+34,ly-40,{font:'800 19px ',h:28,pad:22,bg:'#285c4b',fg:'#fff'});
+   if(stop.firstOfDay)pill(ctx,(stop.dayIdx+1)+'일 차',box.x+34,ly-40,{font:'800 19px ',h:28,pad:22,bg:'#1b1e2e',fg:'#fff'});
    if(dwell&&stop.react.say&&p>.12&&p<.92){const who=stage.heads()[f.cur%n]||stage.heads().find(Boolean);if(who)pill(ctx,stop.react.say,who.x+(who.x>W/2?-96:96),who.y-44,{h:44,pad:32,line:'#d9dee6'});}
    if(dwell&&tl.group==='couple'&&n>=2){const a=stage.heads()[0],b=stage.heads()[1];if(a&&b){const u=(t*.6)%1;ctx.globalAlpha=1-u;ctx.fillStyle='#ff5a7a';ctx.font='40px '+FONT;ctx.textAlign='center';ctx.fillText('♥',(a.x+b.x)/2,Math.min(a.y,b.y)-84-u*44);ctx.globalAlpha=1;}}
    if(dwell&&stop.react.act==='pose'&&p>.42&&p<.5){ctx.fillStyle='rgba(255,255,255,'+(1-Math.abs(p-.46)/.04).toFixed(2)+')';ctx.fillRect(0,0,W,H);}}}
  if(f.fade>0){ctx.fillStyle='rgba(244,248,251,'+clamp(f.fade,0,1).toFixed(2)+')';ctx.fillRect(0,0,W,H);} // 먼 이동의 화면 전환
  // 제목·날짜
- ctx.fillStyle=night?'rgba(36,46,41,.94)':'rgba(255,255,255,.94)';fillRR(ctx,24,24,W-48,104,26);
- ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=night?'#eef5ef':'#243d34';ctx.font='900 30px '+FONT;ctx.fillText(fit(ctx,tl.title,W-110),50,60);
- ctx.fillStyle=night?'#acc0b1':'#697c70';ctx.font='700 22px '+FONT;ctx.font='700 22px '+FONT+EMOJI;ctx.fillText(stop.dayIdx>=0?(stop.dayIdx+1)+'일 차 · '+(api().fmtDate?.(stop.date)||stop.date||'')+(f.sky?.weather?'  ·  '+WX_TEXT[f.sky.weather]:''):'',50,100);
- ctx.fillStyle='rgba(255,255,255,.8)';fillRR(ctx,24,H-42,W-48,12,6);ctx.fillStyle='#285c4b';fillRR(ctx,24,H-42,Math.max(12,(W-48)*Math.min(1,t/tl.total)),12,6);
- ctx.lineWidth=4;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.font='900 20px '+FONT;ctx.textAlign='right';ctx.strokeText('TRIPKKU',W-28,H-64);ctx.fillStyle='rgba(36,61,52,.75)';ctx.fillText('TRIPKKU',W-28,H-64);
- if(tl.map){ctx.font='600 15px '+FONT;ctx.textAlign='left';ctx.strokeText('© OpenStreetMap',28,H-64);ctx.fillStyle='rgba(36,61,52,.8)';ctx.fillText('© OpenStreetMap',28,H-64);}
+ ctx.fillStyle=night?'rgba(34,37,58,.94)':'rgba(255,255,255,.94)';fillRR(ctx,24,24,W-48,104,26);
+ ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=night?'#f1f2f8':'#1b1e2e';ctx.font='900 30px '+FONT;ctx.fillText(fit(ctx,tl.title,W-110),50,60);
+ ctx.fillStyle=night?'#b0b5cc':'#5d6275';ctx.font='700 22px '+FONT;ctx.font='700 22px '+FONT+EMOJI;ctx.fillText(stop.dayIdx>=0?(stop.dayIdx+1)+'일 차 · '+(api().fmtDate?.(stop.date)||stop.date||'')+(f.sky?.weather?'  ·  '+WX_TEXT[f.sky.weather]:''):'',50,100);
+ ctx.fillStyle='rgba(255,255,255,.8)';fillRR(ctx,24,H-42,W-48,12,6);ctx.fillStyle='#1b1e2e';fillRR(ctx,24,H-42,Math.max(12,(W-48)*Math.min(1,t/tl.total)),12,6);
+ ctx.lineWidth=4;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.font='900 20px '+FONT;ctx.textAlign='right';ctx.strokeText('TRIPKKU',W-28,H-64);ctx.fillStyle='rgba(27,30,46,.75)';ctx.fillText('TRIPKKU',W-28,H-64);
+ if(tl.map){ctx.font='600 15px '+FONT;ctx.textAlign='left';ctx.strokeText('© OpenStreetMap',28,H-64);ctx.fillStyle='rgba(27,30,46,.8)';ctx.fillText('© OpenStreetMap',28,H-64);}
  // 마지막 장면: 위쪽만 어둡게 하고 캐릭터들은 3D 그대로 환호한다
- if(seg.type==='end'){const fade=Math.min(1,p*4),g=ctx.createLinearGradient(0,0,0,H*.62);g.addColorStop(0,'rgba(20,34,28,'+(.86*fade).toFixed(2)+')');g.addColorStop(1,'rgba(20,34,28,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.62);ctx.globalAlpha=fade;
+ if(seg.type==='end'){const fade=Math.min(1,p*4),g=ctx.createLinearGradient(0,0,0,H*.62);g.addColorStop(0,'rgba(22,24,39,'+(.86*fade).toFixed(2)+')');g.addColorStop(1,'rgba(22,24,39,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.62);ctx.globalAlpha=fade;
   for(let i=0;i<46;i++){const h=hash('c'+i),cx=h%W,cy=((h>>>8)%H+t*(140+h%120))%H;ctx.fillStyle=['#f6c945','#f6b6c8','#8fd0b8','#8fb7ea','#ffffff'][i%5];ctx.save();ctx.translate(cx,cy);ctx.rotate(t*3+i);ctx.fillRect(-6,-3,12,6);ctx.restore();}
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.font='900 64px '+FONT;ctx.fillText('여행 끝!',W/2,H*.2);
   ctx.font='800 30px '+FONT;ctx.fillText(fit(ctx,tl.title,W-80),W/2,H*.2+76);
-  ctx.font='700 26px '+FONT;ctx.fillStyle='#e6f2ea';ctx.fillText(tl.days+'일 · '+tl.places+'곳 · 함께한 '+n+'명',W/2,H*.2+122);ctx.globalAlpha=1;nameTags(ctx,stage,members);}
+  ctx.font='700 26px '+FONT;ctx.fillStyle='#eceef5';ctx.fillText(tl.days+'일 · '+tl.places+'곳 · 함께한 '+n+'명',W/2,H*.2+122);ctx.globalAlpha=1;nameTags(ctx,stage,members);}
 }
 
 /* ---------- 화면 연결 (브라우저 전용) ---------- */
@@ -732,7 +732,7 @@ function mountJourney(){
   try{r.stop();}catch{}paintButtons();};
  const tick=now=>{const dt=Math.min(.05,(now-s.last)/1000);s.last=now;s.raf=requestAnimationFrame(tick);
   if(s.exporting)return; // 영상을 만드는 동안은 화면 재생을 멈춘다
-  if(!s.tl){ctx.fillStyle='#eef4e4';ctx.fillRect(0,0,W,H);ctx.fillStyle='#285c4b';ctx.font='800 30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.busy||'준비 중…',W/2,H/2);return;}
+  if(!s.tl){ctx.fillStyle='#f5f6fa';ctx.fillRect(0,0,W,H);ctx.fillStyle='#1b1e2e';ctx.font='800 30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.busy||'준비 중…',W/2,H/2);return;}
   if(s.playing)s.t+=dt*s.speed;
   const f=frameAt(s.tl,s.t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
   if(s.playing&&s.t>=s.tl.total){s.t=s.tl.total;s.playing=false;paintButtons();if(s.rec)setTimeout(()=>finishRec(true),350);}};

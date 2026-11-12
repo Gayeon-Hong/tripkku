@@ -1,12 +1,12 @@
 {
   "name": "트립꾸 TRIPKKU · 함께 꾸미는 여행 플래너",
   "short_name": "트립꾸",
-  "description": "어디로 떠나든: AI 동선 추천, 친구와 일정·예산·메모 공유, 국가별 번역",
+  "description": "친구·가족과 함께 여행 일정을 짜고, 우리 캐릭터가 지도 위를 걷는 동선 영상으로 남기는 여행 플래너",
   "id": "/tripkku/next/",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f7f5f0",
-  "theme_color": "#285c4b",
+  "background_color": "#f5f6fa",
+  "theme_color": "#1b1e2e",
   "icons": [
     {
       "src": "../assets/icon-192.png",
@@ -52,5 +52,45 @@
         }
       ]
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "./store/wide-home.png",
+      "sizes": "1366x768",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "홈: 다가오는 여행과 일행 캐릭터"
+    },
+    {
+      "src": "./store/wide-trip.png",
+      "sizes": "1366x768",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "여행 일정과 동선 영상"
+    },
+    {
+      "src": "./store/phone-home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "홈"
+    },
+    {
+      "src": "./store/phone-trip.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "하루 일정"
+    },
+    {
+      "src": "./store/phone-avatar.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "내 캐릭터 꾸미기"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }

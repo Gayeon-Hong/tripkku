@@ -1,0 +1,59 @@
+# 트립꾸 · Microsoft Store 출시 준비 (2026-11-12)
+
+## 핵심: 한 번 올리면, 그 뒤로는 깃에 푸시만 하면 스토어 앱도 바뀐다
+
+MS 스토어용 앱은 웹앱 주소(`https://gayeon-hong.github.io/tripkku/next/`)를 여는 **껍데기(설치 패키지)**다. 화면·기능은 앱 안에 들어 있지 않고 열 때마다 사이트에서 받아 온다.
+그래서 지금처럼 `main` 에 푸시하면 1~3분 뒤 스토어에서 설치한 앱에도 그대로 반영된다. **스토어에 다시 제출할 필요가 없다.**
+
+스토어에 다시 올려야 하는 경우는 앱 이름, 아이콘, 스토어 소개 글·스크린샷을 바꿀 때뿐이다.
+
+## 저장소에 준비해 둔 것
+
+- `next/manifest.webmanifest`: 이름·설명·아이콘(192, 512, maskable)·스크린샷 5장·바로가기·카테고리
+- `next/sw.js`: 서비스 워커(오프라인에서도 화면 표시, 새 버전 자동 반영)
+- `next/store/`: 스토어용 스크린샷(PC 1366×768 2장, 휴대폰 390×844 3장) — 데모 데이터로 찍은 것
+- `next/privacy.html`: 개인정보 처리방침 **초안** → 주소 `https://gayeon-hong.github.io/tripkku/next/privacy.html`
+
+## 직접 해야 하는 순서 (계정·결제가 필요해 대신 할 수 없음)
+
+1. **개발자 계정 만들기**: https://partner.microsoft.com/dashboard → 개인 Microsoft 계정으로 가입(Windows 개발자 프로그램, 개인은 1회 등록비).
+2. **앱 이름 예약**: Partner Center → 앱 및 게임 → 새 제품 → 앱 → 이름 `트립꾸` 또는 `TRIPKKU`.
+3. **값 3개 복사**: 제품 관리 → 제품 ID 에서 `Package ID`, `Publisher ID`, `Publisher display name`.
+4. **패키지 만들기**: https://www.pwabuilder.com 에 `https://gayeon-hong.github.io/tripkku/next/` 입력 → Package For Stores → Windows → 위 값 3개 붙여넣기 → 내려받기.
+   - 압축 안의 `.msixbundle`(과 `.classic.appxbundle`)만 올린다. `.sideload.msix` 는 내 PC 테스트용.
+5. **제출**: Partner Center → 제출 시작
+   - 가격: 무료
+   - 속성: 카테고리 `여행`, 개인정보 처리방침 URL = 위 주소(초안의 [ ] 부분을 먼저 채울 것)
+   - 연령 등급 설문
+   - 패키지: 4번 파일 업로드
+   - 스토어 등록 정보: 아래 글과 `next/store/wide-*.png` 스크린샷
+6. 심사(보통 1~3일) 후 공개.
+
+## 스토어 소개 글 (그대로 붙여넣기)
+
+**짧은 설명**
+친구·가족과 함께 여행 일정을 짜고, 우리 캐릭터가 지도 위를 걷는 영상으로 남기는 여행 플래너.
+
+**설명**
+트립꾸는 함께 꾸미는 여행 플래너예요.
+- 여행지만 정하면 AI가 하루 동선을 추천해요.
+- 초대 링크 하나로 친구·가족과 일정, 메모, 예산을 같이 관리해요.
+- 나를 닮은 3D 캐릭터를 꾸미고, 일행 캐릭터가 실제 지도 위를 일정대로 걸어가는 동선 영상을 만들어요. 도착한 나라의 전통의상도 입어요.
+- 현지 통화 환율 계산, 현지어 번역, 예약서 보관까지 한곳에서.
+
+**검색어**: 여행, 여행 계획, 일정, 여행 플래너, 가족 여행, 동선
+
+## 출시 전에 확인할 것
+
+- [ ] `next/privacy.html` 의 [운영자 이름], [문의 이메일], [날짜] 채우기
+- [ ] 스크린샷을 실제 여행 화면으로 바꾸고 싶으면 `next/store/` 파일 교체(PC는 1366×768 이상)
+- [ ] 카카오 로그인이 설치형 앱 창에서도 되는지 `.sideload.msix` 로 내 PC에서 먼저 확인
+- [ ] Supabase 에서 `sql/2026-11-12_admin_powers.sql` 실행
+
+## 아직 안 만든 것: 푸시 알림
+
+앱 쪽에서 알림을 받아 띄우는 부분은 `next/sw.js` 에 있다. 보내는 쪽이 없다. 필요한 것:
+1. 알림 키(VAPID) 한 쌍 만들기 — 공개 키는 앱에, 비밀 키는 Supabase 비밀 저장소에만
+2. Supabase 테이블 `tripkku_push_subscriptions`(user_id, endpoint, keys) + 본인만 쓰는 정책
+3. Supabase Edge Function: 새 여행 등록 → 관리자에게, 일정 변경·초대 → 일행에게 보내기
+4. 앱에 "알림 받기" 버튼

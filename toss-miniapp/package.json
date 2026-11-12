@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite --host",
     "build": "ait build",
-    "build:web": "vite build",
-    "preview": "vite preview"
+    "build:web": "node sync-from-web.mjs && vite build",
+    "preview": "vite preview",
+    "sync": "node sync-from-web.mjs",
+    "predev": "node sync-from-web.mjs",
+    "prebuild": "node sync-from-web.mjs"
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "latest",
@@ -15,7 +18,10 @@
     "@toss/tds-mobile-ait": "latest",
     "@emotion/react": "^11.0.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "@supabase/supabase-js": "2.49.8",
+    "three": "0.170.0",
+    "mp4-muxer": "5.1.3"
   },
   "devDependencies": {
     "vite": "^7.0.0",

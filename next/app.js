@@ -17,7 +17,7 @@ import {COUNTRIES,BY_COUNTRY,LANGUAGES,suggestCountry,countryInfo,languageLabel,
 // Public URL and publishable key are safe in the browser; never put GEMINI_API_KEY here.
 const CONFIG={url:'https://aachvbbblwycutggzdpp.supabase.co',publishable:'sb_publishable_VeMIoHqNqCTnxZSMCqLHVg_FLQTW6Pq'};
 const client=createClient(CONFIG.url,CONFIG.publishable,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const DEMO=new URLSearchParams(location.search).has('demo');
+const DEMO=new URLSearchParams(location.search).has('demo')||window.TRIPKKU_LOCAL_ONLY===true; // 토스판 등: 로그인 없이 이 기기에만 저장
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uuid=()=>crypto.randomUUID();
