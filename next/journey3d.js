@@ -637,9 +637,14 @@ export function createPortraits(size=176){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(1);renderer.setSize(size,size,false);
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,10,2000);lights(scene);
+ // 잠깐 다른 크기로 찍고 원래(정사각 얼굴용)로 되돌린다
+ const sized=(w,h,fn)=>{renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();try{return fn();}finally{renderer.setSize(size,size,false);camera.aspect=1;camera.fov=30;camera.updateProjectionMatrix();}};
  return {render(av,kind='',mood='smile'){const c=buildAvatar(av,kind),k=c.scale.y;camera.position.set(0,100*k+8,250*k+20);camera.lookAt(0,96*k,0); // 키에 맞춰 머리와 윗몸이 들어오게
   c.rotation.y=.28;poseAvatar(c,{act:mood==='sleepy'||mood==='angry'?'':'wave',mood,t:.16});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;},
-  /** 장소 소품 한 개를 작은 그림으로(일정표 카드용). 소품 크기에 맞춰 카메라를 잡는다. */
-  prop(key){const p=buildProp(key),box=new THREE.Box3().setFromObject(p),c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3()),r=Math.max(sz.x,sz.y,sz.z*.8)*.62+8;
-   p.rotation.y=-.45;camera.position.set(c.x+r*.9,c.y+r*.75,c.z+r*3.4);camera.lookAt(c.x,c.y,c.z);scene.add(p);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(p);freeTree(p);return url;},
+  /** 전신 그림(홈 카드·꾸미기 화면용). 모두 같은 카메라로 찍어 키 차이가 그대로 보인다. 바닥은 그림 아래쪽에 맞춘다. */
+  body(av,kind='',act='wave',mood='happy'){return sized(240,320,()=>{const c=buildAvatar(av,kind);camera.fov=26;camera.position.set(0,96,470);camera.lookAt(0,86,0);
+   c.rotation.y=.3;poseAvatar(c,{act,mood,t:.3});scene.add(c);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(c);freeTree(c);return url;});},
+  /** 장소 소품 한 개를 그림으로. 소품 크기에 맞춰 카메라를 잡는다. */
+  prop(key,px=320){return sized(px,px,()=>{const p=buildProp(key),box=new THREE.Box3().setFromObject(p),c=box.getCenter(new THREE.Vector3()),sz=box.getSize(new THREE.Vector3()),r=Math.max(sz.x,sz.y,sz.z*.8)*.62+8;
+   p.rotation.y=-.45;camera.position.set(c.x+r*.9,c.y+r*.75,c.z+r*3.4);camera.lookAt(c.x,c.y,c.z);scene.add(p);renderer.render(scene,camera);const url=canvas.toDataURL('image/png');scene.remove(p);freeTree(p);return url;});},
   dispose(){renderer.dispose();}};}

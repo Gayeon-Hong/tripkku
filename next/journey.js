@@ -570,13 +570,13 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
 }
 
 /* ---------- 화면 연결 (브라우저 전용) ---------- */
-const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:10px;font-weight:800;font-size:13px}.jr-seg button.active{background:var(--soft);color:var(--forest);border-color:#8ea995}
+const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:10px;font-weight:800;font-size:13px}.jr-seg button.active{background:var(--soft);color:var(--forest);border-color:#8f93a8}
 #journeyDialog .jr-speed{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800}.jr-speed select{width:auto;min-height:39px;padding:6px 8px}.jr-done{display:flex;justify-content:center}
 #jrCanvas{display:block;margin:auto;max-width:100%;max-height:58dvh;width:auto;height:auto;border-radius:14px;border:1px solid var(--border)}.jr-controls{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
 .av-top{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}#avCanvas{width:150px;height:174px;border-radius:14px;background:var(--soft)}
 .av-group{display:grid;gap:5px}.av-group>span{font-weight:740;font-size:12px}.av-chips{display:flex;gap:6px;flex-wrap:wrap}.av-chips button{min-height:36px;min-width:36px;padding:6px 11px;border-radius:18px;border:2px solid var(--border);background:var(--card);color:var(--ink);font-size:12px;font-weight:750}
-.av-chips button.swatch{padding:0;width:36px;border-radius:50%}.av-chips button.active{border-color:#285c4b;box-shadow:0 0 0 2px #285c4b33}body.night .av-chips button.active{border-color:#92c6ac}
-.av-slider{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:11px;font-weight:600;color:var(--muted)}.av-slider input{min-height:28px;padding:0;border:0;background:none;accent-color:#285c4b}
+.av-chips button.swatch{padding:0;width:36px;border-radius:50%}.av-chips button.active{border-color:#2c3258;box-shadow:0 0 0 2px #2c325833}body.night .av-chips button.active{border-color:#959bc3}
+.av-slider{display:grid;grid-template-columns:52px minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:11px;font-weight:600;color:var(--muted)}.av-slider input{min-height:28px;padding:0;border:0;background:none;accent-color:#2c3258}
 .hero-me{display:grid;justify-items:center;gap:3px;border:0;background:none;color:inherit;font-size:11px;font-weight:800;flex:none;padding:0}.hero-me .tk-face{width:96px;height:96px;background:#ffffff99;box-shadow:0 0 0 3px #f6c945}
 .tk-face{border-radius:50%;background:var(--soft);object-fit:cover;object-position:50% 20%;flex:none}.trip-faces{display:flex;margin-top:7px;padding-left:2px}.trip-faces .tk-face{width:34px;height:34px;box-shadow:0 0 0 2px var(--card);margin-right:-7px}
 .invite-member-row>.tk-face{width:44px;height:44px}.invite-member-row>.tk-face+div{flex:1;min-width:0}@media(max-width:600px){.hero-me .tk-face{width:66px;height:66px}}
@@ -586,7 +586,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_mood1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_ui2'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -615,22 +615,78 @@ function placePieces(){const box=document.getElementById('timeline');if(!box)ret
  const now=new Date(),today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
  const old=box.querySelector('.tk-pieces');
  const cards=[...box.querySelectorAll(':scope > .event-card')],day=(doc.days||[]).find(d=>d.date===date);
- if(date!==today||!day||!cards.length){old?.remove();return;}
+ const clear=()=>cards.forEach(c=>c.classList.remove('tk-past','tk-has-pieces'));
+ if(date!==today||!day||!cards.length){old?.remove();clear();return;}
  const evs=[...(a.activeDayEvents?.(day)||day.events||[])].sort((p,q)=>String(p.start).localeCompare(String(q.start)));
  const cur=now.getHours()*60+now.getMinutes();let idx=-1,tag='지금';
  evs.forEach((e,i)=>{const st=toMin(e.start),en=toMin(e.end)??(st!=null?st+60:null);if(st!=null&&st<=cur&&cur<(en>st?en:st+60))idx=i;});
  if(idx<0){idx=evs.findIndex(e=>(toMin(e.start)??-1)>cur);tag='다음';}
  if(idx<0){idx=evs.length-1;tag='마지막';}
- const card=cards[idx];if(!card){old?.remove();return;}
+ const card=cards[idx];if(!card){old?.remove();clear();return;}
+ cards.forEach((c,i)=>{const e=evs[i],en=e?(toMin(e.end)??(toMin(e.start)??0)+60):0;c.classList.toggle('tk-past',!!e&&i!==idx&&en<=cur);if(c!==card)c.classList.remove('tk-has-pieces');});
  const ms=party(),kind=tripKind(),sig=JSON.stringify([idx,tag,ms.map(m=>[m.id,m.av])]);
  if(old&&old.dataset.sig===sig&&old.parentElement===card)return;old?.remove();
  const pieces=el('div',{class:'tk-pieces','aria-label':tag+' 여기: '+ms.map(m=>m.label).join(', ')},[el('span',{class:'tk-pieces-tag',text:tag}),...ms.slice(0,6).map((m,i)=>{const f=face(m.av,m.av.costume==='on'?kind:'',34);f.title=m.label;f.style.setProperty('--i',i);return f;})]);
  pieces.dataset.sig=sig;card.classList.add('tk-has-pieces');card.append(pieces);}
 /* 홈 화면: 인사 카드에 내 캐릭터. 누르면 꾸미기(여행 밖에서는 이 기기에 저장해 두고, 여행을 열 때 자동으로 적용) */
-function renderHomeHero(openAvatar){const earth=document.querySelector('.home-hero .hero-earth'),me=api().getMyId?.();if(!earth||!me)return;
- let b=document.getElementById('heroMe');if(!b){b=el('button',{id:'heroMe',type:'button',class:'hero-me','aria-label':'내 캐릭터 꾸미기'});earth.before(b);b.addEventListener('click',()=>void openAvatar());}
+function renderHomeHero(openAvatar){const b=document.getElementById('heroMe'),me=api().getMyId?.();if(!b||!me)return;
+ if(!b.dataset.on){b.dataset.on='1';b.addEventListener('click',()=>void openAvatar());}
  const saved=localAvatar()||(api().getTrips?.()||[]).map(t=>t.data?.avatars?.[me]).find(Boolean),av=cleanAvatar(saved,me),sig=JSON.stringify([av,!!saved]);if(b.dataset.sig===sig)return;b.dataset.sig=sig;
- b.replaceChildren(face(av,'',96),el('span',{text:saved?'내 캐릭터':'내 캐릭터 만들기'}));}
+ b.replaceChildren(face(av,'',52));b.setAttribute('aria-label',saved?'내 캐릭터 꾸미기':'내 캐릭터 만들기');
+ const d=document.getElementById('homeDate');if(d)d.textContent=new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'});}
+/* 전신 그림·장소 그림: 한 번 그리면 기기에 저장(다시 열 때 3D 엔진을 받지 않음) */
+function diskCache(store,keep){let d=null;const all=()=>{if(!d){try{d=JSON.parse(localStorage.getItem(store)||'{}')||{};}catch{d={};}}return d;};
+ return {get:k=>all()[k],set(k,v){const o=all();delete o[k];o[k]=v;const ks=Object.keys(o);for(const x of ks.slice(0,Math.max(0,ks.length-keep)))delete o[x];try{localStorage.setItem(store,JSON.stringify(o));}catch{try{localStorage.removeItem(store);}catch{}d={};}}};}
+const bodyDisk=diskCache('tripkku-bodies-v1',8),propDisk=diskCache('tripkku-props-v1',8),picMem=new Map();
+async function picOf(kind,args){const key=kind+JSON.stringify(args),h=portraitHash(key);if(picMem.has(h))return picMem.get(h);const disk=kind==='body'?bodyDisk:propDisk,hit=disk.get(h);if(hit){picMem.set(h,hit);return hit;}
+ await idle();if(!portraits)portraits=(await load3d()).createPortraits();const url=kind==='body'?portraits.body(...args):portraits.prop(...args);picMem.set(h,url);disk.set(h,url);return url;}
+const dayDiff=(a,b)=>Math.round((Date.parse(a+'T00:00:00Z')-Date.parse(b+'T00:00:00Z'))/864e5);
+const todayStr=()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;};
+/* 홈: 다가오는(또는 진행 중인) 여행 카드 — 일행 전신 캐릭터 + 그 도시 대표 건물 */
+function nextTrip(){const shown=new Set([...document.querySelectorAll('#tripList .trip-card[data-trip-id]')].map(c=>c.dataset.tripId)),today=todayStr();
+ const list=(api().getTrips?.()||[]).filter(t=>shown.has(t.id)&&t.start_date&&t.end_date&&t.end_date>=today).sort((a,b)=>a.start_date.localeCompare(b.start_date));return list[0]||null;}
+function renderNextTrip(){const box=document.getElementById('nextTrip'),me=api().getMyId?.();if(!box||!me)return;const t=nextTrip(),today=todayStr();
+ const g=document.getElementById('homeGreeting'),name=(g?.textContent.match(/^(.+?)님,/)||[])[1];
+ const mineAv=cleanAvatar(localAvatar()||(api().getTrips?.()||[]).map(x=>x.data?.avatars?.[me]).find(Boolean),me);
+ if(!t){const sig='none'+JSON.stringify(mineAv);if(box.dataset.sig===sig)return;box.dataset.sig=sig;
+  const img=el('img',{src:BLANK,alt:'',class:'nx-body'}),go=el('button',{type:'button',class:'nx-go',text:'새 여행 만들기'});go.addEventListener('click',()=>document.getElementById('openNewTrip')?.click());
+  box.replaceChildren(el('div',{class:'nx-card nx-empty'},[el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:'처음이신가요?'}),el('strong',{class:'nx-title',text:'첫 여행을 만들어 볼까요?'}),el('span',{class:'nx-route',text:'여행지만 정하면 AI가 동선을 추천해 줘요'})]),el('div',{class:'nx-party'},[img]),go]));
+  picOf('body',[mineAv,'','wave','happy']).then(u=>{img.src=u;}).catch(()=>{});return;}
+ const d=dayDiff(t.start_date,today),on=d<=0,nth=1-d,doc=t.data||{},av0=doc.avatars||{};
+ const ids=[...new Set([me,...Object.keys(av0)])].filter(id=>id===me||(av0[id]&&!sameLook(av0[id],av0[me]))).slice(0,4);
+ const kind=on?costumeKind(doc.meta?.countries?.[0]||t.country_code):'';
+ const people=ids.map(id=>cleanAvatar(av0[id]||(id===me?localAvatar():null),id));
+ const where=[t.destination,t.title].join(' '),city=CITY_SIGHTS.find(c=>c[0].test(where)),cc=String(doc.meta?.countries?.[0]||t.country_code||'').toUpperCase(),propKey=city?city[1][0]:SIGHT_BY_COUNTRY[cc]?sightFor(cc,0):'plane';
+ const sig=JSON.stringify([t.id,t.title,t.destination,d,people,kind,propKey]);
+ if(g&&name)g.textContent=name+'님, '+(on?'여행 '+nth+'일 차예요!':d+'일 뒤 출발!');else if(g)g.textContent=on?'여행 '+nth+'일 차예요!':d+'일 뒤 출발!';
+ if(box.dataset.sig===sig)return;box.dataset.sig=sig;
+ const prop=el('img',{src:BLANK,alt:'',class:'nx-prop'}),acts=['wave','photo','cheer','wave'];
+ const bodies=people.map((av,i)=>{const im=el('img',{src:BLANK,alt:'',class:'nx-body'+(av.size==='baby'?' baby':av.size==='kid'?' kid':'')});picOf('body',[av,av.costume==='on'?kind:'',acts[i%4],i%2?'wink':'happy']).then(u=>{im.src=u;}).catch(()=>{});return im;});
+ const go=el('button',{type:'button',class:'nx-go','aria-label':t.title+' 일정 보기'},[document.createTextNode('일정 보기')]);go.addEventListener('click',()=>openTripById(t.id));
+ const say=on?'오늘도 신나게!':d<=3?'짐 다 쌌어?':d<=14?'두근두근!':'얼른 가고 싶다!';
+ box.replaceChildren(el('div',{class:'nx-card'},[prop,el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:on?'여행 중 · '+nth+'일 차':'D-'+d+' · 다가오는 여행'}),el('strong',{class:'nx-title',text:t.title}),el('span',{class:'nx-route',text:String(t.destination||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean).slice(0,5).join(' → ')})]),el('div',{class:'nx-party'},[...bodies,...(people.length<=2?[el('span',{class:'nx-say',text:say})]:[])]),go]));
+ picOf('prop',[propKey,360]).then(u=>{prop.src=u;}).catch(()=>prop.remove());}
+const tripBtn=id=>[...document.querySelectorAll('#tripList [data-open-trip]')].find(b=>b.dataset.openTrip===id);
+const openTripById=id=>tripBtn(id)?.click();
+/* 아래 메뉴(홈 화면) */
+function mountDock(openAvatar){const dock=document.getElementById('dock');if(!dock)return;
+ const whenTrip=fn=>{let n=0;const iv=setInterval(()=>{const ok=!document.getElementById('tripScreen')?.hidden&&api().getTrip?.();if(ok||++n>40){clearInterval(iv);if(ok)fn();}},150);};
+ dock.addEventListener('click',e=>{const b=e.target.closest('[data-dock]');if(!b)return;const k=b.dataset.dock,t=nextTrip()||(api().getTrips?.()||[]).find(x=>tripBtn(x.id));
+  if(k==='home')window.scrollTo({top:0,behavior:'smooth'});
+  else if(k==='new')document.getElementById('openNewTrip')?.click();
+  else if(k==='avatar')void openAvatar();
+  else if(!t){api().toast?.('먼저 여행을 만들어 주세요.');document.getElementById('openNewTrip')?.click();}
+  else{openTripById(t.id);if(k==='video')whenTrip(()=>setTimeout(()=>document.getElementById('journeyPlay')?.click(),400));}});}
+/* 여행 화면: 동선 영상 카드 */
+function renderJourneyCard(){const box=document.getElementById('journeyCard');if(!box)return;const a=api(),doc=a.activeDoc?.()||{},date=a.getActiveDate?.(),days=doc.days||[],i=days.findIndex(d=>d.date===date),day=days[i];
+ if(!day){box.replaceChildren();box.dataset.sig='';return;}
+ const evs=[...(a.activeDayEvents?.(day)||day.events||[])],country=String(a.dayCountry?.(day)||'').toUpperCase(),seen=new Map();
+ const rs=evs.filter(e=>!flightKind(e)).map(e=>reactionFor({...e,city:day.title||''},country,seen)),pick=rs.find(r=>r.act==='pose'||r.act==='cheer')||rs[0],key=pick?.key||'plane';
+ const whole=/영상/.test(document.getElementById('journeyPlay')?.textContent||''),label=String(day.title||'').trim(),name=label&&label.length<=10&&!/^\d+$/.test(label)?label:'오늘';
+ const sig=JSON.stringify([date,key,whole,name,evs.length]);if(box.dataset.sig===sig)return;box.dataset.sig=sig;
+ const img=el('img',{src:BLANK,alt:''}),play=el('button',{type:'button',class:'jcard-play'},[document.createTextNode(whole?'영상 만들기':'재생')]);play.addEventListener('click',()=>document.getElementById('journeyPlay')?.click());
+ box.replaceChildren(el('div',{class:'jcard-text'},[el('span',{class:'jcard-eyebrow',text:whole?'여행 영상':(i+1)+'일 차 동선'}),el('strong',{text:whole?'우리 여행을 영상으로 남기기':name+' 하루를 영상으로 보기'}),play]),el('div',{class:'jcard-thumb'},[img]));
+ picOf('prop',[key,360]).then(u=>{img.src=u;}).catch(()=>{});}
 /* 홈 화면: 여행 카드마다 그 여행에 저장된 일행 캐릭터 */
 function decorateTripCards(){const trips=api().getTrips?.()||[];
  document.querySelectorAll('.trip-card[data-trip-id]').forEach(card=>{if(card.querySelector('.trip-faces'))return;const t=trips.find(x=>x.id===card.dataset.tripId),me=api().getMyId?.(),av0=t?.data?.avatars||{},list=Object.entries(av0).filter(([id,raw])=>id===me||!sameLook(raw,av0[me])).slice(0,6);if(!list.length)return;
@@ -658,17 +714,18 @@ function renderPartyStrip(openAvatar){const anchor=document.querySelector('.trip
 
 function mountJourney(){
  const dlg=el('dialog',{id:'journeyDialog','aria-labelledby':'jrTitle'});
- dlg.innerHTML=`<div class="modal-content"><header class="modal-header"><h3 id="jrTitle">🎬 우리 여행 동선</h3><button type="button" class="btn icononly" data-jr="close" aria-label="닫기">×</button></header>
- <div class="jr-seg" role="group" aria-label="재생 범위"><button type="button" data-jr-mode="day">선택한 하루</button><button type="button" data-jr-mode="trip">여행 전체</button></div>
+ dlg.innerHTML=`<div class="modal-content"><header class="jr-head"><button type="button" class="round-btn" data-jr="close" aria-label="닫기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button><h3 id="jrTitle" class="sr-only">우리 여행 동선</h3>
+ <div class="jr-seg" role="group" aria-label="재생 범위"><button type="button" data-jr-mode="day">오늘 하루</button><button type="button" data-jr-mode="trip">여행 전체</button></div><span class="jr-head-pad"></span></header>
  <canvas id="jrCanvas" width="${W}" height="${H}" role="img" aria-label="캐릭터들이 지도 위에서 일정 순서대로 이동하는 애니메이션"></canvas>
- <div class="jr-controls"><button type="button" class="btn primary" data-jr="play">⏸ 멈춤</button><button type="button" class="btn" data-jr="restart">↺ 처음부터</button><label class="jr-speed">속도 <select data-jr="speed" aria-label="재생 속도">${SPEEDS.map(v=>`<option value="${v}"${v===1?' selected':''}>×${v}</option>`).join('')}</select></label><button type="button" class="btn" data-jr="rec">⬇ 영상 저장</button></div>
+ <div class="jr-controls"><button type="button" class="jr-play" data-jr="play" aria-label="멈춤">⏸</button><div class="jr-speeds" role="group" aria-label="재생 속도">${[.5,1,1.5,2,2.5].map(v=>`<button type="button" data-sp="${v}">×${v}</button>`).join('')}</div><select data-jr="speed" aria-label="재생 속도(전체)" class="sr-only" tabindex="-1">${SPEEDS.map(v=>`<option value="${v}"${v===1?' selected':''}>×${v}</option>`).join('')}</select></div>
+ <div class="jr-actions"><button type="button" class="jr-save" data-jr="rec">⬇ 영상 저장</button><button type="button" class="jr-again" data-jr="restart">↺ 처음부터</button></div>
  <div class="jr-done" hidden><button type="button" class="btn primary" data-jr="savefile">📥 영상 받기</button></div>
  <p class="tiny" id="jrHint">여행 전체는 출발부터 집에 돌아올 때까지 빠르게 보여 줘요. 영상 저장은 지금 고른 속도로, 재생을 기다리지 않고 빠르게 만들어요.</p></div>`;
  document.body.append(dlg);
  const canvas=dlg.querySelector('#jrCanvas'),ctx=canvas.getContext('2d'),gl=el('canvas',{width:W,height:H}),btn=k=>dlg.querySelector(`[data-jr="${k}"]`);
  const s={tl:null,members:[],t:0,playing:false,speed:1,raf:0,last:0,rec:null,chunks:[],job:0,busy:'',stage:null,exporting:false,file:null};
  const hint=dlg.querySelector('#jrHint'),HINT=hint.textContent;
- const paintButtons=()=>{const busy=!!s.rec||s.exporting;btn('play').textContent=s.playing?'⏸ 멈춤':'▶ 재생';btn('speed').value=String(s.speed);btn('rec').textContent=s.exporting?'● 만드는 중…':s.rec?'● 녹화 중…':'⬇ 영상 저장';
+ const paintButtons=()=>{const busy=!!s.rec||s.exporting;btn('play').textContent=s.playing?'⏸':'▶';btn('play').setAttribute('aria-label',s.playing?'멈춤':'재생');btn('speed').value=String(s.speed);for(const b of dlg.querySelectorAll('[data-sp]')){b.classList.toggle('active',Number(b.dataset.sp)===s.speed);b.disabled=busy||!s.tl;}btn('rec').textContent=s.exporting?'● 만드는 중…':s.rec?'● 녹화 중…':'⬇ 영상 저장';
   for(const b of dlg.querySelectorAll('[data-jr-mode]')){b.classList.toggle('active',b.dataset.jrMode===s.tl?.mode);b.disabled=busy;}
   for(const k of ['play','restart','speed','rec'])btn(k).disabled=busy||!s.tl;dlg.querySelector('.jr-done').hidden=!s.file;hint.textContent=s.busy||HINT;};
  const finishRec=(save)=>{const r=s.rec;if(!r)return;s.rec=null;r.onstop=()=>{if(save&&s.chunks.length){const type=r.mimeType||'video/webm';s.file=new File(s.chunks,'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+(type.includes('mp4')?'.mp4':'.webm'),{type});api().toast?.('영상이 준비됐어요. ‘영상 받기’를 눌러 저장하세요.');paintButtons();}s.chunks=[];};
@@ -697,6 +754,7 @@ function mountJourney(){
  btn('play').addEventListener('click',()=>{if(s.t>=s.tl.total)s.t=0;s.playing=!s.playing;paintButtons();});
  btn('restart').addEventListener('click',()=>{s.t=0;s.playing=true;paintButtons();});
  btn('speed').addEventListener('change',()=>{s.speed=Number(btn('speed').value)||1;paintButtons();});
+ dlg.querySelector('.jr-speeds').addEventListener('click',e=>{const b=e.target.closest('[data-sp]');if(!b||b.disabled)return;s.speed=Number(b.dataset.sp)||1;paintButtons();});
  dlg.querySelectorAll('[data-jr-mode]').forEach(b=>b.addEventListener('click',()=>void load(b.dataset.jrMode)));
  const fileName=ext=>'tripkku-'+(s.tl?.title||'trip').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,40)+ext;
  // 받은 영상: 휴대폰은 공유 창(사진에 저장), 그 밖에는 내려받기. 사용자가 누른 순간에만 열 수 있어 버튼으로 한 번 더 받는다.
@@ -733,13 +791,15 @@ function mountJourney(){
 
 function mountAvatar(){
  const dlg=el('dialog',{id:'avatarDialog','aria-labelledby':'avTitle'});
- dlg.innerHTML=`<div class="modal-content"><header class="modal-header"><h3 id="avTitle">🧑‍🎨 내 캐릭터 꾸미기</h3><button type="button" class="btn icononly" data-av="close" aria-label="닫기">×</button></header>
- <div class="av-top"><canvas id="avCanvas" width="300" height="348" role="img" aria-label="내 캐릭터 미리보기"></canvas><div id="avRel" style="display:grid;gap:10px"></div></div>
- <div id="avParts" style="display:grid;gap:10px"></div>
- <footer class="modal-actions"><button type="button" class="btn" data-av="random">🎲 랜덤</button><button type="button" class="btn" data-av="cancel">취소</button><button type="button" class="btn primary" data-av="save">저장</button></footer></div>`;
+ dlg.innerHTML=`<div class="modal-content"><div class="av-stage"><canvas id="avCanvas" width="780" height="540" role="img" aria-label="내 캐릭터 미리보기"></canvas>
+  <header class="av-head"><button type="button" class="round-btn" data-av="close" aria-label="닫기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button><h3 id="avTitle">내 캐릭터</h3><button type="button" class="av-save" data-av="save">저장</button></header>
+  <button type="button" class="av-random" data-av="random">랜덤으로</button><button type="button" data-av="cancel" hidden>취소</button></div>
+ <div id="avTabs" class="av-tabs" role="tablist" aria-label="꾸미기 항목"></div>
+ <div class="av-body"><div id="avRel" style="display:grid;gap:14px"></div><div id="avParts" style="display:grid;gap:14px"></div></div></div>`;
  document.body.append(dlg);
  const $title=dlg.querySelector('#avTitle'),canvas=dlg.querySelector('#avCanvas'),rel=dlg.querySelector('#avRel'),parts=dlg.querySelector('#avParts');
- const s={av:null,group:'friends',raf:0,preview:null,target:''}; // target: 꾸미는 사람(관리자는 일행 누구든 고를 수 있다)
+ const tabsEl=dlg.querySelector('#avTabs'),TABS=[['face','얼굴'],['hair','머리'],['outfit','옷'],['costume','전통의상'],['rel','관계']];
+ const s={av:null,group:'friends',raf:0,preview:null,target:'',tab:'face'}; // target: 꾸미는 사람(관리자는 일행 누구든 고를 수 있다)
  const group=(title,chips)=>el('div',{class:'av-group'},[el('span',{text:title}),el('div',{class:'av-chips'},chips)]);
  const chip=(label,active,onClick,color)=>{const b=el('button',{type:'button',class:(color?'swatch ':'')+(active?'active':''),'aria-pressed':String(active)});
   if(color){b.style.background=color;b.setAttribute('aria-label',label);}else b.textContent=label;b.addEventListener('click',onClick);return b;};
@@ -752,7 +812,7 @@ function mountAvatar(){
   const a0=api(),me0=a0.getMyId?.(),others=a0.getTrip?.()&&a0.isAdmin?.()?(a0.getMembers?.()||[]):[];
   const who=others.length>1?group('관리자 · 누구 캐릭터를 바꿀까요?',others.map(m=>chip((m.user_id===me0?'나':String(m.display_name||'친구').slice(0,8)),s.target===m.user_id,()=>{if(s.target!==m.user_id)load(m.user_id);}))):null;
   const roleTitle=s.target&&s.target!==me0?'역할':'내 역할';
-  $title.textContent=s.target&&s.target!==me0?'🛠 '+String(others.find(m=>m.user_id===s.target)?.display_name||'친구')+' 캐릭터 바꾸기':'🧑‍🎨 내 캐릭터 꾸미기';
+  $title.textContent=s.target&&s.target!==me0?String(others.find(m=>m.user_id===s.target)?.display_name||'친구')+' 캐릭터':'내 캐릭터';
   if(!api().getTrip?.())rel.replaceChildren(el('p',{class:'muted',text:'우리 사이와 내 역할은 여행을 연 뒤에 정할 수 있어요. 여기서 꾸민 캐릭터는 여행을 열면 자동으로 적용돼요.'}));
   else rel.replaceChildren(...(who?[who]:[]),group('우리 사이 (이 여행 전체에 적용)',GROUPS.map(([k,l])=>chip(l,s.group===k,()=>{s.group=k;if(!ROLES[k].includes(s.av.role))s.av.role='';paint();}))),group(roleTitle,roleChips),custom);
   const names={skin:'피부색',hairColor:'머리색',outfit:'평소 옷 색',costumeColor:'전통의상 색'};
@@ -762,8 +822,10 @@ function mountAvatar(){
   const face=el('div',{class:'av-group'},[el('span',{text:'얼굴형 (조금씩 조절)'}),...FACE.map(([k,label,lo,hi])=>{const input=el('input',{type:'range',min:'-1',max:'1',step:'0.1','aria-label':label+' ('+lo+' ~ '+hi+')'});input.value=String(s.av[k]);
    input.addEventListener('input',()=>{s.av[k]=Number(input.value);refresh();});return el('label',{class:'av-slider'},[el('span',{text:lo}),input,el('span',{text:hi})]);})]);
   const kind=tripKind(),note=el('p',{class:'tiny',text:!api().getTrip?.()?'여행지에 도착하면 그 나라 전통의상으로 갈아입어요. 여/남 형태와 색만 골라 두세요.':kind?'이 여행지에서는 '+COSTUME_NAME[kind]+'을(를) 입어요. 여/남 형태와 색만 고르면 됩니다.':'이 여행지는 아직 준비된 전통의상이 없어 평소 옷을 입어요. 다른 여행을 위해 미리 골라 둘 수 있어요.'});note.style.margin='0';
-  parts.replaceChildren(face,colored('skin'),keyed('머리 모양','hair'),keyed('앞머리','bangs'),colored('hairColor'),keyed('눈','eyes'),keyed('눈썹','brows'),keyed('키','size'),colored('outfit'),keyed('소품','acc'),
-   keyed('여행지 전통의상','costume'),note,keyed('전통의상 형태','gender'),colored('costumeColor'));refresh();};
+  const byTab={face:[face,colored('skin'),keyed('눈','eyes'),keyed('눈썹','brows')],hair:[keyed('머리 모양','hair'),keyed('앞머리','bangs'),colored('hairColor')],outfit:[keyed('키','size'),colored('outfit'),keyed('소품','acc')],
+   costume:[keyed('여행지 전통의상','costume'),note,keyed('전통의상 형태','gender'),colored('costumeColor')],rel:[]};
+  tabsEl.replaceChildren(...TABS.map(([k,l])=>{const b=el('button',{type:'button',role:'tab','aria-selected':String(s.tab===k),class:s.tab===k?'active':'',text:l});b.addEventListener('click',()=>{s.tab=k;paint();});return b;}));
+  rel.hidden=s.tab!=='rel';parts.hidden=s.tab==='rel';parts.replaceChildren(...byTab[s.tab]);refresh();};
  const tick=now=>{s.preview?.render(now/1000);s.raf=requestAnimationFrame(tick);};
  const close=()=>dlg.close();
  dlg.addEventListener('close',()=>cancelAnimationFrame(s.raf));
@@ -793,8 +855,8 @@ function init(){
  label();
  // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
  const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
- const home=()=>{renderHomeHero(openAvatar);decorateTripCards();};
- watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
- watch('tripList',decorateTripCards);watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
- document.addEventListener('tripkku-avatar-saved',()=>renderHomeHero(openAvatar));home();}
+ const home=()=>{renderHomeHero(openAvatar);decorateTripCards();renderNextTrip();};mountDock(openAvatar);
+ watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;renderJourneyCard();if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
+ watch('tripList',()=>{decorateTripCards();renderNextTrip();});watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
+ document.addEventListener('tripkku-avatar-saved',()=>{renderHomeHero(openAvatar);renderNextTrip();});home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}

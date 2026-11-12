@@ -73,3 +73,12 @@
 - `next/sw.js`: 진짜 서비스 워커. 화면(HTML)은 네트워크 먼저, `?v=` 붙은 파일·CDN(three, supabase, mp4-muxer)·국기는 캐시 먼저, 그 밖의 같은 출처 파일은 캐시 보여 주고 뒤에서 갱신, 지도 타일은 최대 500장. **Supabase·AI·환율·날씨는 캐시하지 않음.** 파일을 고치면 지금처럼 `?v=`만 올리면 됨. `push`/`notificationclick` 처리도 미리 들어 있음(서버 쪽은 아직 없음).
 - 캐릭터 얼굴 그림은 `localStorage('tripkku-portraits-v1')`에 최대 16개 저장 → 다시 열 때 three.js(약 700KB)를 받지 않음. 처음에도 화면이 한가할 때(requestIdleCallback) 받음.
 - manifest: maskable 아이콘, 바로가기(`?new=1`), 카테고리 등 스토어용 항목 추가.
+
+## 화면 개편 "UI 2" (2026-11-12)
+- 사용자가 디자인 시안(캐릭터 중심, 연한 회색빛 흰 배경 + 남색 + 코랄, 초록 제거, 제목 글꼴 Jua)을 승인해 실제 앱에 적용.
+- `style.css`: 기존 초록·크림 색을 남색·차가운 흰색으로 일괄 변환했고, 파일 끝의 `UI 2` 구역이 새 화면 규칙. 색은 `--bg --card --ink --accent --sky --warm --navy` 변수(밤 모드 포함).
+- 홈: 인사 + 내 캐릭터 버튼(`#heroMe`), 다가오는 여행 카드(`#nextTrip`, `renderNextTrip` — 일행 전신 그림 + 도시 대표 건물), 환율·지금 여기 타일, 아래 메뉴(`#dock`, `mountDock`). `#openNewTrip` 은 숨겨 두고 메뉴의 + 가 누른다.
+- 여행 화면: 동그란 뒤로·수정 버튼, 동선 영상 카드(`#journeyCard`, `renderJourneyCard`), 날짜 칩, 지난 일정 흐리게(`.tk-past`)·지금 일정 남색 카드(`.tk-has-pieces`), 모바일에서는 탭(`#mainNav`)이 아래 메뉴, `#addEvent` 는 떠 있는 버튼. `#journeyPlay`·`#avatarEdit` 은 숨김(카드·캐릭터 얼굴이 대신 누름).
+- 꾸미기 창: 위쪽 무대 + 탭(얼굴·머리·옷·전통의상·관계). 동선 창: 어두운 화면, 속도 버튼(×0.5~×2.5), 큰 저장 버튼.
+- 전신·장소 그림은 `createPortraits().body()/.prop()` 으로 그리고 `localStorage`(`tripkku-bodies-v1`, `tripkku-props-v1`)에 저장.
+- 시안 캔버스: https://claude.ai/artifact/TrQReT98P81SaNjbWZfvHM (소유자만 열람)
