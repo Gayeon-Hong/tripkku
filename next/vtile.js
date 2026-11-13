@@ -111,7 +111,9 @@ function placeLabels(src,key,z,k,ctx){const lk=key+'@'+z;let L=LABELS.get(lk);if
 // 한 화면에 수십 칸이 한꺼번에 준비돼도 재생이 끊기지 않게, 한 프레임에 두 칸까지만 그린다.
 let budget=0,armed=false;const turnQ=[];
 const tick=()=>{armed=false;budget=2;while(budget>0&&turnQ.length){budget--;turnQ.shift()();}if(turnQ.length)arm();};
-const arm=()=>{if(armed)return;armed=true;(typeof requestAnimationFrame==='function'&&!document.hidden?requestAnimationFrame:f=>setTimeout(f,16))(tick);};
+// 화면이 가려져 requestAnimationFrame 이 멈춰도(녹화 중 다른 앱으로 전환 등) 타이머로 계속 그린다.
+const arm=()=>{if(armed)return;armed=true;let fired=false;const go=()=>{if(fired)return;fired=true;tick();};
+ if(typeof requestAnimationFrame==='function')requestAnimationFrame(go);setTimeout(go,50);};
 const turn=()=>new Promise(r=>{turnQ.push(r);arm();});
 
 /** z/x/y 칸을 그린 캔버스. 데이터를 못 받으면 오류. */
