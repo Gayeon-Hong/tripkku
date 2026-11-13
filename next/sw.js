@@ -1,6 +1,6 @@
 // 트립꾸 서비스 워커: 다시 열 때 빠르게, 오프라인에서도 화면이 뜨게, (나중에) 푸시 알림을 받게.
 // 데이터(Supabase·AI·환율·날씨)는 절대 캐시하지 않는다. 화면 파일만 캐시한다.
-const VERSION='tk-20261113-5',STATIC=VERSION+'-static',TILES='tk-vtiles-1',TILE_MAX=150;
+const VERSION='tk-20261113-6',STATIC=VERSION+'-static',TILES='tk-vtiles-1',TILE_MAX=150;
 self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
   for(const k of await caches.keys())if(k!==STATIC)await caches.delete(k);

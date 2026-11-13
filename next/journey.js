@@ -853,6 +853,7 @@ function mountJourney(){
   if(s.exporting)return; // 영상을 만드는 동안은 화면 재생을 멈춘다
   if(!s.tl){ctx.fillStyle='#f5f6fa';ctx.fillRect(0,0,W,H);ctx.fillStyle='#1b1e2e';ctx.font='800 30px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.busy||'준비 중…',W/2,H/2);return;}
   if(s.playing)s.t+=dt*s.speed;
+  if(s.tl.map&&s.playing)groundTiles(cameraAt(s.tl,Math.min(s.tl.total,s.t+2*s.speed)),(z,x,y)=>tile(z,x,y)); // 배속 재생 때 지도가 늦게 뜨지 않게, 2초 뒤에 보일 곳을 미리 받는다
   const f=frameAt(s.tl,s.t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);if(s.wm&&!s.rec)drawWatermark(ctx);
   if(s.playing&&s.t>=s.tl.total){s.t=s.tl.total;s.playing=false;paintButtons();if(s.rec)setTimeout(()=>finishRec(true),350);}};
  // 일정 → 3D 준비 → 장소 좌표 찾기 → 지도 타일 받기 → 재생
@@ -894,8 +895,11 @@ function mountJourney(){
   let failed=null;const enc=new VE({output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),error:e=>{failed=e;}});enc.configure(cfg);
   s.exporting=true;s.playing=false;s.file=null;paintButtons();
   const total=Math.ceil(s.tl.total/s.speed*fps)+fps; // 끝에 1초 여유
+  let mapWait=2400; // 지도를 기다려 줄 횟수(25ms × 2400 = 60초). 인터넷이 끊겨 끝없이 기다리지 않게
   try{for(let i=0;i<total&&!failed;i++){if(!dlg.open)throw new Error('closed');
-    const t=Math.min(s.tl.total,i/fps*s.speed),f=frameAt(s.tl,t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
+    const t=Math.min(s.tl.total,i/fps*s.speed);
+    if(s.tl.map)for(let ready=false;!ready&&mapWait>0;){ready=true;groundTiles(cameraAt(s.tl,t),(z,x,y)=>{if(!tile(z,x,y).done)ready=false;});if(!ready){mapWait--;await new Promise(r=>setTimeout(r,25));}} // 이 장면의 지도가 준비된 뒤에 찍는다
+    const f=frameAt(s.tl,t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
     const frame=new VideoFrame(canvas,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});enc.encode(frame,{keyFrame:i%(fps*2)===0});frame.close();
     if(i%6===0){s.busy='영상 만드는 중… '+Math.round(i/total*100)+'%';hint.textContent=s.busy;await new Promise(r=>setTimeout(r,0));}
     while(enc.encodeQueueSize>8)await new Promise(r=>setTimeout(r,4));}
