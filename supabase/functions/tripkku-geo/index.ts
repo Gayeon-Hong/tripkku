@@ -13,7 +13,7 @@ const cache = new Map<string, Hit[]>();
 // 같은 사람이 너무 많이 묻지 않게(인스턴스 기준 10분에 80회)
 const hits = new Map<string, number[]>();
 const limited = (ip: string) => { const now = Date.now(), a = (hits.get(ip) || []).filter((t) => now - t < 600000); a.push(now); hits.set(ip, a); if (hits.size > 5000) hits.clear(); return a.length > 80; };
-let last = 0, chain: Promise<void> = Promise.resolve();
+let last = 0, nomiOffUntil = 0, chain: Promise<void> = Promise.resolve();
 // Nominatim 요청 간격을 1.1초 이상으로 줄 세운다(이용 정책).
 const gate = () => (chain = chain.then(async () => { const d = 1100 - (Date.now() - last); if (d > 0) await new Promise((r) => setTimeout(r, d)); last = Date.now(); }));
 
@@ -73,10 +73,13 @@ Deno.serve(async (req) => {
   if (hit) return json(hit, 200, { 'Cache-Control': 'public, max-age=86400' });
   if (limited(req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'x')) return json({ error: 'busy' }, 429);
   const why: string[] = [];
-  for (const f of [nominatim, photon, gemini]) {
+  // Nominatim 이 이 서버를 막고 있으면(403) 10분 동안은 건너뛴다. 한글 이름은 Photon 이 엉뚱한 곳(국내 같은 이름)을 주므로 Gemini 를 먼저 쓴다.
+  const hangul = /[가-힣]/.test(q);
+  const order = [...(Date.now() < nomiOffUntil ? [] : [nominatim]), ...(hangul ? [gemini, photon] : [photon, gemini])];
+  for (const f of order) {
     try { const h = await f(q, box); if (h) { const out = [h]; cache.set(key, out); if (cache.size > 3000) cache.delete(cache.keys().next().value!); return json(out, 200, { 'Cache-Control': 'public, max-age=86400' }); } }
-    catch (e) { why.push(String((e as Error).message || e)); }
+    catch (e) { const m = String((e as Error).message || e); why.push(m); if (m === 'nominatim 403') nomiOffUntil = Date.now() + 600000; }
   }
   // 아무 데서도 못 찾음(오류만 있었으면 502, 단순히 없는 장소면 빈 배열)
-  return why.length === 3 ? json({ error: why.join(' / ') }, 502) : json([], 200);
+  return why.length === order.length ? json({ error: why.join(' / ') }, 502) : json([], 200);
 });
