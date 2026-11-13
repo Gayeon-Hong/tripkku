@@ -32,6 +32,130 @@ function toast(message){const el=$('toast');el.textContent=String(message);el.cl
 function mapUrl(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place||trip?.destination||'');}
 const isGoogleMapLink=url=>{try{const u=new URL(url);return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(u.hostname)||u.hostname.endsWith('.google.com')&&u.pathname.startsWith('/maps'));}catch{return false;}};
 const displayMapUrl=(item)=>isGoogleMapLink(item?.mapUrl)?item.mapUrl:mapUrl(item?.name||item?.place||'');
+
+const isTossPlatform=()=>document.documentElement.classList.contains('toss')||window.TRIPKKU_PLATFORM==='toss'||window.TRIPKKU_TOSS===true;
+
+/**
+ * 트립꾸 여행 제휴 마케팅 (아고다, 클룩, 스카이스캐너, 트립닷컴)
+ * 제휴 파트너스 가입 후 CID/AID를 입력하면 클릭 시 커미션이 자동 적립됩니다.
+ * 미입력 상태에서도 해당 도시 최저가 검색 페이지로 정상 연결됩니다.
+ */
+export const AFFILIATE_CONFIG={
+ agodaCid:'8126459', // 아고다 파트너스 CID (Tripkku 정산 연동 완료)
+ klookAid:'143307', // 클룩 어필리에이트 AID (Tripkku 정산 연동 완료)
+ skyscannerRef:'', // 스카이스캐너 레퍼럴
+ tripAid:'' // 트립닷컴 AID
+};
+
+// 아고다는 도시 이름이 아니라 고유 번호로만 검색된다(2026-11-14 아고다 검색 자동완성에서 확인한 값).
+// shortcut: 표에 없는 도시는 아고다 첫 화면으로 보낸다, 자주 가는 도시가 빠져 있으면 여기에 번호를 추가
+const AGODA_CITY={도쿄:5085,오사카:9590,후쿠오카:16527,교토:1784,삿포로:3435,오키나와:717899,나고야:13740,유후인:106058,벳푸:144,오이타:107890,구마모토:1568,고베:5235,나라:13313,요코하마:4590,하코다테:88743,가고시마:6263,나가사키:193,히로시마:10554,가나자와:18826,
+ 타이베이:4951,가오슝:756,타이중:12080,홍콩:16808,마카오:21397,상하이:3987,베이징:1569,칭다오:12411,방콕:9395,치앙마이:7401,푸켓:16056,파타야:8584,다낭:16440,호치민:13170,하노이:2758,나트랑:2679,푸꾸옥:17188,호이안:16552,달랏:15932,
+ 싱가포르:4064,쿠알라룸푸르:14524,코타키나발루:5070,발리:17193,세부:4001,보라카이:15903,마닐라:1622,괌:6126,사이판:16932,호놀룰루:10921,뉴욕:318,로스앤젤레스:12772,라스베이거스:17072,샌프란시스코:13801,밴쿠버:9023,토론토:4495,칸쿤:5954,
+ 파리:15470,니스:5277,런던:233,로마:16594,베니스:17164,피렌체:16573,밀라노:16585,바르셀로나:2002,마드리드:5531,리스본:16364,프라하:15977,비엔나:16582,잘츠부르크:11876,부다페스트:10647,암스테르담:13868,취리히:16462,인터라켄:5323,뮌헨:16017,베를린:2366,프랑크푸르트:15847,드레스덴:11323,바르샤바:16587,크라쿠프:15790,
+ 이스탄불:14932,두바이:2994,시드니:14370,멜버른:10372,울란바토르:79630,제주:16901,서울:14690,부산:17172};
+const AGODA_ALIAS={동경:'도쿄',타이페이:'타이베이',푸껫:'푸켓',호찌민:'호치민',나짱:'나트랑',하와이:'호놀룰루',LA:'로스앤젤레스',라스베가스:'라스베이거스',베네치아:'베니스',빈:'비엔나',상해:'상하이',북경:'베이징'};
+
+// 여행지 글에서 가장 먼저 나오는 아는 도시를 찾고, 없으면 구분 기호 앞 첫 덩어리를 쓴다("Da Nang"처럼 띄어 쓴 이름은 자르지 않는다).
+function getPrimaryCity(dest){
+ const s=String(dest||'').trim();let best='',at=Infinity;
+ for(const k of [...Object.keys(AGODA_CITY),...Object.keys(AGODA_ALIAS)]){const i=s.indexOf(k);if(i>=0&&(i<at||(i===at&&k.length>best.length))){at=i;best=k;}}
+ if(best)return AGODA_ALIAS[best]||best;
+ return s.split(/\s*(?:->|[\/,→·>]|\s-\s)\s*/)[0].trim()||s;
+}
+
+function buildAffiliateLinks(dest,startDate,endDate){
+ const city=getPrimaryCity(dest),enc=encodeURIComponent(city),id=AGODA_CITY[city];
+ const cid=AFFILIATE_CONFIG.agodaCid?`&cid=${AFFILIATE_CONFIG.agodaCid}`:'',aid=AFFILIATE_CONFIG.klookAid?`&aid=${AFFILIATE_CONFIG.klookAid}`:'';
+ let agoda=`https://www.agoda.com/ko-kr/?pcs=1${cid}`;
+ if(id){ // 아고다 공식 제휴 검색 주소: 도시 번호 + 체크인 + 숙박 일수
+  agoda=`https://www.agoda.com/partners/partnersearch.aspx?pcs=1${cid}&hl=ko-kr&city=${id}`;
+  const nights=Math.round((new Date(endDate)-new Date(startDate))/864e5);
+  if(nights>=1&&nights<=30)agoda+=`&checkIn=${startDate}&los=${nights}`;
+ }
+ const kq=q=>`https://www.klook.com/ko/search/?query=${encodeURIComponent(q)}${aid}`;
+ return {city,agoda,klook:kq(city),klookEsim:kq(city+' eSIM'),klookPass:kq(city+' 교통패스'),
+  skyscanner:'https://www.skyscanner.co.kr/transport/flights/icn/',
+  tripcom:`https://kr.trip.com/global-search/searchlist/search?keyword=${enc}`};
+}
+const AFF_NOTE='※ 제휴 링크예요. 이 링크로 예약하면 이용자 추가 비용 없이 트립꾸가 수수료를 받을 수 있어요.';
+
+function renderAffiliateWidgets(){
+ const transCard=$('transportAffiliateCard'),schedCard=$('scheduleAffiliateCard'),notesCard=$('notesAffiliateCard');
+ if(!trip||isTossPlatform()){
+  if(transCard)transCard.hidden=true;
+  if(schedCard)schedCard.hidden=true;
+  if(notesCard)notesCard.hidden=true;
+  return;
+ }
+ const dest=trip.destination||trip.title||'';
+ if(!dest){
+  if(transCard)transCard.hidden=true;
+  if(schedCard)schedCard.hidden=true;
+  if(notesCard)notesCard.hidden=true;
+  return;
+ }
+ const l=buildAffiliateLinks(dest,trip.start_date,trip.end_date);
+ if(transCard){
+  transCard.hidden=false;
+  transCard.innerHTML=`
+   <div class="card-title"><h3>✈️ ${esc(l.city)} 여행 예약 파트너</h3><span class="tag">제휴 링크</span></div>
+   <p class="muted">여행지에 맞춰 숙소·투어·항공 검색 화면을 바로 열어 드려요.</p>
+   <div class="affiliate-grid">
+    <a href="${esc(l.agoda)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🏨</span>
+     <div class="affiliate-info"><strong>아고다 ${esc(l.city)} 호텔</strong><small>여행 날짜에 맞춘 숙소 검색</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.klook)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🎟️</span>
+     <div class="affiliate-info"><strong>클룩 ${esc(l.city)} 투어·패스·eSIM</strong><small>교통 패스 · 입장권 · eSIM</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.skyscanner)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">✈️</span>
+     <div class="affiliate-info"><strong>스카이스캐너 항공권</strong><small>인천 출발 항공권 비교</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.tripcom)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🚆</span>
+     <div class="affiliate-info"><strong>트립닷컴 ${esc(l.city)}</strong><small>호텔 · 열차 · 투어 검색</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+   </div>
+   <p class="tiny muted" style="margin-top:10px">${AFF_NOTE}</p>
+  `;
+ }
+ if(schedCard){
+  schedCard.hidden=false;
+  schedCard.innerHTML=`
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+    <strong style="font-size:13px">🏨 ${esc(l.city)} 숙소·투어 예약</strong>
+    <span class="tag" style="font-size:10px">제휴 링크</span>
+   </div>
+   <div class="schedule-affiliate-links">
+    <a href="${esc(l.agoda)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🏨 아고다 호텔 ↗</a>
+    <a href="${esc(l.klook)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🎟️ 클룩 투어/입장권/eSIM ↗</a>
+    <a href="${esc(l.skyscanner)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">✈️ 항공권 비교 ↗</a>
+   </div>
+   <p class="tiny muted" style="margin:8px 0 0">${AFF_NOTE}</p>
+  `;
+ }
+ if(notesCard){ // 출발 전 할 일(유심·보험) 바로 아래: 준비물을 살 마음이 가장 큰 자리
+  notesCard.hidden=false;
+  notesCard.innerHTML=`
+   <div class="card-title"><h3>🎒 ${esc(l.city)} 출발 전 챙기기</h3><span class="tag">제휴 링크</span></div>
+   <div class="schedule-affiliate-links">
+    <a href="${esc(l.klookEsim)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">📶 eSIM·유심 ↗</a>
+    <a href="${esc(l.klookPass)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🚆 교통패스 ↗</a>
+    <a href="${esc(l.klook)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🎟️ 투어·입장권 ↗</a>
+    <a href="${esc(l.agoda)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🏨 숙소 ↗</a>
+   </div>
+   <p class="tiny muted" style="margin:8px 0 0">${AFF_NOTE}</p>
+  `;
+ }
+}
+
 // 종류가 없거나 '방문'으로 저장된 이동 일정도 글자를 보고 ✈️/🚆 아이콘을 붙인다(예: 인천출발바르샤바도착).
 const looksTravel=t=>/출발.*도착|→|->|➜|에서\s*\S+(?:으로|로)\s|행\s?(?:비행|항공)|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b/.test(String(t||''));
 const eventEmoji=(e)=>e.emoji||((!e.kind||e.kind==='visit'||e.kind==='other')&&looksTravel(e.title)?(/기차|열차|버스|ICE|플릭스|트램|train|bus/i.test(e.title)?'🚆':/항공|비행|공항|인천|김포|✈|flight|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b|[A-Z]{2}\s?\d{2,4}/i.test(e.title)?'✈️':'🧭'):null)||({food:'🍜',move:'🚆',flight:'✈️',hotel:'🏨',visit:'📍',other:'✨'})[e.kind]||'📍';
@@ -395,7 +519,7 @@ function renderIntro(){const c=currentCountry(),d=activeDoc(),lang=d.meta?.langu
  $('inviteTop').hidden=!canManageTrip();}
 function chooseTab(tab){activeTab=tab;document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();if(tab==='budget')void ensureBudgetFxRates();}
-function renderAll(){if(!trip)return;withInfo(trip);renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();}
+function renderAll(){if(!trip)return;withInfo(trip);renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();renderAffiliateWidgets();}
 function goHome(){if(trip){trip=null;pendingPlan=null;}if(subscription){void client.removeChannel(subscription);subscription=null;}
  $('inviteTop').hidden=true;showScreen(user?'home':'auth');if(user)void loadTrips();window.scrollTo({top:0,behavior:'smooth'});}
 function isTripOwner(){return Boolean(!DEMO&&user&&trip&&trip.owner_id===user.id);}
@@ -759,7 +883,7 @@ async function addReel(e){e.preventDefault();const f=e.currentTarget,url=safeUrl
   await saveTrip(d=>{d.reels.push({id:uuid(),url,title:inferredTitle,placeName});if(placeName&&!d.savedPlaces.some(x=>x.name.toLowerCase()===placeName.toLowerCase()))d.savedPlaces.push({id:uuid(),name:placeName,mapUrl:mapUrl(placeName),sourceUrl:url,countryCode:trip.country_code});},placeName?'영상과 ❤️ 저장 장소를 추가했습니다.':'영상만 저장했습니다.');
   $('reelStatus').textContent=placeName?`❤️ ${placeName} → 저장 장소에 등록됨. 이제 일정에 추가할 수 있어요.`:'장소를 찾지 못해 영상만 저장했어요. 나중에 장소 이름을 등록해 주세요.';f.reset();if(placeName&&$('reelOpenSchedule').checked){chooseTab('schedule');openEventDialog(null,placeName,mapUrl(placeName));}
  }catch(err){$('reelStatus').textContent='등록 오류: '+err.message;}finally{setBusy(btn,false,'🔎 영상 저장 · 장소 찾기');}}
-function renderBookings(){const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[x.kind]||'🧾')} ${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} → ${esc(x.arrivalDate||x.date||'')} ${esc(x.arrivalTime||'')} · ${esc(x.origin||'')} ${x.destination?'→ '+esc(x.destination):''}</small><small>${esc(x.note||'')}${x.fileId?' · 📎 비공개 예약서 보관됨':''}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
+function renderBookings(){renderAffiliateWidgets();const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[x.kind]||'🧾')} ${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} → ${esc(x.arrivalDate||x.date||'')} ${esc(x.arrivalTime||'')} · ${esc(x.origin||'')} ${x.destination?'→ '+esc(x.destination):''}</small><small>${esc(x.note||'')}${x.fileId?' · 📎 비공개 예약서 보관됨':''}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
  $('bookingDate').value=activeDate||trip.start_date;$('bookingArrivalDate').value=activeDate||trip.start_date;
  $('bookingList').querySelectorAll('[data-booking-delete]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('예약 정보를 삭제할까요? 해당 일정도 함께 삭제할까요?'))return;void saveTrip(d=>{d.bookings=d.bookings.filter(x=>x.id!==b.dataset.bookingDelete);for(const day of d.days)day.events=day.events.filter(x=>x.bookingId!==b.dataset.bookingDelete);},'예약과 연결된 일정을 삭제했습니다.');}));}
 function selectedBookingFilename(){return selectedBookingFile?`${selectedBookingFile.name} · ${(selectedBookingFile.size/1048576).toFixed(1)}MB`:'파일 미선택 · 분석은 4MB 이하';}

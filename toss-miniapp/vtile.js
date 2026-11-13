@@ -62,12 +62,13 @@ function decode(b){let pos=0;const dv=new DataView(b.buffer,b.byteOffset,b.byteL
     else if(ff===4&&tt===2){const l=vint();gs=pos;ge=pos+l;pos=ge;}
     else skip(tt);}
    const p={};if(tags)for(let i=0;i+1<tags.length;i+=2)p[keys[tags[i]]]=vals[tags[i+1]];
-   pos=gs;const rings=[];let cx=0,cy=0,ring=null;
+   pos=gs;const rings=[],bb=[1e9,1e9,-1e9,-1e9];let cx=0,cy=0,ring=null;
    while(pos<ge){const ci=vint(),id=ci&7,n=ci>>3;
     if(id===7){if(ring)ring.closed=true;continue;}
     for(let i=0;i<n;i++){const dx=vint(),dy=vint();cx+=(dx%2?-(dx+1)/2:dx/2);cy+=(dy%2?-(dy+1)/2:dy/2);
-     if(id===1){ring=[cx,cy];rings.push(ring);}else ring.push(cx,cy);}}
-   out.push({type,p,rings});}
+     if(id===1){ring=[cx,cy];rings.push(ring);}else ring.push(cx,cy);
+     if(cx<bb[0])bb[0]=cx;if(cy<bb[1])bb[1]=cy;if(cx>bb[2])bb[2]=cx;if(cy>bb[3])bb[3]=cy;}}
+   out.push({type,p,rings,bb});}
   pos=end;layers[name]={extent,feats:out};}
  return {layers};}
 
@@ -83,7 +84,7 @@ const minRoadZ={motorway:5,trunk:6,primary:8,secondary:10,tertiary:11,minor:13,s
 /* ---------- 그리기 ---------- */
 const nameOf=p=>p['name:ko']||p['name:latin']||p.name||p['name:en']||'';
 function path(rings,k,ox,oy,close){const P=new Path2D();
- for(const r of rings){P.moveTo(r[0]*k-ox,r[1]*k-oy);for(let i=2;i<r.length;i+=2)P.lineTo(r[i]*k-ox,r[i+1]*k-oy);if(close)P.closePath();}
+ for(const r of rings){P.moveTo(r[0]*k-ox,r[1]*k-oy);for(let i=2;i<r.length;i+=2)P.lineTo(r[i]*k-ox,r[i+1]*k-oy);if(close)P.lineTo(r[0]*k-ox,r[1]*k-oy);} // closePath 는 한 경로에 고리가 수천 개(도심 건물)면 한 칸에 몇 초가 걸린다. 시작점으로 선을 그어 닫는다
  return P;}
 const LABELS=new Map();
 /** 원본 타일 하나에서 이름표 자리를 한 번 정해(겹치면 뺀다) 같은 원본을 쓰는 칸끼리 똑같이 그린다. */
@@ -127,20 +128,22 @@ export async function renderTile(z,x,y){
  ctx.fillStyle=C.bg;ctx.fillRect(0,0,TILE_PX,TILE_PX);if(src.empty)return cv;
  const n=2**d,ext=4096,k=TILE_PX*n/ext,ox=(x-sx*n)*TILE_PX,oy=(y-sy*n)*TILE_PX; // 원본 좌표 × k − (ox,oy) = 이 칸의 픽셀
  const L=src.layers;
+ // 이 칸에 걸치는 것만 그린다. 확대 칸(15 이상)은 원본 타일의 1/4~1/64 만 쓰는데 전부 그리면 도심에서 한 칸에 몇 초가 걸린다
+ const pad=24*R/k,vx0=ox/k-pad,vy0=oy/k-pad,vx1=(ox+TILE_PX)/k+pad,vy1=(oy+TILE_PX)/k+pad,see=f=>f.bb[2]>=vx0&&f.bb[0]<=vx1&&f.bb[3]>=vy0&&f.bb[1]<=vy1;
  const fill=(lay,pick)=>{if(!L[lay])return;const by=new Map();
-  for(const f of L[lay].feats){if(f.type!==3)continue;const col=pick(f.p);if(!col)continue;(by.get(col)||by.set(col,[]).get(col)).push(...f.rings);}
+  for(const f of L[lay].feats){if(f.type!==3||!see(f))continue;const col=pick(f.p);if(!col)continue;(by.get(col)||by.set(col,[]).get(col)).push(...f.rings);}
   for(const [col,rings] of by){ctx.fillStyle=col;ctx.fill(path(rings,k,ox,oy,true));}};
  fill('landcover',p=>({wood:C.wood,forest:C.wood,grass:C.grass,meadow:C.grass,farmland:z>=12?null:null,sand:C.sand,ice:C.ice,wetland:C.grass})[p.class]);
  fill('landuse',p=>({residential:z>=13?C.residential:null,hospital:C.hospital,school:C.school,university:C.school,college:C.school,cemetery:C.cemetery,pitch:C.pitch,stadium:C.pitch,playground:C.park})[p.class]);
  fill('park',()=>C.park);
  fill('water',()=>C.water);
  if(L.waterway){ctx.strokeStyle=C.water;ctx.lineCap=ctx.lineJoin='round';
-  for(const f of L.waterway.feats){const w=(f.p.class==='river'?3.2:f.p.class==='canal'?2.4:1.2)*Math.pow(2,(z-14)*.6)*R;if(w<.4)continue;ctx.lineWidth=w;ctx.stroke(path(f.rings,k,ox,oy));}}
+  for(const f of L.waterway.feats){if(!see(f))continue;const w=(f.p.class==='river'?3.2:f.p.class==='canal'?2.4:1.2)*Math.pow(2,(z-14)*.6)*R;if(w<.4)continue;ctx.lineWidth=w;ctx.stroke(path(f.rings,k,ox,oy));}}
  fill('aeroway',p=>p.class==='runway'||p.class==='apron'?C.runway:null);
- if(L.building&&z>=15){const P=path(L.building.feats.filter(f=>f.type===3).flatMap(f=>f.rings),k,ox,oy,true);ctx.fillStyle=C.building;ctx.fill(P);ctx.strokeStyle=C.buildingLine;ctx.lineWidth=.6*R;ctx.stroke(P);}
+ if(L.building&&z>=15){const P=path(L.building.feats.filter(f=>f.type===3&&see(f)).flatMap(f=>f.rings),k,ox,oy,true);ctx.fillStyle=C.building;ctx.fill(P);ctx.strokeStyle=C.buildingLine;ctx.lineWidth=.6*R;ctx.stroke(P);}
  if(L.boundary&&z<=10){ctx.strokeStyle=C.border;ctx.setLineDash([6*R,4*R]);
   for(const f of L.boundary.feats){if(f.p.admin_level!==2||f.p.maritime)continue;ctx.lineWidth=1.3*R;ctx.stroke(path(f.rings,k,ox,oy));}ctx.setLineDash([]);}
- if(L.transportation){const T=L.transportation.feats.filter(f=>f.type===2&&z>=(minRoadZ[f.p.class]??99)),
+ if(L.transportation){const T=L.transportation.feats.filter(f=>f.type===2&&see(f)&&z>=(minRoadZ[f.p.class]??99)),
    order=c=>({path:0,track:0,service:1,rail:2,transit:2,minor:3,tertiary:4,secondary:5,primary:6,trunk:7,motorway:8})[c]??0;
   T.sort((a,b)=>order(a.p.class)-order(b.p.class)||(a.p.brunnel==='tunnel'?-1:0));
   ctx.lineCap=ctx.lineJoin='round';
