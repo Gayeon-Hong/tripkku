@@ -144,6 +144,17 @@ function quadriga(c,k=1,panther=false){const g=group(mesh(G.box(40,16,22),c,0,8,
   if(panther){h.children[1].scale.set(1,.6,1);h.children[2].scale.set(1.2,.8,.7);}h.position.set(x,0,8);g.add(h);}
  g.add(mesh(G.capsule(5,16),c,0,32,-14),mesh(G.sphere(5),c,0,48,-14),rot(mesh(G.box(22,14,2),c,-12,40,-18),0,.4,.3),rot(mesh(G.box(22,14,2),c,12,40,-18),0,-.4,-.3),mesh(G.cyl(1,1,36,6),c,7,52,-10),mesh(G.torus(5,1.2),c,7,72,-10));
  g.scale.setScalar(k);return g;}
+// 일본 성(오사카성·나고야성): 돌 기단 위에 흰 벽 + 층층이 작아지는 지붕, 꼭대기 금빛 샤치호코(물고기)
+function jpCastle({wall,roof,trim,base,tiers=4,fish=1}){const g=group(mesh(G.box(160,38,120),base,0,19,0,{flatShading:true}),mesh(G.box(150,4,112),'#7d786f',0,40,0));
+ let y=42;for(let i=0;i<tiers;i++){const w=118-i*(70/tiers),d=w*.76,h=i===tiers-1?24:28;
+  g.add(mesh(G.box(w,h,d),wall,0,y+h/2,0),scl(rot(mesh(G.cone(w*.82,15,4),roof,0,y+h+6,0,{flatShading:true}),0,PI/4,0),1,1,d/w),mesh(G.box(w+2,2,d+2),trim,0,y+h,0));
+  if(i%2===0)g.add(scl(mesh(prism(10,22),roof,0,y+h+12,d/2+2),1,.8,1),scl(mesh(prism(10,22),roof,0,y+h+12,-d/2-2),1,.8,1));y+=h+12;}
+ for(const s of [-1,1]){const f=group(mesh(G.sphere(4*fish,10,8),trim,0,0,0),rot(mesh(G.cone(3.4*fish,12*fish,8),trim,s*4*fish,6*fish,0),0,0,-s*.8));f.position.set(s*12,y-4,0);g.add(f);}
+ return g;}
+// 글자 그림(간판·표지판). 브라우저가 아니면 빈 그림.
+function textTex(text,w,h,color){if(typeof document==='undefined')return null;const cv=document.createElement('canvas');cv.width=w;cv.height=h;const x=cv.getContext('2d');
+ x.fillStyle=color;x.font='900 '+Math.round(h*.82)+'px Arial Black,Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,w/2,h/2,w*.98);
+ const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;}
 const PROPS={
  /* 크리스마스 */
  tree:()=>{const g=group(mesh(G.cyl(9,11,26),'#8a5a3c',0,13,0),mesh(G.cone(58,70),'#2f9e63',0,48,0),mesh(G.cone(46,60),'#37b071',0,88,0),mesh(G.cone(32,50),'#45c283',0,124,0),mesh(new THREE.OctahedronGeometry(13),'#ffd84a',0,160,0,{emissive:'#ffb400',emissiveIntensity:.7}));
@@ -498,7 +509,177 @@ const PROPS={
   for(const x of [-98,78])g.add(mesh(G.cyl(9,9,70,8),br,x,35,-4),mesh(G.cone(11,22,8),'#5f9f8a',x,81,-4));
   g.add(mesh(G.box(22,10,22),'#c8bca6',84,7,26),mesh(G.cyl(4,5,90,12),'#d8ccb0',84,57,26),mesh(G.box(12,5,12),'#c8bca6',84,104,26),mesh(G.capsule(3.6,12),'#4a4a52',84,118,26),mesh(G.sphere(3.4),'#4a4a52',84,130,26),mesh(G.box(1.4,22,1.4),'#4a4a52',90,122,26),mesh(G.box(8,1.4,1.4),'#4a4a52',90,128,26));return g;},
  clocktower:()=>group(mesh(G.box(54,170,54),'#a89880',0,85,0),mesh(G.cone(40,60,4),'#3a4a3a',0,200,0),...[-1,1].map(s=>mesh(G.cone(8,30,6),'#3a4a3a',s*24,186,24)),mesh(G.cyl(22,22,3,28),'#3a5aa0',0,110,28),mesh(G.cyl(16,16,4,28),'#f0c75e',0,110,29),
-  rot(mesh(G.box(2,16,2),'#2a2f3c',0,114,31),0,0,.6),mesh(G.box(100,70,40),'#c8b8a0',-60,35,-10))
+  rot(mesh(G.box(2,16,2),'#2a2f3c',0,114,31),0,0,.6),mesh(G.box(100,70,40),'#c8b8a0',-60,35,-10)),
+ // ===== 2026-11-13 추가: 일본 =====
+ tokyotower:()=>{const g=group(),R='#e8432f',Wt='#fbfbfb';
+  // [바닥 높이, 높이, 아래 반지름, 위 반지름, 색, 각수]
+  for(const [y,h,a,b,c,s] of [[0,42,48,24,R,4],[42,10,30,30,Wt,12],[52,30,22,14,R,4],[82,18,14,10,Wt,4],[100,16,10,8,R,4],[116,8,13,13,Wt,12],[124,22,7,4,R,4],[146,20,4,2,Wt,4],[166,20,1.6,.8,R,6]])
+   g.add(rot(mesh(G.cyl(b,a,h,s),c,0,y+h/2,0,s===4?{flatShading:true}:{}),0,s===4?PI/4:0,0));
+  g.add(mesh(G.cyl(31,31,3,12),'#3a3f4d',0,52,0),mesh(G.cyl(14,14,2,12),'#3a3f4d',0,124,0));return g;},
+ skytree:()=>{const g=group(...[0,1,2].map(i=>rot(mesh(G.box(9,64,9),'#dfe7f1',Math.sin(i*2.094)*14,32,Math.cos(i*2.094)*14),-Math.cos(i*2.094)*.22,0,Math.sin(i*2.094)*.22)),mesh(G.cyl(26,30,6,3),'#c8d3e2',0,3,0),
+   mesh(G.cyl(7,14,150,16),'#e8eef6',0,95,0),mesh(G.cyl(17,15,12,24),'#c8d3e2',0,118,0,{metalness:.3}),rot(mesh(G.torus(17.5,1.6),'#7fb3ff',0,118,0,{emissive:'#7fb3ff',emissiveIntensity:.5}),PI/2),
+   mesh(G.cyl(5,7,30,12),'#e8eef6',0,180,0),mesh(G.cyl(11,10,8,20),'#c8d3e2',0,152,0,{metalness:.3}),rot(mesh(G.torus(11.5,1.2),'#a98bff',0,152,0,{emissive:'#a98bff',emissiveIntensity:.5}),PI/2),
+   mesh(G.cyl(1.3,2.2,26,8),'#c9cfd9',0,208,0));g.scale.setScalar(.86);return g;},
+ kaminarimon:()=>group(mesh(G.box(150,6,60),'#b8b2a6',0,3,0),...[-56,-32,32,56].map(x=>mesh(G.box(9,72,9),'#c4302b',x,42,0)),
+  mesh(G.box(150,10,64),'#c4302b',0,82,0),scl(mesh(prism(46,170),'#3a3533',0,104,0),1,.62,1),mesh(G.box(176,4,84),'#2f2b2a',0,90,0),
+  scl(mesh(G.sphere(20,24,16),'#d8392f',0,52,8),1,1.35,1),mesh(G.cyl(14,14,4,20),'#26221f',0,79,8),mesh(G.cyl(13,13,4,20),'#26221f',0,25,8),
+  mesh(G.box(16,10,1),'#1d1a19',0,54,28.5),...[-44,44].map(x=>mesh(G.box(18,46,22),'#5a6a7a',x,29,-12))),
+ osakacastle:()=>jpCastle({wall:'#f4f2ec',roof:'#3f8f78',trim:'#e7c35a',base:'#8f8a82',tiers:5}),
+ nagoyacastle:()=>jpCastle({wall:'#f1efe9',roof:'#5b9a86',trim:'#f0c75e',base:'#9a9488',tiers:4,fish:1.6}),
+ glico:()=>{const g=group(mesh(G.box(220,10,60),'#5d7fa3',0,5,30),mesh(G.box(150,110,10),'#1f2f55',0,95,-10),mesh(G.box(140,100,4),'#2d74d8',0,95,-4,{emissive:'#2d74d8',emissiveIntensity:.35}),
+   ...[-40,40].map(x=>mesh(G.box(6,40,6),'#8c96a8',x,20,-10)));
+  // 두 팔을 번쩍 든 달리는 사람(흰색 실루엣)
+  const w=mat('#ffffff',{emissive:'#ffffff',emissiveIntensity:.6});
+  g.add(rot(mesh(G.capsule(7,26),w,0,92,0),0,0,-.25),mesh(G.sphere(7),w,-5,118,0),rot(mesh(G.capsule(3,26),w,-20,112,0),0,0,.9),rot(mesh(G.capsule(3,26),w,18,112,0),0,0,-.9),
+   rot(mesh(G.capsule(3.5,30),w,-12,62,0),0,0,.6),rot(mesh(G.capsule(3.5,30),w,14,66,0),0,0,-.9));
+  for(const [x,c] of [[-95,'#ff4f7b'],[95,'#ffd23f']])g.add(mesh(G.box(22,90,8),c,x,85,-6,{emissive:c,emissiveIntensity:.45}));return g;},
+ tsutenkaku:()=>group(mesh(G.box(70,34,70),'#b9bec8',0,17,0),...[-1,1].map(s=>mesh(G.box(26,34,72),'#c9ced8',s*22,17,0)),
+  rot(mesh(G.cyl(14,22,110,8),'#d4d8e0',0,89,0,{flatShading:true}),0,PI/8,0),rot(mesh(G.cyl(24,22,26,8),'#c3c8d2',0,153,0,{flatShading:true}),0,PI/8,0),
+  rot(mesh(G.torus(24,2.2),'#ff9a3c',0,140,0,{emissive:'#ff9a3c',emissiveIntensity:.7}),PI/2),mesh(G.cyl(3,5,24,8),'#c3c8d2',0,178,0),
+  mesh(G.box(30,8,2),'#2a7de1',0,110,15,{emissive:'#2a7de1',emissiveIntensity:.5})),
+ fushimi:()=>{const g=group(mesh(G.cone(120,110,8),'#5f9a5a',0,30,-120),mesh(G.box(60,2,220),'#c9bfa8',0,1,-20));
+  for(let i=0;i<9;i++){const z=80-i*24,s=1-i*.025;const t=group(...[-24,24].map(x=>mesh(G.cyl(4,4.6,84,12),'#e5462f',x,42,0)),...[-24,24].map(x=>mesh(G.cyl(5.2,5.2,9,12),'#1f1d1c',x,4.5,0)),
+    mesh(G.box(64,6,8),'#1f1d1c',0,86,0),mesh(G.box(58,5,6),'#e5462f',0,78,0),mesh(G.box(6,10,5),'#e5462f',0,72,0));t.position.set(0,0,z);t.scale.setScalar(s);g.add(t);}
+  return g;},
+ kinkakuji:()=>{const gold=mat('#e6bd45',{metalness:.55,roughness:.35,emissive:'#7a5a10',emissiveIntensity:.25}),roof='#3d2f26';
+  const g=group(scl(mesh(G.cyl(130,130,4,40),'#5f9fc8',0,2,0),1,1,.75),mesh(G.box(84,6,64),'#8a8070',0,7,0),
+   mesh(G.box(74,34,54),'#f2ecdf',0,27,0),...[-28,-10,10,28].map(x=>mesh(G.box(3,34,2),'#3d2f26',x,27,27.5)),
+   mesh(G.box(66,30,48),gold,0,64,0),mesh(G.box(46,26,34),gold,0,104,0),
+   ...[[44,96,72],[80,68,60],[118,52,42]].map(([y,w,d])=>scl(rot(mesh(G.cone(w*.72,18,4),roof,0,y+8,0,{flatShading:true}),0,PI/4,0),1,1,d/w)),
+   mesh(G.box(6,10,2),gold,0,136,0),rot(mesh(G.cone(6,10,6),gold,0,142,0),0,0,0));
+  for(const [x,z] of [[-100,-40],[96,-50],[-80,60]])g.add(mesh(G.cyl(3,4,26,6),'#6b4a32',x,13,z),scl(mesh(G.sphere(18,10,8),'#3f7f4e',x,34,z),1.3,.7,1.1));
+  return g;},
+ kiyomizu:()=>{const g=group(rot(mesh(G.box(240,60,200),'#6f9a5c',0,-6,-20),0,0,.12));
+  for(let x=-60;x<=60;x+=20)for(let z=0;z<=40;z+=20)g.add(mesh(G.cyl(3,3,70-x*.12,8),'#7a4f33',x,35-x*.06,z));
+  for(const y of [24,48])g.add(mesh(G.box(130,3,3),'#7a4f33',0,y,40),mesh(G.box(130,3,3),'#7a4f33',0,y,0));
+  g.add(mesh(G.box(140,5,56),'#a57a52',0,72,20),mesh(G.box(110,40,60),'#c9a37a',10,94,-30),
+   scl(rot(mesh(G.cone(96,44,4),'#4a4440',10,134,-30,{flatShading:true}),0,PI/4,0),1.15,1,.7));
+  // 삼층탑(붉은 탑)
+  const p=group();for(let i=0;i<3;i++)p.add(mesh(G.box(20-i*3,16,20-i*3),'#d9442f',0,10+i*22,0),rot(mesh(G.cone(22-i*3,9,4),'#3a3533',0,22+i*22,0,{flatShading:true}),0,PI/4,0));
+  p.add(mesh(G.cyl(1.4,1.4,22,6),'#e6bd45',0,86,0));p.position.set(-100,40,-70);g.add(p);return g;},
+ nagoyatv:()=>{const g=group(),st='#8c95a3';
+  for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])g.add(rot(mesh(G.box(6,96,6),st,sx*26,46,sz*26),sz*.26,0,-sx*.26));
+  for(const y of [20,46,72])g.add(rot(mesh(G.torus(32-y*.26,1.6,PI*2),st,0,y,0),PI/2));
+  g.add(mesh(G.box(42,16,42),'#d9dde4',0,104,0),mesh(G.box(46,3,46),'#ff8a3c',0,96,0,{emissive:'#ff8a3c',emissiveIntensity:.5}),
+   mesh(G.cyl(4,6,60,6),st,0,142,0),mesh(G.cyl(1.4,1.4,28,6),'#e8432f',0,186,0));return g;},
+ beppu:()=>{const g=group(mesh(G.cyl(120,126,8,32),'#8b8378',0,4,0),scl(mesh(G.cyl(78,78,3,32),'#c8452f',0,9,0,{emissive:'#7a1f12',emissiveIntensity:.25}),1,1,.8));
+  for(let i=0;i<10;i++){const a=i*.63,r=86+((i*37)%14);g.add(scl(mesh(G.sphere(14,8,6),'#6f675e',Math.cos(a)*r,8,Math.sin(a)*r*.82),1.2,.6,1));}
+  const st=mat('#ffffff',{transparent:true,opacity:.62});
+  for(const [x,z,k] of [[-20,0,1.3],[24,-10,1.1],[0,20,1],[-40,-20,.9],[40,14,.8]])for(let j=0;j<5;j++)g.add(mesh(G.sphere((12-j*1.4)*k,10,8),st,x+Math.sin(j*1.7)*8,18+j*24*k,z));
+  g.add(mesh(G.box(40,26,30),'#7b5a3e',-96,13,-70),scl(rot(mesh(G.cone(32,16,4),'#3a3533',-96,34,-70,{flatShading:true}),0,PI/4,0),1,1,.8));return g;},
+ yufuin:()=>{const g=group(mesh(G.cone(110,170,8),'#6d8f5e',-30,85,-140,{flatShading:true}),mesh(G.cone(80,140,8),'#7c9c6a',60,70,-150,{flatShading:true}),
+   scl(mesh(G.cyl(110,110,3,32),'#7fb7c9',0,2,10),1,1,.7));
+  const t=group(...[-18,18].map(x=>mesh(G.cyl(3,3,44,10),'#d9442f',x,22,0)),mesh(G.box(50,5,6),'#1f1d1c',0,46,0),mesh(G.box(44,4,5),'#d9442f',0,40,0));t.position.set(30,0,20);g.add(t);
+  const mist=mat('#ffffff',{transparent:true,opacity:.42});for(let i=0;i<9;i++)g.add(scl(mesh(G.sphere(22,10,8),mist,-80+i*22,12+(i%3)*5,10+((i*29)%30)-15),1.6,.45,1));
+  g.add(mesh(G.box(34,24,26),'#8a6a4a',-84,12,40),scl(rot(mesh(G.cone(28,14,4),'#4a4440',-84,31,40,{flatShading:true}),0,PI/4,0),1,1,.8));return g;},
+ // ===== 한국 =====
+ namsantower:()=>group(mesh(G.cone(120,70,10),'#5e8f55',0,35,0,{flatShading:true}),mesh(G.cyl(9,13,80,16),'#eef0f3',0,108,0),
+  mesh(G.cyl(20,15,12,24),'#d7dce4',0,152,0),mesh(G.cyl(22,22,10,24),'#9fb6d6',0,164,0,{metalness:.35,roughness:.3}),mesh(G.cyl(18,22,6,24),'#d7dce4',0,172,0),
+  ...[0,1,2,3,4].map(i=>mesh(G.cyl(2.6-i*.3,2.8-i*.3,10,8),i%2?'#ffffff':'#e8432f',0,180+i*10,0))),
+ gyeongbok:()=>{const g=group(mesh(G.cone(150,120,8),'#6f8f62',0,40,-170,{flatShading:true}),mesh(G.box(200,10,110),'#d9d4c8',0,5,0),mesh(G.box(170,10,90),'#e3ded2',0,15,0),
+   ...[-60,-30,0,30,60].map(x=>mesh(G.cyl(3.2,3.6,50,10),'#b5382c',x,45,30)),mesh(G.box(150,48,60),'#c9b79a',0,44,0),
+   mesh(G.box(158,8,68),'#3f8f6f',0,72,0),mesh(G.box(150,26,58),'#c9b79a',0,88,0),mesh(G.box(150,6,66),'#3f8f6f',0,103,0));
+  // 처마가 살짝 들린 두 겹 지붕
+  for(const [y,w,d,h] of [[80,196,104,20],[110,176,92,28]]){const r=scl(mesh(prism(d*.62,w),'#3b3f46',0,y+h/2,0),1,h/(d*.62)*.9,1);g.add(r);
+   for(const s of [-1,1])g.add(rot(mesh(G.box(14,3,d+6),'#3b3f46',s*(w/2-4),y+2,0),0,0,s*.3));}
+  g.add(mesh(G.box(40,14,20),'#d9d4c8',0,7,62),mesh(G.box(30,8,14),'#d9d4c8',0,14,60));return g;},
+ lottetower:()=>{const g=group(mesh(G.box(70,10,70),'#c3c9d3',0,5,0));
+  for(let i=0;i<10;i++){const r=26-i*1.6;g.add(rot(mesh(G.cyl(r-1.4,r,20,4),'#a9bfd6',0,20+i*20,0,{metalness:.45,roughness:.22,flatShading:true}),0,PI/4+i*.03,0));}
+  for(const s of [-1,1])g.add(rot(mesh(G.box(3,200,2),'#e8eef6',s*8,110,17),0,0,0));
+  g.add(rot(mesh(G.cyl(3,10,26,4),'#dfe7f1',0,224,0,{flatShading:true}),0,PI/4,0));g.scale.setScalar(.82);return g;},
+ gwangan:()=>{const g=group(scl(mesh(G.cyl(160,160,3,40),'#4f86b8',0,1,0),1,1,.35),mesh(G.box(300,8,18),'#e9edf2',0,46,0));
+  for(const x of [-70,70])g.add(...[-7,7].map(z=>mesh(G.box(8,120,6),'#dfe4ec',x,60,z)),mesh(G.box(10,8,22),'#dfe4ec',x,112,0));
+  const cable=mat('#c9cfd9');for(const z of [-7,7]){for(const [a,b] of [[-150,-70],[-70,70],[70,150]]){const n=12;for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,x0=a+(b-a)*t0,x1=a+(b-a)*t1,
+   y=t=>a===-70?116-Math.sin(t*PI)*62:a<0?50+t*66:116-t*66;const m=mesh(G.box(Math.hypot(x1-x0,y(t1)-y(t0)),1.4,1.4),cable,(x0+x1)/2,(y(t0)+y(t1))/2,z);m.rotation.z=Math.atan2(y(t1)-y(t0),x1-x0);g.add(m);}}}
+  for(let x=-140;x<=140;x+=20)g.add(mesh(G.box(4,2,4),'#7fb3ff',x,51,9,{emissive:'#7fb3ff',emissiveIntensity:.8}));return g;},
+ // ===== 중국 =====
+ orientalpearl:()=>{const p=mat('#e0609a',{metalness:.45,roughness:.3});const g=group(mesh(G.box(110,8,110),'#c9ced8',0,4,0));
+  for(let i=0;i<3;i++){const a=i*2.094;g.add(rot(mesh(G.cyl(5,6,90,10),'#dfe3ea',Math.sin(a)*30,45,Math.cos(a)*30),Math.cos(a)*.3,0,-Math.sin(a)*.3));}
+  g.add(mesh(G.cyl(7,8,170,14),'#e8ebf0',0,110,0),mesh(G.sphere(30,24,16),p,0,60,0),mesh(G.sphere(20,22,14),p,0,140,0),mesh(G.sphere(9,16,12),p,0,180,0),mesh(G.cyl(1.6,2.6,30,8),'#c9cfd9',0,204,0));
+  g.scale.setScalar(.85);return g;},
+ templeofheaven:()=>{const g=group(...[0,1,2].map(i=>mesh(G.cyl(92-i*16,96-i*16,8,40),'#f1eee7',0,4+i*8,0)),mesh(G.cyl(40,40,40,24),'#b5382c',0,44,0));
+  for(let i=0;i<3;i++){const r=62-i*14,y=66+i*30;g.add(mesh(G.cone(r,22,32),'#2b4fa3',0,y+11,0),mesh(G.cyl(r*.6,r*.6,10,24),'#b5382c',0,y+26,0),rot(mesh(G.torus(r*.6,1.4),'#3f8f6f',0,y+21,0),PI/2));}
+  g.add(mesh(G.sphere(8,16,12),'#e6bd45',0,166,0,{metalness:.6,roughness:.3}),mesh(G.cone(4,14,12),'#e6bd45',0,178,0,{metalness:.6,roughness:.3}));return g;},
+ forbiddencity:()=>{const g=group(mesh(G.box(220,54,64),'#a8302a',0,27,0));
+  for(const x of [-60,-30,0,30,60])g.add(mesh(G.box(x?14:20,x?26:34,4),'#3a2522',x,x?13:17,32.5));
+  g.add(mesh(G.box(220,4,68),'#e8dccb',0,56,0),...[-80,-50,-20,20,50,80].map(x=>mesh(G.cyl(3,3,28,8),'#b5382c',x,72,22)),mesh(G.box(180,26,40),'#b5382c',0,72,0),
+   mesh(G.box(18,24,2),'#f1e3c8',0,30,32.5));
+  for(const [y,w,d] of [[86,210,70],[108,170,56]]){g.add(scl(mesh(prism(d*.6,w),'#e2b13c',0,y+10,0),1,.55,1),...[-1,1].map(s=>rot(mesh(G.box(12,3,d),'#e2b13c',s*(w/2-4),y+1,0),0,0,s*.35)));}
+  return g;},
+ // ===== 미국 =====
+ empirestate:()=>{const c='#d7cdb9',d='#bfb39b',g=group(mesh(G.box(110,26,80),d,0,13,0),mesh(G.box(84,22,62),c,0,37,0),mesh(G.box(62,96,46),c,0,96,0),
+   mesh(G.box(48,16,36),d,0,152,0),mesh(G.box(36,12,28),c,0,166,0),mesh(G.cyl(10,13,14,8),d,0,179,0),mesh(G.cyl(4,7,18,8),'#c9cfd9',0,195,0,{metalness:.5}),mesh(G.cyl(.9,1.4,22,6),'#c9cfd9',0,215,0));
+  for(let y=56;y<=140;y+=12)g.add(mesh(G.box(63,1.5,47),'#9a917f',0,y,0));
+  g.add(mesh(G.box(38,4,30),'#ff6b8a',0,172,0,{emissive:'#ff6b8a',emissiveIntensity:.5}));g.scale.setScalar(.82);return g;},
+ hollywood:()=>{const g=group(scl(mesh(G.sphere(110,20,12),'#a39570',0,-46,-110),1.5,.8,.6),mesh(G.cone(70,90,8),'#8f8a5c',-110,35,-130,{flatShading:true}),mesh(G.cone(60,70,8),'#9b8f68',110,25,-130,{flatShading:true}));
+  const tex=textTex('HOLLYWOOD',1024,150,'#ffffff');const sign=new THREE.Mesh(new THREE.PlaneGeometry(250,42),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
+  sign.position.set(0,40,30);sign.rotation.x=-.12;g.add(sign);for(let x=-110;x<=110;x+=27)g.add(mesh(G.box(1.8,30,1.8),'#7a7a7a',x,24,26));g.add(mesh(G.box(270,6,40),'#a39570',0,3,30));return g;},
+ spaceneedle:()=>{const g=group(mesh(G.cyl(30,34,6,24),'#c9ced8',0,3,0));
+  for(let i=0;i<3;i++){const a=i*2.094;for(const k of [-1,1]){const m=mesh(G.cyl(2.6,3.2,170,8),'#f1f3f6',Math.sin(a+k*.2)*20,90,Math.cos(a+k*.2)*20);m.rotation.set(Math.cos(a)*-.04,0,Math.sin(a)*.04);g.add(m);}}
+  g.add(rot(mesh(G.torus(12,2),'#f1f3f6',0,64,0),PI/2),mesh(G.cyl(46,18,14,32),'#eef0f3',0,168,0),mesh(G.cyl(40,46,6,32),'#f39a45',0,178,0,{emissive:'#f39a45',emissiveIntensity:.25}),
+   mesh(G.cyl(30,40,8,32),'#dfe3ea',0,185,0),mesh(G.cyl(1.4,2.4,30,8),'#c9cfd9',0,204,0));g.scale.setScalar(.82);return g;},
+ whitehouse:()=>{const w='#f7f7f3',g=group(mesh(G.box(220,6,140),'#7fb069',0,3,0),mesh(G.box(170,50,62),w,0,31,-10),mesh(G.box(172,4,64),'#dcdcd6',0,58,-10),
+   mesh(G.box(60,4,26),'#ecece6',0,2,34),...[-24,-12,0,12,24].map(x=>mesh(G.cyl(2.6,2.8,46,10),w,x,27,40)),mesh(G.box(62,6,30),w,0,53,34),scl(mesh(prism(16,62),w,0,62,34),1,.5,1));
+  for(let i=0;i<7;i++)g.add(mesh(G.box(8,12,1),'#9fb3c8',-72+i*24,34,21.5));
+  g.add(mesh(G.cyl(16,18,6,24),'#cfd6dc',0,6,72),mesh(G.cyl(2,2,14,8),'#cfd6dc',0,14,72),mesh(G.cyl(1,1,40,6),'#a7adb6',0,80,-10),mesh(G.box(16,10,1),'#c8394a',8,94,-10));return g;},
+ // ===== 캐나다 =====
+ cntower:()=>{const c='#cfcac2',g=group(...[0,1,2].map(i=>rot(mesh(G.box(12,90,24),c,Math.sin(i*2.094)*12,45,Math.cos(i*2.094)*12),0,i*2.094,0)),mesh(G.cyl(10,15,160,12),c,0,90,0),
+   mesh(G.cyl(22,18,10,24),'#9aa0aa',0,158,0),mesh(G.cyl(24,24,8,24),'#7fb3d9',0,167,0,{metalness:.35,roughness:.25}),mesh(G.cyl(18,24,8,24),'#9aa0aa',0,175,0),
+   mesh(G.cyl(7,9,10,16),'#9aa0aa',0,198,0),mesh(G.cyl(4,6,30,10),c,0,214,0),mesh(G.cyl(1.4,2.8,26,8),'#e8432f',0,242,0));g.scale.setScalar(.72);return g;},
+ frontenac:()=>{const br='#a4573f',cu='#5f9e8f',g=group(mesh(G.box(220,10,120),'#8f8a82',0,5,0));
+  for(const [x,z,w,h] of [[-70,0,60,70],[70,0,60,66],[0,-20,70,120],[0,30,150,54]]){g.add(mesh(G.box(w,h,w*.7),br,x,10+h/2,z),scl(rot(mesh(G.cone(w*.74,h*.45,4),cu,x,10+h+h*.22,z,{flatShading:true}),0,PI/4,0),1,1,.7));}
+  for(const [x,z] of [[-100,30],[100,30],[-40,40],[40,40],[-20,-46],[20,-46]])g.add(mesh(G.cyl(9,9,82,12),br,x,51,z),mesh(G.cone(11,26,12),cu,x,105,z));
+  g.add(mesh(G.cone(10,34,4),cu,0,186,-20,{flatShading:true}));return g;},
+ falls:()=>{const g=group(scl(mesh(G.cyl(170,170,3,40),'#5fa7c9',0,1,30),1,1,.55)),water=mat('#e4f4fb',{transparent:true,opacity:.88,emissive:'#bfe6f5',emissiveIntensity:.35});
+  for(let i=0;i<=12;i++){const a=PI+i*PI/12,x=Math.cos(a)*100,z=Math.sin(a)*70-20;const seg=group(mesh(G.box(30,14,40),'#7b7368',0,66,-20),mesh(G.box(30,6,40),'#6f9a5c',0,76,-20),mesh(G.box(28,62,3),water,0,32,0));
+   seg.position.set(x,0,z);seg.rotation.y=-a-PI/2;g.add(seg);}
+  const mist=mat('#ffffff',{transparent:true,opacity:.55});for(let i=0;i<12;i++){const a=PI+(i+.5)*PI/12;g.add(mesh(G.sphere(16,10,8),mist,Math.cos(a)*84,8+(i%3)*7,Math.sin(a)*58-6));}
+  const b=group(mesh(G.box(36,8,14),'#3d6fd6',0,6,0),mesh(G.box(22,8,10),'#ffffff',0,14,0));b.position.set(30,2,70);g.add(b);return g;},
+ // ===== 브라질 =====
+ sugarloaf:()=>{const g=group(scl(mesh(G.cyl(170,170,3,40),'#3d8fc0',0,1,30),1,1,.6),scl(mesh(G.sphere(60,24,16),'#7a7f74',40,70,-40),1,1.6,1),scl(mesh(G.sphere(54,18,12),'#5f8a55',-90,20,-20),1.3,.9,1),
+   scl(mesh(G.sphere(46,20,14),'#4f7f4a',40,112,-40),1.08,.5,1.08));
+  g.add(mesh(G.box(150,1,1),'#3a3a3a',-25,95,-30));const car=group(mesh(G.box(14,12,12),'#e8432f',0,0,0),mesh(G.box(1,12,1),'#3a3a3a',0,10,0));car.position.set(-20,82,-30);g.add(car);return g;},
+ // ===== 유럽 =====
+ towerbridge:()=>{const s='#d8c9a8',g=group(scl(mesh(G.cyl(150,150,3,40),'#5f8fae',0,1,0),1,1,.3),mesh(G.box(260,7,26),'#4f7fb8',0,40,0));
+  for(const x of [-60,60]){g.add(mesh(G.box(40,110,40),s,x,55,0),mesh(G.box(46,8,46),'#c4b391',x,112,0),rot(mesh(G.cone(24,30,4),'#4f5a6a',x,131,0,{flatShading:true}),0,PI/4,0));
+   for(const [dx,dz] of [[-18,-18],[18,-18],[-18,18],[18,18]])g.add(mesh(G.cyl(3.2,3.2,22,8),s,x+dx,126,dz),mesh(G.cone(4,12,8),'#4f5a6a',x+dx,143,dz));
+   g.add(mesh(G.box(22,30,2),'#3d3a35',x,50,20.5));}
+  g.add(mesh(G.box(80,8,12),'#4f7fb8',0,96,0),mesh(G.box(80,2,14),'#e9edf2',0,101,0));for(const x of [-150,150])g.add(mesh(G.box(70,5,20),'#4f7fb8',x,40,0));return g;},
+ londoneye:()=>{const g=group(scl(mesh(G.cyl(110,110,3,40),'#5f8fae',0,1,30),1,1,.4)),w=group();
+  w.add(mesh(G.torus(80,2.4),'#f1f3f6'),mesh(G.torus(74,1.2),'#f1f3f6'),mesh(G.cyl(6,6,10,16),'#c9cfd9'));
+  for(let i=0;i<16;i++){const a=i*PI/8;w.add(rot(mesh(G.box(1,80,1),'#d9dee6',Math.cos(a)*40,Math.sin(a)*40,0),0,0,a-PI/2),scl(mesh(G.sphere(5,12,8),glass('#bfe3f5',.85),Math.cos(a)*84,Math.sin(a)*84,0),1.5,1,1));}
+  w.position.set(0,92,0);g.add(w);
+  g.add(rot(mesh(G.box(5,110,5),'#f1f3f6',-14,46,-34),.55,0,0),rot(mesh(G.box(5,110,5),'#f1f3f6',14,46,-34),.55,0,0));g.userData.spin=[[w,'z',.25]];return g;},
+ louvre:()=>{const c='#e6d9bd',g=group(mesh(G.box(240,4,170),'#d8d3c7',0,2,0));
+  for(const [x,z,w,d] of [[0,-70,240,30],[-105,0,30,170],[105,0,30,170]])g.add(mesh(G.box(w,40,d),c,x,24,z),scl(mesh(prism(d*.5,w),'#5b6575',x,52,z),1,.5,1));
+  g.add(rot(mesh(G.cone(52,62,4),glass('#bfe0f2',.55),0,35,20,{flatShading:true}),0,PI/4,0),rot(new THREE.LineSegments(new THREE.EdgesGeometry(G.cone(52,62,4)),new THREE.LineBasicMaterial({color:'#6b7a8a'})),0,PI/4,0));
+  g.children.at(-1).position.set(0,35,20);for(const x of [-70,70])g.add(rot(mesh(G.cone(14,16,4),glass('#bfe0f2',.55),x,10,30,{flatShading:true}),0,PI/4,0));return g;},
+ notredame:()=>{const s='#d9cdb4',g=group(mesh(G.box(80,80,30),s,0,40,20),mesh(G.box(56,46,150),s,0,23,-70));
+  for(const x of [-28,28])g.add(mesh(G.box(24,128,30),s,x,64,20),mesh(G.box(26,4,32),'#c4b79c',x,130,20));
+  g.add(rot(mesh(G.cyl(14,14,2,24),'#3a5a9a',0,82,35.5,{emissive:'#3a5a9a',emissiveIntensity:.35}),PI/2),mesh(G.torus(14,1.5),'#c4b79c',0,82,36),
+   rot(scl(mesh(prism(30,150),'#5b6575',0,58,-70),1,.6,1),0,PI/2,0),mesh(G.cone(5,56,6),'#5b6575',0,100,-40));
+  for(let i=0;i<3;i++)g.add(mesh(G.box(14,24,2),'#3a3330',(i-1)*22,14,35.5));return g;},
+ neuschwanstein:()=>{const w='#f2efe8',b='#4f6a9a',g=group(mesh(G.cone(110,70,8),'#7f8a6f',0,35,0,{flatShading:true}),mesh(G.box(120,60,40),w,0,100,-10));
+  g.add(scl(mesh(prism(24,120),b,0,140,-10),1,.8,1));
+  for(const [x,z,r,h] of [[-56,10,10,96],[40,14,9,110],[62,-20,8,80],[-20,20,7,70],[10,-30,14,120]])g.add(mesh(G.cyl(r,r,h,16),w,x,70+h/2,z),mesh(G.cone(r*1.25,r*2.4,16),b,x,70+h+r*1.2,z));
+  for(let i=0;i<5;i++)g.add(mesh(G.box(6,10,1),'#3a4a6a',-40+i*20,104,10.5));return g;},
+ trevi:()=>{const s='#e9e1cf',g=group(mesh(G.box(220,110,30),s,0,55,-40),mesh(G.box(230,10,34),'#d8cfba',0,114,-40),mesh(G.box(80,22,32),s,0,130,-40));
+  for(const x of [-84,-56,-28,28,56,84])g.add(mesh(G.cyl(4,4.4,80,12),s,x,48,-24));
+  g.add(mesh(G.box(40,70,6),'#cfc5ae',0,50,-22),scl(mesh(G.sphere(20,16,10),'#bfb6a2',0,46,-20),1,1.4,.6),mesh(G.capsule(6,20),'#f3eee2',0,44,-10),mesh(G.sphere(6),'#f3eee2',0,64,-10));
+  for(const x of [-60,-20,20,60])g.add(scl(mesh(G.sphere(16,8,6),'#cdc4b0',x,8,0),1.6,.7,1));
+  g.add(scl(mesh(G.cyl(100,100,4,32,1,false,0,PI),'#3fc1c9',0,4,0,{emissive:'#2a9aa3',emissiveIntensity:.25}),1,1,.7));return g;},
+ atomium:()=>{const m=mat('#d9dee6',{metalness:.75,roughness:.25}),g=group(),pts=[[0,40,0]];
+  for(const sx of [-1,1])for(const sz of [-1,1])for(const sy of [-1,1])pts.push([sx*44,110+sy*44,sz*44]);pts.push([0,180,0]);
+  pts.forEach(p=>g.add(mesh(G.sphere(15,20,14),m,...p)));
+  const tube=(a,b)=>{const d=new THREE.Vector3(b[0]-a[0],b[1]-a[1],b[2]-a[2]),L=d.length(),t=mesh(G.cyl(3.4,3.4,L,8),m,(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2);
+   t.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());g.add(t);};
+  for(let i=1;i<9;i++){tube(pts[i],[0,110,0]);}for(let i=1;i<9;i++)for(let j=i+1;j<9;j++){const a=pts[i],b=pts[j];if([0,1,2].filter(k=>a[k]!==b[k]).length===1)tube(a,b);}
+  tube(pts[0],[0,110,0]);g.add(mesh(G.sphere(15,20,14),m,0,110,0));for(const x of [-30,30])g.add(mesh(G.cyl(3,4,70,8),'#9aa0aa',x,35,30));g.scale.setScalar(.8);return g;},
+ budaparliament:()=>{const s='#efe8da',r='#b5503a',g=group(scl(mesh(G.cyl(150,150,3,40),'#5f8fae',0,1,60),1,1,.3),mesh(G.box(260,44,60),s,0,26,-10),scl(mesh(prism(30,260),r,0,58,-10),1,.6,1));
+  g.add(mesh(G.cyl(22,24,40,16),s,0,66,-10),mesh(G.sphere(24,20,12),r,0,92,-10),mesh(G.cone(6,40,8),s,0,128,-10));
+  for(const x of [-120,-90,-60,60,90,120])g.add(mesh(G.cone(4,30,6),s,x,62,18),mesh(G.cyl(3,3,20,6),s,x,52,18));
+  for(const x of [-40,40])g.add(mesh(G.cyl(6,6,70,8),s,x,45,-30),mesh(G.cone(7,22,8),r,x,91,-30));return g;},
+
 };
 export const PROP_KEYS=Object.keys(PROPS);
 export function buildProp(key){return (PROPS[key]||PROPS.pin)();}

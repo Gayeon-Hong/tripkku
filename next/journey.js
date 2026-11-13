@@ -75,6 +75,43 @@ export function party(){const a=api(),doc=a.activeDoc?.()||{},me=a.getMyId?.();
    규칙은 위에서부터 먼저 맞는 것을 쓴다. 소품·말풍선이 여러 개면 같은 종류가 다시 나올 때마다 차례로 바꾼다
    (크리스마스 마켓 → 트리, 다음엔 산타, 그다음엔 가판대 …). */
 const RULES=[
+ // 일본 · 한국 · 중국 · 미국 · 캐나다 · 브라질 · 유럽 (2026-11-13 추가) — 이름이 확실한 건물이라 맨 앞에서 본다("남산타워"의 '산타', "스카이트리"의 '트리'가 크리스마스로 잡히지 않게)
+ [/도쿄 ?타워|東京タワー|tokyo ?tower/i,['tokyotower'],'pose',['찰칵!','빨갛다!']],
+ [/스카이 ?트리|スカイツリー|sky ?tree/i,['skytree'],'pose',['엄청 높다!','다 보인다!']],
+ [/센소지|센소 ?사|아사쿠사|가미나리 ?몬|카미나리 ?몬|浅草|senso-?ji|asakusa/i,['kaminarimon'],'pose',['찰칵!','등 크다!']],
+ [/오사카 ?성|大阪城|osaka ?castle/i,['osakacastle'],'pose',['찰칵!','멋지다!']],
+ [/나고야 ?성|名古屋城|nagoya ?castle/i,['nagoyacastle'],'pose',['금 물고기다!','찰칵!']],
+ [/도톤보리|글리코|道頓堀|dotonbori|glico/i,['glico'],'cheer',['글리코 포즈!','오사카다!']],
+ [/츠텐카쿠|쓰텐카쿠|통천각|신세카이|通天閣|tsutenkaku|shinsekai/i,['tsutenkaku'],'pose',['찰칵!']],
+ [/후시미|천본 ?도리이|伏見|fushimi/i,['fushimi'],'pose',['도리이가 끝없어!','찰칵!']],
+ [/금각사|킨카쿠|金閣|kinkaku/i,['kinkakuji'],'pose',['금빛이다!','반짝반짝!']],
+ [/기요미즈|청수사|清水寺|kiyomizu/i,['kiyomizu'],'pose',['경치 최고!','찰칵!']],
+ [/나고야 ?(tv|티비)|오아시스 ?21|nagoya ?tv|中部電力/i,['nagoyatv'],'pose',['찰칵!']],
+ [/벳푸|지옥 ?(온천|순례|투어)|가마도 ?지옥|우미 ?지옥|치노이케|別府|beppu/i,['beppu'],'pose',['김이 펄펄!','뜨겁겠다!']],
+ [/유후인|긴린 ?호|킨린 ?호|유후다케|由布院|湯布院|yufuin/i,['yufuin'],'relax',['물안개 예쁘다…','그림 같아']],
+ [/남산|n ?서울 ?타워|서울 ?타워|namsan/i,['namsantower'],'pose',['서울이 다 보여!','찰칵!']],
+ [/경복궁|광화문|근정전|gyeongbok/i,['gyeongbok'],'pose',['찰칵!','고즈넉하다']],
+ [/롯데 ?(월드 ?)?타워|서울 ?스카이|lotte ?(world ?)?tower/i,['lottetower'],'pose',['엄청 높다!']],
+ [/광안 ?대교|광안리|gwangan/i,['gwangan'],'cheer',['바다다!','야경 최고!']],
+ [/동방 ?명주|东方明珠|oriental ?pearl/i,['orientalpearl'],'pose',['찰칵!','동글동글!']],
+ [/천단|天坛|temple ?of ?heaven/i,['templeofheaven'],'pose',['찰칵!']],
+ [/자금성|천안문|고궁 ?박물원|故宫|天安门|forbidden ?city|tiananmen/i,['forbiddencity'],'pose',['웅장하다!','찰칵!']],
+ [/엠파이어|empire ?state/i,['empirestate'],'pose',['뉴욕이다!','찰칵!']],
+ [/할리우드|헐리우드|hollywood/i,['hollywood'],'cheer',['할리우드다!','찰칵!']],
+ [/스페이스 ?니들|space ?needle/i,['spaceneedle'],'pose',['찰칵!']],
+ [/백악관|white ?house/i,['whitehouse'],'pose',['찰칵!']],
+ [/(cn|씨엔) ?타워|cn ?tower/i,['cntower'],'pose',['엄청 높다!']],
+ [/프롱트낙|프론트낙|샤토 ?프롱|frontenac/i,['frontenac'],'pose',['동화 속 같아!','찰칵!']],
+ [/나이아가라|이구아수|이과수|폭포|niagara|iguazu|igua[cç]u|waterfall|falls/i,['falls'],'cheer',['우와, 물보라!','시원하다!']],
+ [/슈가 ?로프|팡 ?데 ?아수카르|sugar ?loaf|p[aã]o de a[cç][uú]car/i,['sugarloaf'],'cheer',['케이블카 타자!']],
+ [/타워 ?브리지|tower ?bridge/i,['towerbridge'],'pose',['찰칵!','런던이다!']],
+ [/런던 ?아이|london ?eye/i,['londoneye'],'cheer',['높다!','런던이 다 보여!']],
+ [/루브르|louvre/i,['louvre'],'pose',['모나리자 보러 가자!','찰칵!']],
+ [/노트르 ?담|노틀 ?담|notre[ -]?dame/i,['notredame'],'pose',['웅장하다…','찰칵!']],
+ [/노이슈반슈타인|노이슈반|백조의 ?성|neuschwanstein/i,['neuschwanstein'],'pose',['디즈니 성이다!','찰칵!']],
+ [/트레비|trevi/i,['trevi'],'pose',['동전 던지자!','찰칵!']],
+ [/아토미움|atomium/i,['atomium'],'pose',['신기하다!','찰칵!']],
+ [/부다페스트.*국회|국회.*부다페스트|헝가리 ?국회|orsz[aá]gh[aá]z|budapest ?parliament/i,['budaparliament'],'pose',['야경 맛집!','찰칵!']],
  // 크리스마스·겨울
  [/글뤼바인|뱅쇼|gl[uü]hwein/i,['gluhwein'],'cheer',['따뜻해~','짠!']],
  [/산타|santa/i,['santa'],'cheer',['산타다!','메리 크리스마스!']],
@@ -176,7 +213,6 @@ const RULES=[
  [/슈트리첼|striezel|대관람차|관람차|ferris/i,['xferris'],'cheer',['높다!','반짝반짝!']],
  // 나라별 랜드마크
  [/빅 ?벤|big ?ben|국회의사당.*런던|웨스트민스터/i,['bigben'],'pose',['찰칵!','런던이다!']],
- [/런던 ?아이|london ?eye/i,['ferris'],'cheer',['높다!']],
  [/콜로세움|colosseo|colosseum/i,['colosseum'],'pose',['찰칵!','웅장하다!']],
  [/피사|pisa/i,['pisa'],'pose',['기울었다!']],
  [/개선문|arc de triomphe/i,['arc'],'pose',['찰칵!']],
@@ -239,11 +275,18 @@ const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitz
  AE:['kebab','grill'],SA:['kebab','grill'],EG:['kebab','bread'],MA:['kebab','tea'],RU:['dumpling','bread'],SE:['bread','seafood'],NO:['seafood'],DK:['bread','hotdog'],FI:['seafood','bread'],IS:['seafood','hotdog'],HR:['seafood','pasta'],RO:['goulash','sausage'],UA:['dumpling','bread'],
  BR:['grill','steak'],AR:['steak','grill'],PE:['seafood'],CL:['seafood','steak'],ZA:['grill','steak'],KE:['grill'],TZ:['grill'],KH:['bowl','curry'],LA:['bowl'],MM:['curry','bowl'],NP:['dumpling','curry'],LK:['curry'],BD:['curry'],PK:['curry','kebab'],IL:['kebab','bread']};
 // 관광 일정이 어디인지 특정되지 않으면 그 나라를 대표하는 건물로
-const SIGHT_BY_COUNTRY={JP:['torii','japancastle','pagoda'],KR:['hanok','tower'],CN:['greatwall','pagoda'],TW:['taipei101','pagoda'],HK:['skyline','boat'],TH:['stupa'],KH:['stupa'],LA:['stupa'],MM:['stupa'],VN:['pagoda','boat'],SG:['marina','skyline'],MY:['petronas','mosque'],ID:['stupa','parasol'],PH:['church','parasol'],
- US:['liberty','skyline','goldengate'],CA:['mountain','skyline'],GB:['bigben','castle'],IE:['castle','church'],FR:['eiffel','arc','museum'],IT:['colosseum','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['brandenburg','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['church','museum'],
- GR:['parthenon','church'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
+const SIGHT_BY_COUNTRY={JP:['tokyotower','torii','osakacastle','kinkakuji','pagoda'],KR:['gyeongbok','namsantower','hanok'],CN:['greatwall','forbiddencity','templeofheaven','orientalpearl'],TW:['taipei101','pagoda'],HK:['skyline','boat'],TH:['stupa'],KH:['stupa'],LA:['stupa'],MM:['stupa'],VN:['pagoda','boat'],SG:['marina','skyline'],MY:['petronas','mosque'],ID:['stupa','parasol'],PH:['church','parasol'],
+ US:['liberty','empirestate','goldengate','hollywood'],CA:['cntower','frontenac','falls','mountain'],GB:['bigben','towerbridge','londoneye','castle'],IE:['castle','church'],FR:['eiffel','louvre','arc','notredame'],IT:['colosseum','trevi','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['brandenburg','neuschwanstein','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['atomium','church','museum'],
+ GR:['parthenon','church'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['budaparliament','castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','sugarloaf','falls','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
 // 도시 이름이 보이면 그 도시의 대표 건물을 차례로 보여 준다
-const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','berlindom','reichstag','siegessaeule']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn','powdertower','dancinghouse']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper','fuerstenzug']],[/바르샤바|warszawa|warsaw/i,['warsawcastle','pkin']]];
+const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','berlindom','reichstag','siegessaeule']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn','powdertower','dancinghouse']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper','fuerstenzug']],[/바르샤바|warszawa|warsaw/i,['warsawcastle','pkin']],
+ [/도쿄|東京|tokyo/i,['tokyotower','skytree','kaminarimon']],[/오사카|大阪|osaka/i,['osakacastle','glico','tsutenkaku']],[/교토|京都|kyoto/i,['fushimi','kinkakuji','kiyomizu']],
+ [/나고야|名古屋|nagoya/i,['nagoyacastle','nagoyatv']],[/오이타|벳푸|유후인|大分|別府|由布院|湯布院|oita|beppu|yufuin/i,['beppu','yufuin']],
+ [/서울|seoul/i,['namsantower','gyeongbok','lottetower']],[/부산|busan/i,['gwangan']],[/상하이|상해|上海|shanghai/i,['orientalpearl']],[/베이징|북경|北京|beijing/i,['forbiddencity','templeofheaven','greatwall']],
+ [/뉴욕|new ?york/i,['empirestate','liberty']],[/로스 ?앤젤레스|엘에이|los ?angeles/i,['hollywood']],[/샌프란시스코|san ?francisco/i,['goldengate']],[/시애틀|seattle/i,['spaceneedle']],[/워싱턴|washington/i,['whitehouse']],
+ [/토론토|toronto/i,['cntower','falls']],[/퀘벡|qu[eé]bec/i,['frontenac']],[/리우 ?데 ?자네이루|리우|rio de janeiro/i,['christ','sugarloaf']],
+ [/런던|london/i,['bigben','towerbridge','londoneye']],[/파리|paris/i,['eiffel','louvre','notredame','arc']],[/로마|roma|rome/i,['colosseum','trevi']],
+ [/뮌헨|퓌센|m[uü]nchen|munich|f[uü]ssen/i,['neuschwanstein']],[/브뤼셀|bruxelles|brussels/i,['atomium']],[/부다페스트|budapest/i,['budaparliament']]];
 // 크리스마스 마켓은 도시마다 다르게: 드레스덴은 대관람차·피라미드부터
 const CITY_XMAS=[[/드레스덴|dresden/i,['xferris','xpyramid','stall','gluhwein','tree']],[/베를린|berlin/i,['tree','xpyramid','gluhwein','xferris','santa']],[/프라하|praha|prague/i,['tree','stall','santa','gluhwein']],[/바르샤바|warszawa|warsaw/i,['tree','xferris','stall']]];
 function sightFor(country,n){const list=SIGHT_BY_COUNTRY[country]||['camera'];return list[n%list.length];}
@@ -256,6 +299,7 @@ export function reactionFor(e,country='',seen=new Map()){const text=[e.title,e.p
  if(i<0&&e.kind==='hotel')return {key:'hotel',act:'sleep',say:'오늘도 수고했어'};
  if(i<0&&e.kind==='move')return {key:'train',act:'wave',say:'가자!'};
  const city=CITY_SIGHTS.find(c=>c[0].test(text+' '+(e.city||'')));
+ if(i===RULES.length-1)i=city?-1:i; // "교토 구경"처럼 그냥 구경이면 그 도시의 대표 건물로
  if(i<0&&city){const k='city:'+city[1][0],m=seen.get(k)||0;seen.set(k,m+1);return {key:city[1][m%city[1].length],act:'pose',say:['찰칵!','여기 좋다!'][m%2],generic:true};}
  if(i<0){const k='sight:'+country,m=seen.get(k)||0;seen.set(k,m+1);const key=SIGHT_BY_COUNTRY[country]?sightFor(country,m):'pin';return {key,act:'pose',say:['찰칵!','여기 좋다!'][m%2],generic:true};}
  if(Array.isArray(RULES[i][1])&&RULES[i][1].includes('tree')&&RULES[i][1].includes('stall')){const cx=CITY_XMAS.find(c=>c[0].test(text+' '+(e.city||'')));
@@ -523,7 +567,12 @@ const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],sno
  baklava:['🍯',C.cafe],tea:['🫖',C.cafe],espresso:['☕',C.cafe],macaron:['🧁',C.cafe],churros:['🥖',C.cafe],nata:['🥧',C.cafe],fondue:['🫕',C.food],waffle:['🧇',C.cafe],cheese:['🧀',C.food],trdelnik:['🥐',C.cafe],goulash:['🥘',C.food],donut:['🍩',C.cafe],hotdog:['🌭',C.food],poutine:['🍟',C.food],meatpie:['🥧',C.food],tapas:['🍢',C.food],chocolate:['🍫',C.cafe],
  bigben:['🕰️',C.sight],colosseum:['🏟️',C.sight],pisa:['🏛️',C.sight],arc:['🏛️',C.sight],windmill:['🌬️',C.sight],sagrada:['⛪',C.sight],parthenon:['🏛️',C.sight],taj:['🕌',C.sight],mosque:['🕌',C.sight],burj:['🏙️',C.sight],onion:['⛪',C.sight],liberty:['🗽',C.sight],goldengate:['🌉',C.sight],opera:['🎭',C.sight],pyramid:['🔺',C.sight],christ:['🗿',C.sight],
  marina:['🏙️',C.sight],petronas:['🏙️',C.sight],hanok:['🏯',C.sight],japancastle:['🏯',C.sight],greatwall:['🧱',C.sight],taipei101:['🏙️',C.sight],stupa:['🛕',C.sight],chalet:['🏡',C.nature],clocktower:['🕰️',C.sight],
- hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move]};
+ hotel:['🏨',C.stay],house:['🏠',C.stay],pin:['📍',C.sight],plane:['✈️',C.move],train:['🚆',C.move],
+ tokyotower:['🗼',C.sight],skytree:['🗼',C.sight],kaminarimon:['⛩️',C.sight],osakacastle:['🏯',C.sight],nagoyacastle:['🏯',C.sight],glico:['🏃',C.fun],tsutenkaku:['🗼',C.sight],
+ fushimi:['⛩️',C.sight],kinkakuji:['🏯',C.sight],kiyomizu:['🛕',C.sight],nagoyatv:['🗼',C.sight],beppu:['♨️',C.nature],yufuin:['🏞️',C.nature],
+ namsantower:['🗼',C.sight],gyeongbok:['🏯',C.sight],lottetower:['🏙️',C.sight],gwangan:['🌉',C.sight],orientalpearl:['🗼',C.sight],templeofheaven:['🛕',C.sight],forbiddencity:['🏯',C.sight],
+ empirestate:['🏙️',C.sight],hollywood:['🎬',C.fun],spaceneedle:['🗼',C.sight],whitehouse:['🏛️',C.sight],cntower:['🗼',C.sight],frontenac:['🏰',C.sight],falls:['💧',C.nature],sugarloaf:['⛰️',C.nature],
+ towerbridge:['🌉',C.sight],londoneye:['🎡',C.fun],louvre:['🖼️',C.sight],notredame:['⛪',C.sight],neuschwanstein:['🏰',C.sight],trevi:['⛲',C.sight],atomium:['⚛️',C.sight],budaparliament:['🏛️',C.sight]};
 function drawPin(ctx,x,y,key,seen,r){const [glyph,color]=ICON[key]||ICON.pin,cy=y-r*2;ctx.save();ctx.globalAlpha=seen?1:.62;
  ctx.fillStyle=color;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-r*.72,cy+r*.7);ctx.arc(x,cy,r,PI*.76,PI*.24);ctx.closePath();ctx.stroke();ctx.fill();
  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,cy,r*.76,0,PI*2);ctx.fill();ctx.font=Math.round(r*1.05)+'px '+FONT+EMOJI;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#1b1e2e';ctx.fillText(glyph,x,cy+1);ctx.restore();}
@@ -605,7 +654,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261112_ui2'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261113_lm1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
