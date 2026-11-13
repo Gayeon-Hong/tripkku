@@ -32,6 +32,100 @@ function toast(message){const el=$('toast');el.textContent=String(message);el.cl
 function mapUrl(place){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(place||trip?.destination||'');}
 const isGoogleMapLink=url=>{try{const u=new URL(url);return u.protocol==='https:'&&(['google.com','www.google.com','maps.google.com','maps.app.goo.gl','goo.gl'].includes(u.hostname)||u.hostname.endsWith('.google.com')&&u.pathname.startsWith('/maps'));}catch{return false;}};
 const displayMapUrl=(item)=>isGoogleMapLink(item?.mapUrl)?item.mapUrl:mapUrl(item?.name||item?.place||'');
+
+const isTossPlatform=()=>document.documentElement.classList.contains('toss')||window.TRIPKKU_PLATFORM==='toss'||window.TRIPKKU_TOSS===true;
+
+/**
+ * 트립꾸 여행 제휴 마케팅 (아고다, 클룩, 스카이스캐너, 트립닷컴)
+ * 제휴 파트너스 가입 후 CID/AID를 입력하면 클릭 시 커미션이 자동 적립됩니다.
+ * 미입력 상태에서도 해당 도시 최저가 검색 페이지로 정상 연결됩니다.
+ */
+export const AFFILIATE_CONFIG={
+ agodaCid:'', // 아고다 파트너스 CID
+ klookAid:'', // 클룩 어필리에이트 AID
+ skyscannerRef:'', // 스카이스캐너 레퍼럴
+ tripAid:'' // 트립닷컴 AID
+};
+
+function getPrimaryCity(dest){
+ if(!dest)return '';
+ const first=String(dest).split(/[\/,→\->\s]+/)[0].trim();
+ return first||String(dest).trim();
+}
+
+function buildAffiliateLinks(dest,startDate,endDate){
+ const city=getPrimaryCity(dest);
+ const enc=encodeURIComponent(city);
+ let agoda=`https://www.agoda.com/ko-kr/search?city=${enc}`;
+ if(startDate&&endDate)agoda+=`&checkIn=${startDate}&checkOut=${endDate}`;
+ if(AFFILIATE_CONFIG.agodaCid)agoda+=`&cid=${AFFILIATE_CONFIG.agodaCid}`;
+ let klook=`https://www.klook.com/ko/search/?query=${enc}`;
+ if(AFFILIATE_CONFIG.klookAid)klook+=`&aid=${AFFILIATE_CONFIG.klookAid}`;
+ const skyscanner=`https://www.skyscanner.co.kr/transport/flights/icn/?destination=${enc}`;
+ const tripcom=`https://kr.trip.com/hotels/list?keyword=${enc}`;
+ return {city,agoda,klook,skyscanner,tripcom};
+}
+
+function renderAffiliateWidgets(){
+ const transCard=$('transportAffiliateCard'),schedCard=$('scheduleAffiliateCard');
+ if(!trip||isTossPlatform()){
+  if(transCard)transCard.hidden=true;
+  if(schedCard)schedCard.hidden=true;
+  return;
+ }
+ const dest=trip.destination||trip.title||'';
+ if(!dest){
+  if(transCard)transCard.hidden=true;
+  if(schedCard)schedCard.hidden=true;
+  return;
+ }
+ const l=buildAffiliateLinks(dest,trip.start_date,trip.end_date);
+ if(transCard){
+  transCard.hidden=false;
+  transCard.innerHTML=`
+   <div class="card-title"><h3>✈️ ${esc(l.city)} 여행 예약 파트너</h3><span class="tag">최저가 제휴</span></div>
+   <p class="muted">숙소·투어·항공을 트립꾸 제휴 링크로 예약하면 공식 할인가에 예약할 수 있고 트립꾸 개발에 큰 힘이 됩니다.</p>
+   <div class="affiliate-grid">
+    <a href="${esc(l.agoda)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🏨</span>
+     <div class="affiliate-info"><strong>아고다 ${esc(l.city)} 호텔</strong><small>최저가 보장 · 실시간 특가</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.klook)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🎟️</span>
+     <div class="affiliate-info"><strong>클룩 ${esc(l.city)} 투어·패스·eSIM</strong><small>교통 패스 · 인기 입장권 할인</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.skyscanner)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">✈️</span>
+     <div class="affiliate-info"><strong>스카이스캐너 항공권</strong><small>인천 ↔ ${esc(l.city)} 실시간 최저가</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+    <a href="${esc(l.tripcom)}" target="_blank" rel="noopener noreferrer" class="affiliate-item">
+     <span class="affiliate-icon">🚆</span>
+     <div class="affiliate-info"><strong>트립닷컴 호텔·열차</strong><small>해외 기차표 및 패스 예매</small></div>
+     <span class="affiliate-arrow">↗</span>
+    </a>
+   </div>
+   <p class="tiny muted" style="margin-top:10px">※ 제휴 링크를 통해 예약 시 이용자 추가 비용 없이 트립꾸 개발자에게 소정의 수수료가 적립됩니다.</p>
+  `;
+ }
+ if(schedCard){
+  schedCard.hidden=false;
+  schedCard.innerHTML=`
+   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+    <strong style="font-size:13px">🏨 ${esc(l.city)} 여행 준비 제휴 예약</strong>
+    <span class="tag" style="font-size:10px">최저가 특가</span>
+   </div>
+   <div class="schedule-affiliate-links">
+    <a href="${esc(l.agoda)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🏨 아고다 호텔 특가 ↗</a>
+    <a href="${esc(l.klook)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">🎟️ 클룩 투어/입장권/eSIM ↗</a>
+    <a href="${esc(l.skyscanner)}" target="_blank" rel="noopener noreferrer" class="btn small subtle">✈️ 항공권 비교 ↗</a>
+   </div>
+  `;
+ }
+}
+
 // 종류가 없거나 '방문'으로 저장된 이동 일정도 글자를 보고 ✈️/🚆 아이콘을 붙인다(예: 인천출발바르샤바도착).
 const looksTravel=t=>/출발.*도착|→|->|➜|에서\s*\S+(?:으로|로)\s|행\s?(?:비행|항공)|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b/.test(String(t||''));
 const eventEmoji=(e)=>e.emoji||((!e.kind||e.kind==='visit'||e.kind==='other')&&looksTravel(e.title)?(/기차|열차|버스|ICE|플릭스|트램|train|bus/i.test(e.title)?'🚆':/항공|비행|공항|인천|김포|✈|flight|\b[A-Z]{3}\s*[-–\/]\s*[A-Z]{3}\b|[A-Z]{2}\s?\d{2,4}/i.test(e.title)?'✈️':'🧭'):null)||({food:'🍜',move:'🚆',flight:'✈️',hotel:'🏨',visit:'📍',other:'✨'})[e.kind]||'📍';
@@ -412,7 +506,7 @@ function renderIntro(){const c=currentCountry(),d=activeDoc(),lang=d.meta?.langu
  $('inviteTop').hidden=!canManageTrip();}
 function chooseTab(tab){activeTab=tab;document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  document.querySelectorAll('.workspace-page').forEach(x=>x.hidden=x.id!==tab+'Page');if(tab==='assistant')renderTranslatorConfig();if(tab==='budget')void ensureBudgetFxRates();}
-function renderAll(){if(!trip)return;withInfo(trip);renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();}
+function renderAll(){if(!trip)return;withInfo(trip);renderIntro();renderSchedule();renderTodos();renderBudget();renderPlaces();renderBookings();renderTranslatorConfig();renderChat();renderAffiliateWidgets();}
 function goHome(){if(trip){trip=null;pendingPlan=null;}if(subscription){void client.removeChannel(subscription);subscription=null;}
  $('inviteTop').hidden=true;showScreen(user?'home':'auth');if(user)void loadTrips();window.scrollTo({top:0,behavior:'smooth'});}
 function isTripOwner(){return Boolean(!DEMO&&user&&trip&&trip.owner_id===user.id);}
@@ -776,7 +870,7 @@ async function addReel(e){e.preventDefault();const f=e.currentTarget,url=safeUrl
   await saveTrip(d=>{d.reels.push({id:uuid(),url,title:inferredTitle,placeName});if(placeName&&!d.savedPlaces.some(x=>x.name.toLowerCase()===placeName.toLowerCase()))d.savedPlaces.push({id:uuid(),name:placeName,mapUrl:mapUrl(placeName),sourceUrl:url,countryCode:trip.country_code});},placeName?'영상과 ❤️ 저장 장소를 추가했습니다.':'영상만 저장했습니다.');
   $('reelStatus').textContent=placeName?`❤️ ${placeName} → 저장 장소에 등록됨. 이제 일정에 추가할 수 있어요.`:'장소를 찾지 못해 영상만 저장했어요. 나중에 장소 이름을 등록해 주세요.';f.reset();if(placeName&&$('reelOpenSchedule').checked){chooseTab('schedule');openEventDialog(null,placeName,mapUrl(placeName));}
  }catch(err){$('reelStatus').textContent='등록 오류: '+err.message;}finally{setBusy(btn,false,'🔎 영상 저장 · 장소 찾기');}}
-function renderBookings(){const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[x.kind]||'🧾')} ${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} → ${esc(x.arrivalDate||x.date||'')} ${esc(x.arrivalTime||'')} · ${esc(x.origin||'')} ${x.destination?'→ '+esc(x.destination):''}</small><small>${esc(x.note||'')}${x.fileId?' · 📎 비공개 예약서 보관됨':''}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
+function renderBookings(){renderAffiliateWidgets();const d=activeDoc();$('bookingList').innerHTML=d.bookings.length?d.bookings.map(x=>`<div class="list-row"><div><strong>${esc(({항공:'✈️',열차:'🚆',버스:'🚌',렌터카:'🚗',차량:'🚗',숙소:'🏨'})[x.kind]||'🧾')} ${esc(x.kind)} · ${esc(x.title)}</strong><small>${esc(x.date||'')} ${esc(x.time||'')} → ${esc(x.arrivalDate||x.date||'')} ${esc(x.arrivalTime||'')} · ${esc(x.origin||'')} ${x.destination?'→ '+esc(x.destination):''}</small><small>${esc(x.note||'')}${x.fileId?' · 📎 비공개 예약서 보관됨':''}</small></div><button class="btn" data-booking-delete="${esc(x.id)}">삭제</button></div>`).join(''):emptyMessage('아직 등록한 교통·숙소 예약이 없습니다.');
  $('bookingDate').value=activeDate||trip.start_date;$('bookingArrivalDate').value=activeDate||trip.start_date;
  $('bookingList').querySelectorAll('[data-booking-delete]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('예약 정보를 삭제할까요? 해당 일정도 함께 삭제할까요?'))return;void saveTrip(d=>{d.bookings=d.bookings.filter(x=>x.id!==b.dataset.bookingDelete);for(const day of d.days)day.events=day.events.filter(x=>x.bookingId!==b.dataset.bookingDelete);},'예약과 연결된 일정을 삭제했습니다.');}));}
 function selectedBookingFilename(){return selectedBookingFile?`${selectedBookingFile.name} · ${(selectedBookingFile.size/1048576).toFixed(1)}MB`:'파일 미선택 · 분석은 4MB 이하';}
