@@ -680,6 +680,102 @@ const PROPS={
   for(const x of [-120,-90,-60,60,90,120])g.add(mesh(G.cone(4,30,6),s,x,62,18),mesh(G.cyl(3,3,20,6),s,x,52,18));
   for(const x of [-40,40])g.add(mesh(G.cyl(6,6,70,8),s,x,45,-30),mesh(G.cone(7,22,8),r,x,91,-30));return g;},
 
+ // ===== 2026-11-13 추가 2: 싱가포르·동남아·동아시아·유럽·이집트·중앙아시아·중동 =====
+ merlion:()=>{const w='#f3f1ec',g=group(scl(mesh(G.cyl(130,130,3,40),'#4f9ec4',0,1,20),1,1,.6),mesh(G.box(70,40,50),'#c9c3b5',0,20,-20));
+  g.add(scl(mesh(G.capsule(22,50),w,0,84,-20),1,1,.9),scl(mesh(G.sphere(26,20,14),w,0,128,-14),1,1,1.05),mesh(G.box(36,8,22),w,0,118,6));
+  for(let i=0;i<5;i++)g.add(rot(mesh(G.cone(9,30,6),'#e7e3d8',-20+i*10,150,-24),-.5,0,(i-2)*.25));
+  g.add(rot(mesh(G.cone(16,46,10),w,0,46,4),-.6,0,0),scl(mesh(G.sphere(6),'#1f2a33',-10,132,10),1,1,.4),scl(mesh(G.sphere(6),'#1f2a33',10,132,10),1,1,.4));
+  const water=mat('#cfeefc',{transparent:true,opacity:.85,emissive:'#9fd8f2',emissiveIntensity:.4});for(let i=0;i<7;i++)g.add(mesh(G.sphere(4.5,8,6),water,0,112-i*2+(i*i)*.6,24+i*12));return g;},
+ gardensbay:()=>{const g=group(mesh(G.cyl(140,140,4,40),'#7fb069',0,2,0));
+  for(const [x,z,h,c] of [[-70,10,150,'#7d5ba6'],[-20,-30,190,'#d0466e'],[40,10,170,'#e0844a'],[90,-20,130,'#5a9e8f'],[0,50,120,'#c84f8a']]){
+   g.add(mesh(G.cyl(5,12,h,10),'#5a6b52',x,h/2,z),mesh(new THREE.CylinderGeometry(32,6,22,16,1,true),mat(c,{side:THREE.DoubleSide,emissive:c,emissiveIntensity:.25}),x,h+8,z));
+   for(let i=0;i<6;i++){const a=i*1.05;g.add(mesh(G.sphere(3,8,6),'#ffe680',x+Math.cos(a)*30,h+18,z+Math.sin(a)*30,{emissive:'#ffe680',emissiveIntensity:.8}));}}
+  g.add(rot(mesh(G.box(150,3,8),'#c9cfd9',-30,140,-10),0,.4,0));return g;},
+ watarun:()=>{const c='#efe7d6',g=group(mesh(G.box(160,12,160),'#d8d0bf',0,6,0));
+  const prang=(x,z,s)=>{const p=group();for(let i=0;i<5;i++)p.add(rot(mesh(G.cyl(22-i*4,24-i*4,22,8),i%2?'#d9a24a':c,0,11+i*22,0,{flatShading:true}),0,PI/8,0));
+   p.add(mesh(G.cone(8,46,8),c,0,133,0),mesh(G.cyl(1.4,1.4,20,6),'#d9a24a',0,166,0));for(let i=0;i<8;i++)p.add(mesh(G.sphere(2.4,6,4),['#4fa3d8','#e85a6e','#f5c542'][i%3],Math.cos(i*.78)*20,40,Math.sin(i*.78)*20));
+   p.position.set(x,12,z);p.scale.setScalar(s);return p;};
+  g.add(prang(0,0,1),prang(-62,-62,.45),prang(62,-62,.45),prang(-62,62,.45),prang(62,62,.45));return g;},
+ angkorwat:()=>{const s='#a99a7c',g=group(scl(mesh(G.cyl(150,150,3,40),'#6f9fb8',0,1,60),1,1,.25),mesh(G.box(220,14,150),s,0,7,-20),mesh(G.box(170,16,110),'#9b8c70',0,22,-20),mesh(G.box(120,16,80),s,0,38,-20));
+  const tower=(x,z,h)=>{const t=group();for(let i=0;i<6;i++)t.add(mesh(G.cyl(16-i*2.4,18-i*2.4,h/6,8),i%2?'#9b8c70':s,0,(i+.5)*h/6,0,{flatShading:true}));t.add(mesh(G.cone(4,22,8),s,0,h+11,0));t.position.set(x,46,z);return t;};
+  g.add(tower(0,-20,110),tower(-44,-56,80),tower(44,-56,80),tower(-44,16,80),tower(44,16,80));return g;},
+ goldenbridge:()=>{const g=group(mesh(G.cone(110,140,8),'#5f8f55',0,40,-120,{flatShading:true}));
+  const gold=mat('#e6bd45',{metalness:.5,roughness:.35});const curve=[];for(let i=0;i<=16;i++){const a=-1.1+i*2.2/16;curve.push([Math.sin(a)*120,Math.cos(a)*70-40]);}
+  for(let i=0;i<16;i++){const [x0,z0]=curve[i],[x1,z1]=curve[i+1];const m=mesh(G.box(Math.hypot(x1-x0,z1-z0)+1,5,18),gold,(x0+x1)/2,92,(z0+z1)/2);m.rotation.y=-Math.atan2(z1-z0,x1-x0);g.add(m);}
+  for(const s of [-1,1]){const h=group(scl(mesh(G.sphere(30,16,12),'#7f8a7c',0,0,0),1,1.5,.8));for(let i=0;i<4;i++)h.add(rot(mesh(G.capsule(7,40),'#7f8a7c',-22+i*14,40,0),0,0,(i-1.5)*.12));h.position.set(s*40,52,-10);h.scale.setScalar(.75);g.add(h);}
+  return g;},
+ halong:()=>{const g=group(scl(mesh(G.cyl(170,170,3,40),'#3f9a9e',0,1,0),1,1,.75));
+  for(const [x,z,r,h] of [[-80,-60,30,110],[-20,-90,24,140],[60,-70,34,120],[110,-20,22,90],[-110,10,20,80],[20,-40,16,70]])g.add(scl(mesh(G.cyl(r*.6,r,h,9),'#6f8f62',x,h/2,z,{flatShading:true}),1,1,.9),scl(mesh(G.sphere(r*.7,10,8),'#5f8a55',x,h,z),1,.5,1));
+  const b=group(mesh(G.box(60,12,20),'#8a5a3c',0,8,0),mesh(G.box(30,14,16),'#a87a52',-6,20,0));for(const x of [-14,10])b.add(scl(mesh(G.cyl(.5,14,40,3),'#d9542f',x,46,0),1,1,.1));b.position.set(10,2,60);g.add(b);return g;},
+ borobudur:()=>{const s='#8f8577',g=group();for(let i=0;i<6;i++){const w=200-i*26;g.add(mesh(G.box(w,10,w),i%2?'#9b9183':s,0,5+i*10,0));}
+  for(let r=0;r<3;r++){const n=8+r*4,rad=60-r*16,y=66+r*10;for(let i=0;i<n;i++){const a=i*2*PI/n;g.add(mesh(G.cone(6,14,8),s,Math.cos(a)*rad,y+7,Math.sin(a)*rad),scl(mesh(G.sphere(6,8,6),s,Math.cos(a)*rad,y,Math.sin(a)*rad),1,.8,1));}}
+  g.add(scl(mesh(G.sphere(18,16,12),s,0,100,0),1,.9,1),mesh(G.cone(6,30,8),s,0,128,0));return g;},
+ bigbuddha:()=>{const b=mat('#7f8c84',{metalness:.45,roughness:.4}),g=group(mesh(G.cone(110,60,8),'#5f8f55',0,30,0,{flatShading:true}),mesh(G.cyl(50,56,20,24),'#e2ddd2',0,70,0),mesh(G.cyl(42,46,14,24),'#e2ddd2',0,87,0));
+  g.add(scl(mesh(G.sphere(36,20,14),b,0,112,0),1.1,.6,1),scl(mesh(G.capsule(22,30),b,0,140,0),1,1,.8),mesh(G.sphere(16,18,12),b,0,182,0),scl(mesh(G.sphere(16,10,8),b,0,196,0),1,.5,1),
+   rot(mesh(G.capsule(5,26),b,20,150,12),.2,0,-.5),rot(mesh(G.capsule(5,22),b,-22,138,14),-.4,0,.2));return g;},
+ fuji:()=>{const g=group(mesh(G.cone(150,150,24),'#6d86a6',0,75,-90),mesh(G.cone(66,66,24),'#ffffff',0,117,-90),mesh(G.cyl(150,150,2,24),'#7fb069',0,1,-90));
+  const p=group();for(let i=0;i<5;i++)p.add(mesh(G.box(22-i*2.4,14,22-i*2.4),'#d9442f',0,8+i*18,0),rot(mesh(G.cone(23-i*2.4,8,4),'#3a3533',0,19+i*18,0,{flatShading:true}),0,PI/4,0));
+  p.add(mesh(G.cyl(1.2,1.2,20,6),'#e6bd45',0,104,0));p.position.set(70,0,50);g.add(p);
+  for(const [x,z] of [[-60,60],[-100,30],[10,80]])g.add(mesh(G.cyl(2,3,20,6),'#6b4a32',x,10,z),scl(mesh(G.sphere(16,10,8),'#f2a7c3',x,26,z),1.2,.8,1.2));return g;},
+ seongsan:()=>{const g=group(scl(mesh(G.cyl(170,170,3,40),'#3f8fb8',0,1,0),1,1,.75));
+  const rim=new THREE.Mesh(new THREE.CylinderGeometry(70,110,80,28,1,true),mat('#6f8f55',{side:THREE.DoubleSide,flatShading:true}));rim.position.y=40;g.add(rim);
+  g.add(mesh(G.cyl(68,68,2,28),'#8fae6a',0,60,0),mesh(G.box(40,6,60),'#d8d0bf',-20,3,90));for(let i=0;i<12;i++){const a=i*.52;g.add(mesh(G.box(14,22,10),'#5f7f4a',Math.cos(a)*74,82,Math.sin(a)*74));}return g;},
+ // 유럽
+ belem:()=>{const s='#efe6d2',g=group(scl(mesh(G.cyl(140,140,3,40),'#4f8fb8',0,1,30),1,1,.5),mesh(G.box(90,40,70),s,0,20,20),mesh(G.box(44,110,44),s,0,75,-20));
+  for(const [x,z] of [[-45,55],[45,55],[-45,-15],[45,-15]])g.add(mesh(G.cyl(7,7,46,10),s,x,40,z),mesh(G.sphere(8,10,8),s,x,66,z));
+  for(const [x,z] of [[-22,2],[22,2],[-22,-42],[22,-42]])g.add(mesh(G.cyl(5,5,20,8),s,x,140,z),mesh(G.sphere(6,8,6),s,x,152,z));
+  g.add(mesh(G.box(46,4,46),'#d8cdb4',0,131,-20),mesh(G.box(20,26,2),'#5b6575',0,90,2.5));return g;},
+ santorini:()=>{const g=group(scl(mesh(G.cyl(170,170,3,40),'#2f7fc0',0,1,40),1,1,.6),rot(mesh(G.box(240,90,120),'#b98d6a',0,20,-60),0,0,0));
+  const W='#ffffff',B='#2a62c4';for(const [x,y,z,w] of [[-80,70,-20,34],[-40,78,-30,30],[0,70,-10,36],[40,82,-34,28],[80,72,-16,32],[-60,96,-60,28],[20,100,-62,30],[70,98,-58,26],[-100,88,-50,24]])g.add(mesh(G.box(w,22,w*.9),W,x,y,z));
+  for(const [x,y,z] of [[0,94,-10],[-60,120,-60],[70,118,-58]])g.add(mesh(G.cyl(14,14,8,20),W,x,y,z),scl(mesh(G.sphere(14,20,12),B,x,y+4,z),1,.9,1),mesh(G.cyl(1,1,10,6),W,x,y+18,z));
+  g.add(mesh(G.box(12,30,10),W,-100,110,-20),mesh(G.box(14,4,12),B,-100,126,-20));return g;},
+ matterhorn:()=>{const g=group(mesh(G.cyl(150,150,4,24),'#7fae6a',0,2,0),rot(mesh(G.cone(90,200,5),'#7d7a76',10,100,-30,{flatShading:true}),.05,0,-.12),rot(mesh(G.cone(42,90,5),'#ffffff',22,160,-34,{flatShading:true}),.05,0,-.12));
+  g.add(rot(mesh(G.cone(60,30,6),'#f6f6f6',-40,60,10,{flatShading:true}),0,.4,0));const c=group(mesh(G.box(40,26,30),'#8a5a3c',0,13,0),scl(mesh(prism(22,46),'#4a3a2e',0,32,0),1,.7,1));c.position.set(-80,4,80);g.add(c);return g;},
+ canalhouses:()=>{const g=group(mesh(G.box(240,4,60),'#4f86b8',0,2,50),mesh(G.box(240,8,30),'#b8b2a6',0,4,10)),cols=['#d9542f','#f2c14e','#3f8f6f','#4f7fc4','#e88a3c','#c8466e','#8a6fc2'];
+  for(let i=0;i<7;i++){const x=-96+i*32,h=70+((i*37)%30),c=cols[i];g.add(mesh(G.box(30,h,40),c,x,8+h/2,-10),scl(mesh(prism(17,40),c,x,8+h+8,-10),.88,.8,1));g.children.at(-1).rotation.y=PI/2;
+   for(let r=0;r<3;r++)g.add(mesh(G.box(8,10,1),'#ffffff',x-6,22+r*20,10.5),mesh(G.box(8,10,1),'#ffffff',x+6,22+r*20,10.5));}
+  const b=group(mesh(G.box(50,8,16),'#6f4a32',0,4,0),mesh(G.box(6,30,1),'#ffffff',0,22,0));b.position.set(40,4,50);g.add(b);return g;},
+ hallgrimskirkja:()=>{const c='#d8d6d2',g=group(mesh(G.box(140,6,100),'#bfbcb6',0,3,0),mesh(G.box(60,60,80),c,0,33,-30));
+  for(let i=0;i<5;i++){const w=14+i*14;g.add(mesh(G.box(w,160-i*28,22),c,0,(160-i*28)/2+6,22));}
+  g.add(mesh(G.cone(10,30,4),c,0,180,22),mesh(G.box(14,24,2),'#3a3f4d',0,20,33.5));for(const s of [-1,1])g.add(rot(mesh(G.box(40,30,22),c,s*50,20,22),0,0,0));return g;},
+ montstmichel:()=>{const s='#a99f8d',g=group(scl(mesh(G.cyl(170,170,3,40),'#c9b98f',0,1,0),1,1,.8),scl(mesh(G.cone(100,110,10),'#8f8577',0,55,0,{flatShading:true}),1,1,.9));
+  for(const [x,y,z,w] of [[-40,40,40,40],[30,46,36,36],[-50,60,-10,34],[40,64,-20,30]])g.add(mesh(G.box(w,22,w*.8),s,x,y,z),scl(mesh(prism(w*.42,w),'#5b6575',x,y+16,z),1,.6,1));
+  g.add(mesh(G.box(60,30,40),'#b3a994',0,112,0),scl(mesh(prism(22,60),'#5b6575',0,134,0),1,.6,1),mesh(G.cyl(6,8,30,8),'#b3a994',0,156,0),mesh(G.cone(6,40,8),'#5b6575',0,191,0),mesh(G.sphere(3,8,6),'#e6bd45',0,214,0,{metalness:.6}));
+  g.add(mesh(G.box(220,6,10),'#b8a98a',0,3,110));return g;},
+ // 이집트
+ sphinx:()=>{const s='#d6b77c',g=group(mesh(G.box(240,4,180),'#e6cf9a',0,2,0),mesh(G.box(150,34,50),s,-10,19,10),mesh(G.box(56,10,50),s,84,7,10));
+  g.add(mesh(G.box(40,46,40),s,-80,40,10),mesh(G.box(36,36,10),s,-80,48,32),mesh(G.box(46,30,8),'#c9a96a',-80,46,-12),scl(mesh(G.sphere(10,10,8),s,-80,36,36),1.2,.8,.6));
+  for(const s2 of [-1,1])g.add(mesh(G.box(60,10,14),s,-110,7,10+s2*18));
+  g.add(mesh(G.cone(70,80,4),'#d9bd84',80,40,-80,{flatShading:true}));return g;},
+ abusimbel:()=>{const s='#c99a62',g=group(mesh(G.box(240,130,60),'#b88a55',0,65,-30),mesh(G.box(240,4,100),'#e6cf9a',0,2,20));
+  for(const x of [-84,-30,30,84]){const st=group(mesh(G.box(36,30,20),s,0,15,0),mesh(G.box(32,44,18),s,0,52,0),mesh(G.box(22,24,18),s,0,86,0),mesh(G.box(26,22,18),'#e3c27a',0,104,-2),mesh(G.box(6,30,4),s,0,78,10));st.position.set(x,0,8);g.add(st);}
+  g.add(mesh(G.box(22,36,2),'#3a2a1c',0,18,1.5),mesh(G.box(14,20,4),s,0,104,2));return g;},
+ // 중앙아시아
+ registan:()=>{const tile=mat('#2f8fc6',{roughness:.5}),s='#c8a77a',g=group(mesh(G.box(240,4,160),'#d8c7a5',0,2,0));
+  const madrasa=(x,z,ry)=>{const m=group(mesh(G.box(80,90,20),s,0,45,0),mesh(G.box(40,66,22),tile,0,40,1),mesh(G.box(30,54,24),'#2a3a5a',0,30,2));
+   for(const sx of [-1,1])m.add(mesh(G.cyl(7,8,120,12),s,sx*44,60,0),mesh(G.cyl(9,9,6,12),tile,sx*44,118,0));m.add(scl(mesh(G.sphere(22,18,12),tile,30,100,-30),1,1.2,1),mesh(G.cyl(18,18,20,16),s,30,84,-30));
+   m.position.set(x,0,z);m.rotation.y=ry;return m;};
+  g.add(madrasa(0,-60,0),madrasa(-90,10,PI/2),madrasa(90,10,-PI/2));return g;},
+ ger:()=>{const g=group(mesh(G.cyl(140,140,3,32),'#9cbf6a',0,1,0),mesh(G.cone(110,60,10),'#8aaf5c',-60,30,-140,{flatShading:true}));
+  const one=(x,z,s)=>{const y=group(mesh(G.cyl(40,40,36,24),'#f4f0e6',0,18,0),mesh(G.cone(44,26,24),'#ece6d8',0,49,0),mesh(G.cyl(9,9,4,12),'#c9a46a',0,62,0),mesh(G.box(14,24,2),'#d9542f',0,12,40),
+    rot(mesh(G.torus(40.5,1.4),'#2f5f9a',0,24,0),PI/2),rot(mesh(G.torus(40.5,1.4),'#2f5f9a',0,10,0),PI/2));y.position.set(x,0,z);y.scale.setScalar(s);return y;};
+  g.add(one(0,0,1),one(-80,-40,.7),one(80,-30,.75));const h=group(scl(mesh(G.capsule(8,26),'#7a5232',0,24,0),1,1,1),rot(mesh(G.box(6,14,6),'#7a5232',16,36,0),0,0,-.5));h.children[0].rotation.z=PI/2;
+  for(const x of [-10,10])for(const z of [-4,4])h.add(mesh(G.box(3,20,3),'#6a4428',x,10,z));h.position.set(60,0,60);g.add(h);return g;},
+ bayterek:()=>{const g=group(mesh(G.cyl(60,66,8,24),'#e3e1dc',0,4,0));
+  for(let i=0;i<12;i++){const a=i*PI/6,m=mesh(G.cyl(2.4,3.4,150,8),'#f4f4f2',Math.cos(a)*14,82,Math.sin(a)*14);g.add(m);}
+  for(let i=0;i<12;i++){const a=i*PI/6;g.add(rot(mesh(G.cyl(1.6,2.4,46,6),'#f4f4f2',Math.cos(a)*28,170,Math.sin(a)*28),Math.sin(a)*.6,0,-Math.cos(a)*.6));}
+  g.add(mesh(G.sphere(26,24,16),mat('#e6bd45',{metalness:.7,roughness:.25,emissive:'#7a5a10',emissiveIntensity:.3}),0,180,0));return g;},
+ // 중동
+ burjalarab:()=>{const g=group(scl(mesh(G.cyl(150,150,3,40),'#3fa0c9',0,1,0),1,1,.7),mesh(G.cyl(40,44,8,24),'#e3e1dc',0,8,0));
+  const sail=new THREE.Shape();sail.moveTo(0,0);sail.quadraticCurveTo(70,90,8,200);sail.lineTo(0,200);sail.lineTo(0,0);
+  const sg=new THREE.ExtrudeGeometry(sail,{depth:30,bevelEnabled:false});sg.translate(0,0,-15);const sm=new THREE.Mesh(sg,mat('#f4f6f8',{roughness:.4}));sm.position.set(-30,10,0);g.add(sm);
+  g.add(mesh(G.box(8,210,8),'#d9dde4',-36,115,20),mesh(G.box(8,210,8),'#d9dde4',-36,115,-20),mesh(G.cyl(16,16,3,20),'#e3e1dc',20,150,16),mesh(G.box(3,40,3),'#d9dde4',-36,236,0));return g;},
+ petra:()=>{const r='#c97d5a',g=group(mesh(G.box(240,200,70),'#b8694a',0,100,-40),mesh(G.box(240,4,120),'#d9a07a',0,2,20));
+  g.add(mesh(G.box(130,8,6),r,0,70,-3),...[-54,-30,30,54].map(x=>mesh(G.cyl(5,5,62,10),r,x,35,0)),scl(mesh(prism(20,60),r,0,80,-4),1,.6,1),mesh(G.box(22,44,2),'#3a2418',0,22,-2));
+  g.add(mesh(G.box(120,6,6),r,0,96,-3),mesh(G.cyl(14,14,44,12),r,0,124,-6),mesh(G.cone(16,16,12),r,0,154,-6),...[-46,46].map(x=>mesh(G.box(30,44,10),r,x,122,-6)));return g;},
+ domeofrock:()=>{const g=group(mesh(G.box(220,8,200),'#d8d0bf',0,4,0)),tile=mat('#2f6fc0',{roughness:.5});
+  g.add(rot(mesh(G.cyl(70,70,46,8),tile,0,31,0,{flatShading:true}),0,PI/8,0),rot(mesh(G.cyl(71,71,10,8),'#f1ede4',0,12,0,{flatShading:true}),0,PI/8,0),mesh(G.cyl(34,34,22,24),tile,0,65,0),
+   scl(mesh(new THREE.SphereGeometry(38,24,16,0,PI*2,0,PI/2),mat('#e6bd45',{metalness:.7,roughness:.25,emissive:'#7a5a10',emissiveIntensity:.25}),0,76,0),1,1.15,1),mesh(G.cyl(1.4,1.4,20,6),'#e6bd45',0,126,0));return g;},
 };
 export const PROP_KEYS=Object.keys(PROPS);
 export function buildProp(key){return (PROPS[key]||PROPS.pin)();}
@@ -687,20 +783,58 @@ export function buildProp(key){return (PROPS[key]||PROPS.pin)();}
  * 지도 데이터의 실제 건물 모양으로 만든 심볼(전용 3D 가 없는 장소용). shape = vtile.js footprints() 결과.
  * 지름 약 220 안에 들어오게 줄이고, 높이는 조금 과장해(최대 190) 미니어처 블록처럼 보이게 한다.
  */
-export function buildShape(shape){const g=new THREE.Group(),far=b=>Math.max(...b.outer.map(([x,z])=>Math.hypot(x,z)));
+/** 지역 · 장소 종류에 따라 자동 심볼의 색과 지붕 모양을 고른다. */
+function shapeStyle(shape){const [lat,lon]=shape.ll||[0,0],n=shape.name||'',k=shape.kind||'';
+ let region='etc';
+ if(lat>34&&lon>-25&&lon<45)region='eu';
+ else if(lat>20&&lat<50&&lon>100&&lon<146)region='ea';
+ else if(lat>-11&&lat<=20&&lon>92&&lon<141)region='sea';
+ else if(lat>12&&lat<=45&&lon>-17&&lon<80)region='me';
+ else if(lon<-30)region='am';
+ const P={eu:{wall:'#e8dcc6',roof:'#5d6878',other:'#e2ddd4',oroof:'#a9a49c'},ea:{wall:'#f1e6d3',roof:'#3f454e',other:'#e4e1dc',oroof:'#8f949c'},
+  sea:{wall:'#f6f1e6',roof:'#d9a24a',other:'#ece6da',oroof:'#c9b48a'},me:{wall:'#e6cf9f',roof:'#2f7fc0',other:'#e8dcc0',oroof:'#c9b48e'},
+  am:{wall:'#e3b28f',roof:'#6b7380',other:'#e2dcd4',oroof:'#a7a39d'},etc:{wall:'#f3e7cf',roof:'#d9714a',other:'#dfe2ea',oroof:'#c9cdd8'}}[region];
+ let kind='plain';
+ if(/모스크|mosque|masjid|자미|cami/i.test(n)||k==='mosque')kind='mosque';
+ else if(/성당|교회|대성당|수도원|cathedral|church|kirche|dom\b|basilica|chapel|église|iglesia|chiesa/i.test(n)||k==='church')kind='church';
+ else if(/사원|절\b|사찰|신사|寺|神社|temple|wat\b|pagoda/i.test(n)||k==='pagoda'||k==='stupa')kind='temple';
+ else if(/성\b|성곽|castle|schloss|burg|château|palace|궁\b|궁전|왕궁|palais|palazzo/i.test(n)||k==='castle'||k==='hanok')kind='castle';
+ else if(/박물관|미술관|갤러리|museum|gallery|musée|museo/i.test(n)||k==='museum')kind='museum';
+ else if(/타워|탑\b|tower|turm/i.test(n)||k==='tower'||k==='clocktower')kind='tower';
+ const s={...P,top:'dome',topc:'#f5c542'};
+ if(kind==='church'){s.roof=region==='eu'?'#6fa89a':s.roof;s.top='spire';s.topc=s.roof;}
+ if(kind==='mosque'){s.wall=region==='me'?'#efe3c4':'#f1ede4';s.roof='#2f7fc0';s.top='dome';s.topc='#2f7fc0';}
+ if(kind==='temple'){if(region==='sea'){s.wall='#f6efe0';s.roof='#d9a24a';s.top='spire';s.topc='#e6bd45';}else{s.wall='#c8442f';s.roof='#3a3533';s.top='hip';s.topc='#3a3533';}}
+ if(kind==='castle'){s.wall=region==='ea'?'#f4f1ea':'#d6cfc2';s.roof=region==='ea'?'#3f5f58':'#4f5a6e';s.top=region==='ea'?'hip':'spire';s.topc=s.roof;}
+ if(kind==='museum'){s.wall='#f2efe8';s.roof='#9aa3ad';s.top=region==='eu'?'dome':'none';s.topc='#7f9ca8';}
+ if(kind==='tower'){s.top='spire';s.topc='#d9442f';}
+ return s;}
+const okColour=c=>/^#[0-9a-f]{6}$/i.test(c)&&(()=>{const v=parseInt(c.slice(1),16),r=v>>16,g=v>>8&255,b=v&255,l=(r*299+g*587+b*114)/1000;return l>70&&l<235;})();
+/**
+ * 지도 데이터의 실제 건물 모양으로 만든 심볼(전용 3D 가 없는 장소용). shape = vtile.js footprints() 결과.
+ * 지름 약 220 안에 들어오게 줄이고, 높이는 조금 과장해(최대 190) 미니어처 블록처럼 보이게 한다.
+ * 색과 지붕 장식은 지역(유럽·동아시아·동남아·중동·아메리카)과 장소 종류(성당·사원·성·모스크·박물관·탑)로 바뀐다.
+ */
+export function buildShape(shape){const g=new THREE.Group(),far=b=>Math.max(...b.outer.map(([x,z])=>Math.hypot(x,z))),st=shapeStyle(shape);
  // 주인공 건물은 다 넣고, 이웃 건물은 받침 밖으로 크게 삐져나오지 않는 것만
  const list=shape.buildings.filter(b=>b.main||far(b)<=shape.R*1.2),ext=Math.max(45,...list.map(far)),k=105/ext,
   maxH=Math.max(...list.map(b=>b.h)),hk=Math.min(k*1.7,190/Math.max(8,maxH)),rad=ext*k;
- shape={...shape,buildings:list};
  g.add(mesh(G.cyl(rad+12,rad+16,6,48),'#e8e4dc',0,3,0),mesh(G.cyl(rad+6,rad+6,1.2,48),'#d9e8d3',0,6.6,0));
- const walls={main:mat('#f3e7cf',{roughness:.7}),other:mat('#dfe2ea',{roughness:.85})},roofs={main:mat('#d9714a',{roughness:.6}),other:mat('#c9cdd8',{roughness:.85})};
- for(const b of shape.buildings){const sh=new THREE.Shape(b.outer.map(([x,z])=>new THREE.Vector2(x*k,-z*k)));
+ const mainCol=list.find(b=>b.main&&okColour(b.colour))?.colour;
+ const walls={main:mat(mainCol||st.wall,{roughness:.7}),other:mat(st.other,{roughness:.85})},roofs={main:mat(st.roof,{roughness:.6}),other:mat(st.oroof,{roughness:.85})};
+ for(const b of list){const sh=new THREE.Shape(b.outer.map(([x,z])=>new THREE.Vector2(x*k,-z*k)));
   for(const hole of b.holes)sh.holes.push(new THREE.Path(hole.map(([x,z])=>new THREE.Vector2(x*k,-z*k))));
   const h=Math.max(4,(b.h-b.min)*hk),geo=new THREE.ExtrudeGeometry(sh,{depth:h,bevelEnabled:false,curveSegments:2});geo.rotateX(-PI/2);
   const m=new THREE.Mesh(geo,b.main?[roofs.main,walls.main]:[roofs.other,walls.other]);m.position.y=7+b.min*hk;m.castShadow=true;g.add(m);}
- // 주인공 건물 위에 작은 금빛 별
- const top=Math.max(...shape.buildings.filter(b=>b.main).map(b=>b.h))*hk+7,mc=shape.buildings.filter(b=>b.main).flatMap(b=>b.outer),cx=mc.reduce((a,p)=>a+p[0],0)/mc.length*k,cz=mc.reduce((a,p)=>a+p[1],0)/mc.length*k;
- const star=mesh(new THREE.OctahedronGeometry(9),'#f5c542',cx,top+18,cz,{emissive:'#f5c542',emissiveIntensity:.5,metalness:.3});g.add(star);g.userData.spin=[[star,'y',1.2]];
+ // 주인공 건물에서 가장 높은 부분 위에 지붕 장식(돔 · 첨탑 · 기와지붕)
+ const ar=b=>{let a=0;const o=b.outer;for(let i=0;i<o.length;i++){const j=(i+1)%o.length;a+=o[i][0]*o[j][1]-o[j][0]*o[i][1];}return Math.abs(a/2);},mains=list.filter(b=>b.main),hi=mains.reduce((a,b)=>ar(b)>ar(a)?b:a,mains[0]),top=hi.h*hk+7;
+ const xs=hi.outer.map(p=>p[0]*k),zs=hi.outer.map(p=>p[1]*k),cx=(Math.min(...xs)+Math.max(...xs))/2,cz=(Math.min(...zs)+Math.max(...zs))/2,
+  span=Math.max(10,Math.min(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))),tc=mat(st.topc,{roughness:.45,metalness:st.topc==='#e6bd45'||st.topc==='#f5c542'?.5:.1});
+ let peak=Math.max(...mains.map(b=>b.h))*hk+7;
+ if(st.top==='dome'){const r=Math.min(34,span*.32);g.add(new THREE.Mesh(new THREE.SphereGeometry(r,24,14,0,PI*2,0,PI/2),tc).translateX(cx).translateY(top).translateZ(cz));peak=Math.max(peak,top+r);}
+ else if(st.top==='spire'){const r=Math.min(14,span*.22),h=Math.min(70,r*4.5);g.add(mesh(G.cone(r,h,8),tc,cx,top+h/2,cz));peak=Math.max(peak,top+h);}
+ else if(st.top==='hip'){const r=Math.min(60,span*.62),h=Math.min(34,r*.5),m=mesh(G.cone(r,h,4),tc,cx,top+h/2,cz,{flatShading:true});m.rotation.y=PI/4;g.add(m);peak=Math.max(peak,top+h);}
+ const star=mesh(new THREE.OctahedronGeometry(8),'#f5c542',cx,peak+16,cz,{emissive:'#f5c542',emissiveIntensity:.5,metalness:.3});g.add(star);g.userData.spin=[[star,'y',1.2]];
  return g;}
 
 /* ---------- 장면 ---------- */

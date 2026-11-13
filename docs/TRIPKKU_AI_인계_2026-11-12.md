@@ -157,3 +157,9 @@
 - `docs/TRIPKKU_캐릭터_동선_작업정리.md` — 요구사항과 작업 이력
 - `docs/MS_스토어_출시.md`, `docs/결제_연동.md`, `docs/푸시_알림.md`, `docs/TOSS.md`
 - 디자인 캔버스: https://claude.ai/artifact/TrQReT98P81SaNjbWZfvHM
+
+## 2026-11-13 추가 — 토스 최종 제출 체크리스트 (Claude Code 와 함께 진행 예정)
+- 랜드마크 3D 총 60종(2차 24종: 싱가포르·동남아·동아시아·유럽·이집트·중앙아시아·중동). 규칙은 `next/journey.js` RULES 맨 앞 블록, 모델은 `next/journey3d.js` PROPS.
+- 전용 3D 가 없는 장소는 지도 건물 모양 자동 심볼(`buildShape`). 색·지붕 장식은 지역(유럽/동아시아/동남아/중동/아메리카) + 장소 종류(성당/사원/성/모스크/박물관/탑)로 달라지고, 지도에 건물 색(colour)이 있으면 그 색을 씀.
+- 제출 순서: `git pull` → `toss-miniapp\02_build_windows.cmd` → 콘솔 업로드 → QR 테스트(지도·장소 검색·광고·3D) → `toss-miniapp/toss-ads.js` 의 `AD_GROUP_ID` 를 실제 ID `ait.v2.live.7b6b89cdb8104280` 로 교체 → 다시 빌드·업로드 → 심사 제출.
+- 미니앱 번들에 외부 결제 SDK(`tosspayments.com`)가 들어가면 반려됨. `sync-from-web.mjs` 가 자동으로 빼고, 남아 있으면 오류를 냄.

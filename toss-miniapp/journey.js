@@ -75,6 +75,31 @@ export function party(){const a=api(),doc=a.activeDoc?.()||{},me=a.getMyId?.();
    규칙은 위에서부터 먼저 맞는 것을 쓴다. 소품·말풍선이 여러 개면 같은 종류가 다시 나올 때마다 차례로 바꾼다
    (크리스마스 마켓 → 트리, 다음엔 산타, 그다음엔 가판대 …). */
 const RULES=[
+ // 2026-11-13 추가 2: 싱가포르·동남아·동아시아·유럽·이집트·중앙아시아·중동
+ [/멀라이언|머라이언|merlion/i,['merlion'],'pose',['물 뿜는다!','찰칵!']],
+ [/가든스 ?바이 ?더 ?베이|가든스바이|슈퍼 ?트리|gardens ?by ?the ?bay|supertree/i,['gardensbay'],'pose',['미래 도시 같아!']],
+ [/왓 ?아룬|새벽 ?사원|wat ?arun/i,['watarun'],'pose',['반짝반짝!']],
+ [/앙코르 ?와트|앙코르|angkor/i,['angkorwat'],'pose',['웅장하다…']],
+ [/골든 ?브릿지|바나 ?힐|ba ?na ?hills|golden ?bridge/i,['goldenbridge'],'pose',['손 위를 걷는다!']],
+ [/하롱 ?베이|하롱|ha ?long/i,['halong'],'relax',['그림 같아…']],
+ [/보로부두르|borobudur/i,['borobudur'],'pose',['신비롭다…']],
+ [/빅 ?부다|천단대불|옹핑|ngong ?ping|tian ?tan ?buddha|big ?buddha/i,['bigbuddha'],'pose',['평화롭다…']],
+ [/후지 ?산|후지산|富士山|fuji/i,['fuji'],'pose',['후지산이다!']],
+ [/성산 ?일출봉|일출봉|seongsan/i,['seongsan'],'cheer',['정상이다!']],
+ [/벨렝|벨ém|bel[eé]m/i,['belem'],'pose',['찰칵!']],
+ [/산토리니|이아 ?마을|santorini|\boia\b/i,['santorini'],'relax',['하얗고 파래!']],
+ [/마터호른|matterhorn/i,['matterhorn'],'pose',['봉우리 뾰족!']],
+ [/암스테르담 ?운하|운하 ?(집|하우스|크루즈)|canal ?(house|cruise)/i,['canalhouses'],'pose',['알록달록!']],
+ [/할그림스키르캬|hallgr[ií]mskirkja/i,['hallgrimskirkja'],'pose',['찰칵!']],
+ [/몽생미셸|몽 ?생 ?미셸|mont[ -]?saint[ -]?michel/i,['montstmichel'],'pose',['섬 위의 성!']],
+ [/스핑크스|sphinx/i,['sphinx'],'pose',['신비롭다…']],
+ [/아부 ?심벨|abu ?simbel/i,['abusimbel'],'pose',['거대하다!']],
+ [/레기스탄|registan/i,['registan'],'pose',['타일이 반짝!']],
+ [/몽골 ?게르|게르 ?(캠프|숙박|체험)|유르트|ger|yurt/i,['ger'],'relax',['초원이다!']],
+ [/바이테렉|bayterek/i,['bayterek'],'pose',['황금 알!']],
+ [/부르즈 ?알 ?아랍|burj ?al ?arab/i,['burjalarab'],'pose',['돛 모양이다!']],
+ [/페트라|알 ?카즈네|petra/i,['petra'],'pose',['바위에 새겼어!']],
+ [/바위의 ?돔|황금 ?돔|dome ?of ?the ?rock/i,['domeofrock'],'pose',['반짝반짝!']],
  // 일본 · 한국 · 중국 · 미국 · 캐나다 · 브라질 · 유럽 (2026-11-13 추가) — 이름이 확실한 건물이라 맨 앞에서 본다("남산타워"의 '산타', "스카이트리"의 '트리'가 크리스마스로 잡히지 않게)
  [/도쿄 ?타워|東京タワー|tokyo ?tower/i,['tokyotower'],'pose',['찰칵!','빨갛다!']],
  [/스카이 ?트리|スカイツリー|sky ?tree/i,['skytree'],'pose',['엄청 높다!','다 보인다!']],
@@ -275,11 +300,16 @@ const FOOD_BY_COUNTRY={DE:['sausage','schnitzel','pretzel','steak'],AT:['schnitz
  AE:['kebab','grill'],SA:['kebab','grill'],EG:['kebab','bread'],MA:['kebab','tea'],RU:['dumpling','bread'],SE:['bread','seafood'],NO:['seafood'],DK:['bread','hotdog'],FI:['seafood','bread'],IS:['seafood','hotdog'],HR:['seafood','pasta'],RO:['goulash','sausage'],UA:['dumpling','bread'],
  BR:['grill','steak'],AR:['steak','grill'],PE:['seafood'],CL:['seafood','steak'],ZA:['grill','steak'],KE:['grill'],TZ:['grill'],KH:['bowl','curry'],LA:['bowl'],MM:['curry','bowl'],NP:['dumpling','curry'],LK:['curry'],BD:['curry'],PK:['curry','kebab'],IL:['kebab','bread']};
 // 관광 일정이 어디인지 특정되지 않으면 그 나라를 대표하는 건물로
-const SIGHT_BY_COUNTRY={JP:['tokyotower','torii','osakacastle','kinkakuji','pagoda'],KR:['gyeongbok','namsantower','hanok'],CN:['greatwall','forbiddencity','templeofheaven','orientalpearl'],TW:['taipei101','pagoda'],HK:['skyline','boat'],TH:['stupa'],KH:['stupa'],LA:['stupa'],MM:['stupa'],VN:['pagoda','boat'],SG:['marina','skyline'],MY:['petronas','mosque'],ID:['stupa','parasol'],PH:['church','parasol'],
- US:['liberty','empirestate','goldengate','hollywood'],CA:['cntower','frontenac','falls','mountain'],GB:['bigben','towerbridge','londoneye','castle'],IE:['castle','church'],FR:['eiffel','louvre','arc','notredame'],IT:['colosseum','trevi','pisa','church'],ES:['sagrada','church'],PT:['church','bridge'],DE:['brandenburg','neuschwanstein','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['chalet','mountain'],NL:['windmill','bridge'],BE:['atomium','church','museum'],
- GR:['parthenon','church'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['budaparliament','castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','mosque'],SA:['mosque'],EG:['pyramid'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','sugarloaf','falls','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
+const SIGHT_BY_COUNTRY={JP:['tokyotower','torii','osakacastle','kinkakuji','pagoda'],KR:['gyeongbok','namsantower','hanok'],CN:['greatwall','forbiddencity','templeofheaven','orientalpearl'],TW:['taipei101','pagoda'],HK:['skyline','bigbuddha','boat'],TH:['watarun','stupa'],KH:['angkorwat'],LA:['stupa'],MM:['stupa'],VN:['halong','goldenbridge','pagoda'],SG:['marina','merlion','gardensbay'],MY:['petronas','mosque'],ID:['borobudur','parasol'],PH:['church','parasol'],
+ US:['liberty','empirestate','goldengate','hollywood'],CA:['cntower','frontenac','falls','mountain'],GB:['bigben','towerbridge','londoneye','castle'],IE:['castle','church'],FR:['eiffel','louvre','arc','notredame'],IT:['colosseum','trevi','pisa','church'],ES:['sagrada','church'],PT:['belem','church','bridge'],DE:['brandenburg','neuschwanstein','fernsehturm','frauenkirche','castle'],AT:['castle','church'],CH:['matterhorn','chalet','mountain'],NL:['canalhouses','windmill','bridge'],BE:['atomium','church','museum'],
+ GR:['parthenon','santorini'],CZ:['pragcastle','charlesbridge','orloj','tyn'],PL:['church','castle'],HU:['budaparliament','castle','bridge'],HR:['castle','boat'],TR:['mosque','tower'],AE:['burj','burjalarab','mosque'],SA:['mosque'],JO:['petra'],IL:['domeofrock'],UZ:['registan'],KZ:['bayterek'],MN:['ger'],KG:['ger'],IS:['hallgrimskirkja'],EG:['pyramid','sphinx','abusimbel'],MA:['mosque'],IN:['taj','mosque'],RU:['onion'],AU:['opera','parasol'],NZ:['mountain'],MX:['pyramid','church'],BR:['christ','sugarloaf','falls','parasol'],PE:['mountain'],NP:['mountain','stupa'],LK:['stupa']};
 // 도시 이름이 보이면 그 도시의 대표 건물을 차례로 보여 준다
-const CITY_SIGHTS=[[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','berlindom','reichstag','siegessaeule']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn','powdertower','dancinghouse']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper','fuerstenzug']],[/바르샤바|warszawa|warsaw/i,['warsawcastle','pkin']],
+const CITY_SIGHTS=[
+ [/싱가포르|singapore/i,['marina','merlion','gardensbay']],[/방콕|bangkok/i,['watarun','stupa']],[/시엠립|씨엠립|siem ?reap/i,['angkorwat']],[/다낭|da ?nang/i,['goldenbridge']],[/하노이|hanoi/i,['halong','pagoda']],
+ [/족자카르타|욕야카르타|yogyakarta/i,['borobudur']],[/홍콩|hong ?kong/i,['skyline','bigbuddha']],[/제주|jeju/i,['seongsan']],[/리스본|lisboa|lisbon/i,['belem']],[/암스테르담|amsterdam/i,['canalhouses','windmill']],
+ [/레이캬비크|reykjav[ií]k/i,['hallgrimskirkja']],[/체르마트|zermatt/i,['matterhorn','chalet']],[/카이로|cairo|기자|giza/i,['pyramid','sphinx']],[/아스완|aswan/i,['abusimbel']],
+ [/사마르칸트|samarkand/i,['registan']],[/아스타나|astana/i,['bayterek']],[/울란바토르|ulaanbaatar/i,['ger']],[/두바이|dubai/i,['burj','burjalarab']],[/예루살렘|jerusalem/i,['domeofrock']],
+[/베를린|berlin/i,['brandenburg','fernsehturm','berlinwall','berlindom','reichstag','siegessaeule']],[/프라하|praha|prague/i,['pragcastle','charlesbridge','orloj','tyn','powdertower','dancinghouse']],[/드레스덴|dresden/i,['frauenkirche','zwinger','semperoper','fuerstenzug']],[/바르샤바|warszawa|warsaw/i,['warsawcastle','pkin']],
  [/도쿄|東京|tokyo/i,['tokyotower','skytree','kaminarimon']],[/오사카|大阪|osaka/i,['osakacastle','glico','tsutenkaku']],[/교토|京都|kyoto/i,['fushimi','kinkakuji','kiyomizu']],
  [/나고야|名古屋|nagoya/i,['nagoyacastle','nagoyatv']],[/오이타|벳푸|유후인|大分|別府|由布院|湯布院|oita|beppu|yufuin/i,['beppu','yufuin']],
  [/서울|seoul/i,['namsantower','gyeongbok','lottetower']],[/부산|busan/i,['gwangan']],[/상하이|상해|上海|shanghai/i,['orientalpearl']],[/베이징|북경|北京|beijing/i,['forbiddencity','templeofheaven','greatwall']],
@@ -519,7 +549,7 @@ const SHAPE_KEYS=new Set(['museum','church','castle','tower','gate','statue','fo
 const SHAPE_SKIP=/구경|관광|시내|자유|투어|둘러|산책|올드 ?타운|구시가|거리|시장|공원|해변|호수|숲|정원|등산|하이킹|전망대 ?가기|야경/;
 async function attachShapes(tl,maxMs=7000){const S=tl.stops.filter(s=>s.ll&&!s.home&&s.via!=='plane'&&s.react&&(s.react.generic||SHAPE_KEYS.has(s.react.key))&&!SHAPE_SKIP.test(s.title+' '+(s.placeQ||'')));
  if(!S.length)return;let vt;try{vt=await loadVT();}catch{return;}
- await Promise.race([Promise.all(S.map(async s=>{try{const sh=await vt.footprints(s.ll[0],s.ll[1]);if(sh)s.shape=sh;}catch{}})),new Promise(r=>setTimeout(r,maxMs))]);}
+ await Promise.race([Promise.all(S.map(async s=>{try{const sh=await vt.footprints(s.ll[0],s.ll[1]);if(sh){sh.ll=s.ll;sh.kind=s.react.key;sh.name=s.title+' '+(s.placeQ||'');s.shape=sh;}}catch{}})),new Promise(r=>setTimeout(r,maxMs))]);}
 /** 재생에 필요한 타일을 미리 받아 둔다(녹화 중 빈 지도가 찍히지 않게). */
 export async function preloadTiles(tl,maxMs=12000){if(!tl.map)return;const asked=new Set();
  for(let t=0;t<=tl.total;t+=.06)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y)));
@@ -564,7 +594,11 @@ function drawFlag(ctx,code,p,dur){const sec=p*dur,show=1.6;if(sec>show)return;co
 /* ---------- 장소 아이콘 핀: 지도 위 각 장소에 종류별 색·아이콘 핀을 꽂는다(지도 앱의 장소 핀처럼) ---------- */
 const EMOJI=",'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji'";
 const C={food:'#f28b30',cafe:'#b9772f',drink:'#c0478f',sight:'#12a39a',nature:'#3f9e5a',shop:'#3f7fe0',fun:'#8a5fd6',stay:'#e0568a',move:'#4a6fb5',xmas:'#d63c4a'};
-const ICON={tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
+const ICON={
+ merlion:['🦁',C.sight],gardensbay:['🌳',C.nature],watarun:['🛕',C.sight],angkorwat:['🛕',C.sight],goldenbridge:['🌉',C.sight],halong:['⛰️',C.nature],borobudur:['🛕',C.sight],bigbuddha:['🧘',C.sight],
+ fuji:['🗻',C.nature],seongsan:['🌋',C.nature],belem:['🏰',C.sight],santorini:['🏘️',C.sight],matterhorn:['🏔️',C.nature],canalhouses:['🏘️',C.sight],hallgrimskirkja:['⛪',C.sight],montstmichel:['🏰',C.sight],
+ sphinx:['🦁',C.sight],abusimbel:['🗿',C.sight],registan:['🕌',C.sight],ger:['⛺',C.stay],bayterek:['🌟',C.sight],burjalarab:['⛵',C.sight],petra:['🏛️',C.sight],domeofrock:['🕌',C.sight],
+tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
  sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
  castle:['🏰',C.sight],xferris:['🎡',C.sight],xpyramid:['🎄',C.sight],berlindom:['⛪',C.sight],siegessaeule:['🗽',C.sight],charlottenburg:['🏰',C.sight],dancinghouse:['🏢',C.sight],powdertower:['🏰',C.sight],fuerstenzug:['🖼️',C.sight],pkin:['🏙️',C.sight],warsawcastle:['🏰',C.sight],brandenburg:['🏛️',C.sight],berlinwall:['🧱',C.sight],checkpoint:['🛂',C.sight],fernsehturm:['📡',C.sight],reichstag:['🏛️',C.sight],pragcastle:['🏰',C.sight],charlesbridge:['🌉',C.sight],orloj:['🕰️',C.sight],tyn:['⛪',C.sight],frauenkirche:['⛪',C.sight],zwinger:['👑',C.sight],semperoper:['🎭',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],

@@ -175,7 +175,7 @@ export async function footprints(lat,lon,R=80){
  for(const f of L.feats){if(f.type!==3||f.p.hide_3d)continue;let cur=null;
   for(const ring of f.rings){const pts=[];for(let i=0;i<ring.length;i+=2)pts.push([(ring[i]-px)*mpu,(ring[i+1]-py)*mpu]);
    if(pts.length>2&&pts[0][0]===pts.at(-1)[0]&&pts[0][1]===pts.at(-1)[1])pts.pop();if(pts.length<3)continue;
-   if(area(ring)>0||!cur){cur={outer:pts,holes:[],h:Math.max(3,+f.p.render_height||(+f.p.levels||3)*3.2),min:Math.max(0,+f.p.render_min_height||0)};list.push(cur);}
+   if(area(ring)>0||!cur){cur={outer:pts,holes:[],h:Math.max(3,+f.p.render_height||(+f.p.levels||3)*3.2),min:Math.max(0,+f.p.render_min_height||0),colour:f.p.colour||''};list.push(cur);}
    else cur.holes.push(pts);}}
  for(const b of list){let sx=0,sz=0;for(const [a,c] of b.outer){sx+=a;sz+=c;}b.cx=sx/b.outer.length;b.cz=sz/b.outer.length;b.d=Math.hypot(b.cx,b.cz);
   b.near=Math.min(...b.outer.map(([a,c])=>Math.hypot(a,c)));b.in=inside(b.outer,0,0);}
@@ -185,4 +185,4 @@ export async function footprints(lat,lon,R=80){
  // 같은 건물의 다른 부분(성당 탑 등)도 주인공으로: 중심이 주인공 건물 바깥 테두리 15m 안이면
  const xs=main.outer.map(p=>p[0]),zs=main.outer.map(p=>p[1]),bx=[Math.min(...xs)-15,Math.max(...xs)+15,Math.min(...zs)-15,Math.max(...zs)+15];
  for(const b of keep)b.main=b===main||b.in||(b.cx>bx[0]&&b.cx<bx[1]&&b.cz>bx[2]&&b.cz<bx[3]&&b.h>=main.h*.5);
- return {R,buildings:keep.map(({outer,holes,h,min,main})=>({outer,holes,h,min,main}))};}
+ return {R,buildings:keep.map(({outer,holes,h,min,main,colour})=>({outer,holes,h,min,main,colour}))};}
