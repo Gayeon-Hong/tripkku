@@ -524,9 +524,10 @@ function skyAt(h,sun){h=((h%24)+24)%24;const r=sun?.rise??6.5,st=sun?.set??18;
 let vtMod=null;const loadVT=()=>vtMod||(vtMod=import('./vtile.js?v=20261113_vt4'));
 const TILES=new Map(),TILE_KEEP=240;
 function tile(z,x,y){const k=z+'/'+x+'/'+y;let e=TILES.get(k);
- if(!e){e={img:null,ok:false,done:false};TILES.set(k,e);
+ const now=Date.now();if(e){e.at=now;TILES.delete(k);TILES.set(k,e);return e;} // 방금 쓴 타일을 맨 뒤로: 오래 안 쓴 것부터 버려야 지금 화면의 지도가 빠지지 않는다
+ if(!e){e={img:null,ok:false,done:false,at:now};TILES.set(k,e);
   loadVT().then(m=>m.renderTile(z,x,y)).then(cv=>{e.img=cv;e.ok=!!cv;e.done=true;},()=>{e.done=true;TILES.delete(k);});
-  if(TILES.size>TILE_KEEP)for(const [kk,v] of TILES){if(TILES.size<=TILE_KEEP)break;if(v.done&&kk!==k)TILES.delete(kk);}}
+  if(TILES.size>TILE_KEEP)for(const [kk,v] of TILES){if(TILES.size<=TILE_KEEP)break;if(v.done&&now-v.at>1500)TILES.delete(kk);}} // 1.5초 안에 쓴 타일은 한도를 넘겨도 남긴다
  return e;}
 // 기울어진 카메라에 보이는 바닥 범위(좌우 XR, 뒤쪽 FAR, 앞쪽 NEAR)를 덮는 타일들
 const XR=480,FAR=1380,NEAR=440;
@@ -554,7 +555,7 @@ async function attachShapes(tl,maxMs=7000){const S=tl.stops.filter(s=>s.ll&&!s.h
  await Promise.race([Promise.all(S.map(async s=>{try{const sh=await vt.footprints(s.ll[0],s.ll[1]);if(sh){sh.ll=s.ll;sh.kind=s.react.key;sh.name=s.title+' '+(s.placeQ||'');s.shape=sh;}}catch{}})),new Promise(r=>setTimeout(r,maxMs))]);}
 /** 재생에 필요한 타일을 미리 받아 둔다(녹화 중 빈 지도가 찍히지 않게). */
 export async function preloadTiles(tl,maxMs=12000){if(!tl.map)return;const asked=new Set();
- for(let t=0;t<=tl.total;t+=.06)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y)));
+ for(let t=0;t<=tl.total&&asked.size<TILE_KEEP-80;t+=.06)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y))); // 긴 여행은 앞부분만 미리 받는다(다 받으면 보관 한도를 넘겨 처음 장면 지도가 밀려난다). 뒤는 재생하면서 받는다
  const until=Date.now()+maxMs;while(Date.now()<until&&[...asked].some(e=>!e.done))await new Promise(r=>setTimeout(r,120));}
 
 /** 3D 장면(journey3d.js)에 넘길 한 장면의 상태 */
@@ -895,10 +896,10 @@ function mountJourney(){
   let failed=null;const enc=new VE({output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),error:e=>{failed=e;}});enc.configure(cfg);
   s.exporting=true;s.playing=false;s.file=null;paintButtons();
   const total=Math.ceil(s.tl.total/s.speed*fps)+fps; // 끝에 1초 여유
-  let mapWait=2400; // 지도를 기다려 줄 횟수(25ms × 2400 = 60초). 인터넷이 끊겨 끝없이 기다리지 않게
+  let mapDead=0; // 지도를 끝까지 못 받은 장면 수. 연달아 3번이면 인터넷이 끊긴 것으로 보고 더 기다리지 않는다
   try{for(let i=0;i<total&&!failed;i++){if(!dlg.open)throw new Error('closed');
     const t=Math.min(s.tl.total,i/fps*s.speed);
-    if(s.tl.map)for(let ready=false;!ready&&mapWait>0;){ready=true;groundTiles(cameraAt(s.tl,t),(z,x,y)=>{if(!tile(z,x,y).done)ready=false;});if(!ready){mapWait--;await new Promise(r=>setTimeout(r,25));}} // 이 장면의 지도가 준비된 뒤에 찍는다
+    if(s.tl.map&&mapDead<3){let w=240,ready=false;for(;!ready&&w>0;){ready=true;groundTiles(cameraAt(s.tl,t),(z,x,y)=>{if(!tile(z,x,y).done)ready=false;});if(!ready){w--;await new Promise(r=>setTimeout(r,25));}}mapDead=ready?0:mapDead+1;} // 이 장면의 지도가 준비된 뒤에 찍는다(장면마다 최대 6초. 전체 합으로 묶으면 긴 여행 뒷부분 지도가 빠진다)
     const f=frameAt(s.tl,t);s.stage.render(f);ctx.drawImage(gl,0,0);drawOverlay(ctx,s.tl,f,s.stage,s.members);
     const frame=new VideoFrame(canvas,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});enc.encode(frame,{keyFrame:i%(fps*2)===0});frame.close();
     if(i%6===0){s.busy='영상 만드는 중… '+Math.round(i/total*100)+'%';hint.textContent=s.busy;await new Promise(r=>setTimeout(r,0));}
