@@ -521,7 +521,7 @@ function skyAt(h,sun){h=((h%24)+24)%24;const r=sun?.rise??6.5,st=sun?.set??18;
 
 /* ---------- 지도 타일과 카메라 ---------- */
 // 바닥 지도는 OpenFreeMap 벡터 타일을 vtile.js 가 우리 색으로 그린 캔버스다(OSM 타일 서버는 앱에서 쓰면 이용 정책상 막힌다).
-let vtMod=null;const loadVT=()=>vtMod||(vtMod=import('./vtile.js?v=20261113_vt4'));
+let vtMod=null;const loadVT=()=>vtMod||(vtMod=import('./vtile.js?v=20261114_vt5'));
 const TILES=new Map(),TILE_KEEP=240;
 function tile(z,x,y){const k=z+'/'+x+'/'+y;let e=TILES.get(k);
  const now=Date.now();if(e){e.at=now;TILES.delete(k);TILES.set(k,e);return e;} // 방금 쓴 타일을 맨 뒤로: 오래 안 쓴 것부터 버려야 지금 화면의 지도가 빠지지 않는다
