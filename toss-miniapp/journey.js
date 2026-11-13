@@ -439,6 +439,7 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  const known={...(doc.geo||{})},fresh={};const dest=String(trip.destination||'').split(/[·,/]/)[0].trim();
  const need=[];const add=(q,local)=>{if(q&&!(geoKey(q) in known)&&!need.some(n=>geoKey(n.q)===geoKey(q)))need.push({q,local});};
  for(const s of tl.stops){add(s.fromQ,false);add(s.q,s.local);}
+ add(dest,false); // 장소를 하나도 못 찾았을 때 여행지 중심에라도 지도를 깔기 위해
  let last=0;const wait=async()=>{const d=1100-(Date.now()-last);if(d>0)await new Promise(r=>setTimeout(r,d));last=Date.now();}; // 초당 1회 제한
  let box=null,center=null;
  if(need.some(n=>n.local)&&dest){try{await wait();const d=await geocode(dest);if(d){center=[d.lat,d.lon];if(d.box.length===4){const [s,n,w,e]=d.box,py=Math.max(.3,n-s),px=Math.max(.3,e-w);box=[w-px,n+py,e+px,s-py];}}}catch{}}
@@ -462,6 +463,7 @@ export async function locate(tl,onProgress){const a=api(),doc=a.activeDoc?.()||{
  // 나라가 바뀌어 처음 도착한 곳에서는 국기를 한 번 띄운다
  let prevCountry='';for(const s of S){s.flag=s.country&&s.country!==prevCountry?s.country:'';if(s.flag)flagImage(s.flag);prevCountry=s.country||'';}
  for(const g of tl.segs)if(g.type==='dwell')g.flag=!!S[g.i].flag; // 집 근처(출발 공항 포함)에서는 평소 옷
+ const destLL=ll(dest);if(destLL&&!S.some(s=>s.ll))for(const s of S)s.ll=destLL; // "현지 산책"처럼 지도에서 못 찾는 일정뿐이어도 여행지 지도는 보여 준다
  tl.map=S.some(s=>s.ll);
  if(tl.map){for(let i=1;i<S.length;i++)if(!S[i].ll)S[i].ll=S[i-1].ll;for(let i=S.length-2;i>=0;i--)if(!S[i].ll)S[i].ll=S[i+1].ll;for(const s of S)Object.assign(s,merc(s.ll[0],s.ll[1]));}
  // 장소·날짜마다 해 뜨고 지는 시각
