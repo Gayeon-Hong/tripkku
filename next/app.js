@@ -41,7 +41,7 @@ const isTossPlatform=()=>document.documentElement.classList.contains('toss')||wi
  * 미입력 상태에서도 해당 도시 최저가 검색 페이지로 정상 연결됩니다.
  */
 export const AFFILIATE_CONFIG={
- agodaCid:'', // 아고다 파트너스 CID
+ agodaCid:'8126459', // 아고다 파트너스 CID (Tripkku 정산 연동 완료)
  klookAid:'143307', // 클룩 어필리에이트 AID (Tripkku 정산 연동 완료)
  skyscannerRef:'', // 스카이스캐너 레퍼럴
  tripAid:'' // 트립닷컴 AID
