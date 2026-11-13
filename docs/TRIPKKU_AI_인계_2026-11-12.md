@@ -41,7 +41,7 @@
 - 여행 한 건은 `tripkku_trips.data` JSON 문서 하나다. 캐릭터(`data.avatars`), 좌표 캐시(`data.geo`) 등도 그 안에 있어서 대부분의 기능은 DB 변경이 없다.
 - 권한: 주인 또는 관리자(`tripkku_beta_admins`)는 모든 권한. 앱에서는 `canManageTrip()`.
 - SQL 은 `sql/` 에 날짜별 파일로 두고 사용자가 Supabase SQL Editor 에서 직접 실행한다. 지금까지 실행됨: `admin_powers`, `coupons`, `payments`, `push`.
-- Edge Function: `tripkku-ai`(Gemini 동선 추천·챗봇·번역), `trip-booking-ocr`(예약서 읽기), `tripkku-pay-confirm`(결제 승인), `tripkku-push`(푸시 발송).
+- Edge Function: `tripkku-ai`(Gemini 동선 추천·챗봇·번역), `trip-booking-ocr`(예약서 읽기), `tripkku-pay-confirm`(결제 승인, 보류), `tripkku-push`(푸시 발송), `tripkku-geo`(장소 좌표 대리 조회, 2026-11-13 추가).
 
 ### 3-3. Three.js 절차적 3D (`next/journey3d.js`)
 - Three.js 0.170. 모델 파일 없이 **코드로 도형을 조립**해 캐릭터와 랜드마크 약 150종을 만든다(브란덴부르크 문, 프라하성, 관람차 등). 용량이 작고 색·형태를 바로 바꿀 수 있다.
@@ -50,7 +50,8 @@
 
 ### 3-4. 동선 영상 엔진 (`next/journey.js`)
 - **타임라인**: 일정 글자를 분석해(`parseRoute`, 공항 코드, "인천출발 바르샤바도착" 같은 표현) 장소·이동 수단을 정한다. 600km 이상은 비행기, 150km 미만 비행은 걷기로 바꾼다.
-- **지도**: OpenStreetMap 타일을 바닥에 깔고, 장소 이름은 Nominatim 으로 좌표를 찾아 `data.geo` 에 저장한다.
+- **지도(2026-11-13 교체)**: 바닥은 `next/vtile.js` 가 OpenFreeMap 벡터 타일(무료·키 없음·상업 이용 가능, 최대 z14)을 받아 우리 색으로 캔버스에 직접 그린다(한국어 이름 우선, 이름표 겹침 정리, 프레임당 2칸). OSM 타일 서버는 앱 배포 시 이용 정책 위반이고 토스(Referer 없음)에서 막혀 뺐다. 서비스 워커가 지도 데이터를 150개까지 보관.
+- **장소 좌표**: Nominatim 으로 찾아 `data.geo` 에 저장. 직접 요청이 막히면(토스는 처음부터) Edge Function `tripkku-geo`(JWT 검사 끔, 비밀 값 없음)가 대신 묻는다. 실패하면 영상 창 안내 문구에 이유가 붙는다.
 - **연출**: 구글 지도 같은 카메라 이동(`camMoveAt`), 장소·날짜별 일몰 계산(`sunTimes`)으로 밤낮, Open-Meteo 날씨, 도착 시 대표자가 국기를 흔든다.
 - **장면 규칙**: `RULES` 표가 일정 문구에 맞는 소품·행동·말풍선을 고른다. 모르는 장소는 `unknownPlaces` 로 모아 관리자에게 "새 장소 요청"으로 보여 준다.
 - **영상 저장**: WebCodecs + `mp4-muxer` 로 빠르게 MP4 를 만들고(`exportFast`), 안 되면 `MediaRecorder` 로 녹화한다.
