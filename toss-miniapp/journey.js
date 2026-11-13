@@ -346,10 +346,17 @@ if(typeof window!=='undefined'){window.__tripkkuPlaces=unknownPlaces;window.__tr
 
 /* ---------- 장소 좌표 찾기 ---------- */
 const GEO_URL='https://nominatim.openstreetmap.org/search';
+// Nominatim 에 직접 못 물어보는 화면(토스 미니앱: Referer 가 안 붙어 막힘)에서는 우리 서버(Edge Function)가 대신 묻는다.
+const GEO_PROXY='https://aachvbbblwycutggzdpp.supabase.co/functions/v1/tripkku-geo';
+let geoVia=typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss'?'proxy':'direct',geoErr='';
 const geoKey=q=>String(q).trim().toLowerCase().slice(0,80);
 async function geocode(q,box){const params={format:'jsonv2',limit:'1','accept-language':'ko',q};if(box){params.viewbox=box.join(',');params.bounded='0';}
- const r=await fetch(GEO_URL+'?'+new URLSearchParams(params),{referrerPolicy:'origin',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('geocode '+r.status);
- const hit=(await r.json())[0];if(!hit)return null;return {lat:Number(hit.lat),lon:Number(hit.lon),box:(hit.boundingbox||[]).map(Number)};}
+ const ask=async via=>{const r=via==='direct'?await fetch(GEO_URL+'?'+new URLSearchParams(params),{referrerPolicy:'origin',headers:{Accept:'application/json'}})
+   :await fetch(GEO_PROXY+'?'+new URLSearchParams(box?{q,viewbox:box.join(',')}:{q}));
+  if(!r.ok)throw new Error(via+' '+r.status);return (await r.json())[0];};
+ let hit;try{hit=await ask(geoVia);}catch(e){if(geoVia!=='direct')throw (geoErr=String(e.message||e),e);
+  try{hit=await ask('proxy');geoVia='proxy';}catch(e2){geoErr=String(e.message||e)+' / '+String(e2.message||e2);throw e2;}}
+ if(!hit)return null;return {lat:Number(hit.lat),lon:Number(hit.lon),box:(hit.boundingbox||[]).map(Number)};}
 const merc=(lat,lon)=>({mx:(lon+180)/360,my:(1-Math.asinh(Math.tan(lat*PI/180))/PI)/2});
 const kmApart=(a,b)=>{const R=6371,dLat=(b[0]-a[0])*PI/180,dLon=(b[1]-a[1])*PI/180,h=Math.sin(dLat/2)**2+Math.cos(a[0]*PI/180)*Math.cos(b[0]*PI/180)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(h));};
 const apart=(A,B)=>Math.hypot(A.mx-B.mx,A.my-B.my);
@@ -437,11 +444,13 @@ function skyAt(h,sun){h=((h%24)+24)%24;const r=sun?.rise??6.5,st=sun?.set??18;
   dusk=Math.max(0,1-Math.abs(h-st)/1.2)*.9+Math.max(0,1-Math.abs(h-r)/1)*.5;return {night:clamp(night,0,1),dusk:Math.min(1,dusk)};}
 
 /* ---------- 지도 타일과 카메라 ---------- */
-const TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILES=new Map();
+// 바닥 지도는 OpenFreeMap 벡터 타일을 vtile.js 가 우리 색으로 그린 캔버스다(OSM 타일 서버는 앱에서 쓰면 이용 정책상 막힌다).
+let vtMod=null;const loadVT=()=>vtMod||(vtMod=import('./vtile.js'));
+const TILES=new Map(),TILE_KEEP=240;
 function tile(z,x,y){const k=z+'/'+x+'/'+y;let e=TILES.get(k);
- if(!e){const img=new Image();img.crossOrigin='anonymous';img.referrerPolicy='origin';e={img,ok:false,done:false};img.onload=()=>{e.ok=true;e.done=true;};img.onerror=()=>{e.done=true;};
-  img.src=TILE_URL.replace('{z}',z).replace('{x}',x).replace('{y}',y);TILES.set(k,e);}
+ if(!e){e={img:null,ok:false,done:false};TILES.set(k,e);
+  loadVT().then(m=>m.renderTile(z,x,y)).then(cv=>{e.img=cv;e.ok=!!cv;e.done=true;},()=>{e.done=true;TILES.delete(k);});
+  if(TILES.size>TILE_KEEP)for(const [kk,v] of TILES){if(TILES.size<=TILE_KEEP)break;if(v.done&&kk!==k)TILES.delete(kk);}}
  return e;}
 // 기울어진 카메라에 보이는 바닥 범위(좌우 XR, 뒤쪽 FAR, 앞쪽 NEAR)를 덮는 타일들
 const XR=480,FAR=1380,NEAR=440;
@@ -570,7 +579,7 @@ export function drawOverlay(ctx,tl,f,stage,members){const {seg,p,stop,t}=f,night
  ctx.fillStyle=night?'#b0b5cc':'#5d6275';ctx.font='700 22px '+FONT;ctx.font='700 22px '+FONT+EMOJI;ctx.fillText(stop.dayIdx>=0?(stop.dayIdx+1)+'일 차 · '+(api().fmtDate?.(stop.date)||stop.date||'')+(f.sky?.weather?'  ·  '+WX_TEXT[f.sky.weather]:''):'',50,100);
  ctx.fillStyle='rgba(255,255,255,.8)';fillRR(ctx,24,H-42,W-48,12,6);ctx.fillStyle='#1b1e2e';fillRR(ctx,24,H-42,Math.max(12,(W-48)*Math.min(1,t/tl.total)),12,6);
  ctx.lineWidth=4;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.font='900 20px '+FONT;ctx.textAlign='right';ctx.strokeText('TRIPKKU',W-28,H-64);ctx.fillStyle='rgba(27,30,46,.75)';ctx.fillText('TRIPKKU',W-28,H-64);
- if(tl.map){ctx.font='600 15px '+FONT;ctx.textAlign='left';ctx.strokeText('© OpenStreetMap',28,H-64);ctx.fillStyle='rgba(27,30,46,.8)';ctx.fillText('© OpenStreetMap',28,H-64);}
+ if(tl.map){ctx.font='600 15px '+FONT;ctx.textAlign='left';ctx.strokeText('© OpenFreeMap © OpenMapTiles © OpenStreetMap',28,H-64);ctx.fillStyle='rgba(27,30,46,.8)';ctx.fillText('© OpenFreeMap © OpenMapTiles © OpenStreetMap',28,H-64);}
  // 마지막 장면: 위쪽만 어둡게 하고 캐릭터들은 3D 그대로 환호한다
  if(seg.type==='end'){const fade=Math.min(1,p*4),g=ctx.createLinearGradient(0,0,0,H*.62);g.addColorStop(0,'rgba(22,24,39,'+(.86*fade).toFixed(2)+')');g.addColorStop(1,'rgba(22,24,39,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.62);ctx.globalAlpha=fade;
   for(let i=0;i<46;i++){const h=hash('c'+i),cx=h%W,cy=((h>>>8)%H+t*(140+h%120))%H;ctx.fillStyle=['#f6c945','#f6b6c8','#8fd0b8','#8fb7ea','#ffffff'][i%5];ctx.save();ctx.translate(cx,cy);ctx.rotate(t*3+i);ctx.fillRect(-6,-3,12,6);ctx.restore();}
@@ -764,7 +773,7 @@ function mountJourney(){
   try{await locate(tl,(i,n)=>{if(job===s.job){s.busy='장소 위치를 찾는 중… '+i+'/'+n;hint.textContent=s.busy;}});}catch(e){console.error(e);}
   if(job!==s.job)return true;
   if(tl.map){s.busy='지도·날씨를 불러오는 중…';hint.textContent=s.busy;await Promise.all([preloadTiles(tl),fetchWeather(tl)]);if(job!==s.job)return true;}
-  else api().toast?.('장소 위치를 찾지 못해 지도 없이 보여 드려요.');
+  else api().toast?.('장소 위치를 찾지 못해 지도 없이 보여 드려요.'+(geoErr?' ('+geoErr.slice(0,60)+')':''));
   s.members=party();s.stage.setScene(tl,s.members);s.busy='';s.tl=tl;s.t=0;s.playing=true;paintButtons();return true;};
  const open=async mode=>{if(!dlg.open){dlg.showModal();void paintCoupon();}cancelAnimationFrame(s.raf);s.last=performance.now();s.raf=requestAnimationFrame(tick);
   if(!(await load(mode))&&!(await load(mode==='trip'?'day':'trip')))dlg.close();};
