@@ -69,6 +69,7 @@ const couponMissing=e=>e&&(e.code==='PGRST202'||/could not find the function|doe
 const coupon={async balance(){if(DEMO||!user)return null;const {data,error}=await client.rpc('tripkku_coupon_balance');return error?null:data;},
  async unlock(key){if(DEMO||!user||!trip)return {ok:true,why:'local'};const {data,error}=await client.rpc('tripkku_video_unlock',{p_trip:trip.id,p_key:key});
   if(error)return couponMissing(error)?{ok:true,why:'unset'}:{ok:false,why:'error',message:error.message};return data;}};
+/*PAY-START: 토스 미니앱 빌드(sync-from-web.mjs)에서는 이 구간을 통째로 뺀다. 미니앱에는 외부 결제 SDK 를 넣을 수 없다. */
 // 쿠폰 결제(토스페이먼츠 결제창). 클라이언트 키는 공개해도 되는 값이고, 시크릿 키는 Supabase Edge Function 비밀 값에만 둔다.
 // 키가 비어 있으면 결제 버튼이 보이지 않는다. 테스트 키(test_ck_…)로 먼저 확인한 뒤 라이브 키(live_ck_…)로 바꾼다.
 const PAY={clientKey:''}; // 비어 있으면 구매 버튼이 숨는다. 테스트 키(test_ck)를 넣으면 가짜 카드로 쿠폰이 무료 지급되니 공개 앱에 넣지 말 것. // 토스페이먼츠 클라이언트 키(공개 값). 지금은 테스트 키 — 가맹 심사 통과 후 live_ck 로 바꿀 것
@@ -87,6 +88,7 @@ async function handlePayReturn(){if(payReturnDone||DEMO||!user)return;const q=ne
  try{const {data,error}=await client.functions.invoke('tripkku-pay-confirm',{body});
   if(error||!data?.ok)toast('결제 확인에 실패했어요. 돈이 빠져나갔다면 자동으로 취소돼요. 계속되면 문의해 주세요.');
   else toast('쿠폰 '+data.coupons+'장이 들어왔어요! 지금 '+data.balance+'장 있어요.');}catch(e){toast('결제 확인 실패: '+e.message);}}
+/*PAY-END*/
 // 푸시 알림. 공개 키(VAPID)는 공개해도 되는 값이고, 비밀 키는 Supabase Edge Function 비밀 값에만 둔다. 비어 있으면 알림 버튼이 보이지 않는다.
 const PUSH={publicKey:'BL4H5GJK2fY374w2MZcKv6_pmz4qTXypAs9cPFsi1Mlw32v3d50jCTzMnq9ddVGP1Zs64j-Ke3i2k8ikviF_ygw'};
 const pushReady=()=>!!PUSH.publicKey&&!DEMO&&!!user&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
