@@ -10,7 +10,7 @@ const fix=s=>s.replaceAll('../assets/','./assets/').replace(/(\.(?:js|css))\?v=[
  .replaceAll('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm','mp4-muxer');
 // 예전 로컬 데모 파일 정리
 for(const f of ['ai.js','collab.js','destination-map.js','earth-avatar.js','i18n.js','presets.js','world-coasts.js','config.js'])rmSync(join(here,f),{force:true});
-for(const f of ['app.js','journey.js','journey3d.js','countries.js','earth-controls.js','style.css'])writeFileSync(join(here,f),fix(readFileSync(join(web,f),'utf8')));
+for(const f of ['app.js','journey.js','journey3d.js','vtile.js','countries.js','earth-controls.js','style.css'])writeFileSync(join(here,f),fix(readFileSync(join(web,f),'utf8')));
 let html=fix(readFileSync(join(web,'index.html'),'utf8')).replace('../travel-status.js','./travel-status.js')
  .replace(/<link rel="modulepreload"[^>]*>/,'').replace(/<link rel="preconnect" href="https:\/\/(?:cdn\.jsdelivr\.net|[a-z]+\.supabase\.co)"[^>]*>/g,'')
  // 토스 안에서는 토스 로그인만 허용된다. 서버 연동 전까지는 로그인 없이 이 기기에만 저장하는 모드로 연다.
