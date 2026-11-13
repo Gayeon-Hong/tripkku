@@ -13,7 +13,7 @@
 <section id="authScreen" class="auth card">
  <img class="auth-globe" alt="TRIPKKU 지구 캐릭터" src="./assets/earth-base-light.png" loading="lazy" decoding="async"><span class="eyebrow">NEXT TRAVEL STARTS HERE</span><h1>여행의 시작부터<br>돌아오는 날까지.</h1>
  <p>여행지만 정해도 충분해요. AI가 동선을 추천하고, 직접 또는 챗봇으로 바꿀 수 있어요. 친구와 함께 일정·메모·예산을 관리하세요.</p>
- <div class="login-methods"><button id="loginBtn" class="btn primary" type="button" hidden aria-hidden="true" tabindex="-1" style="display:none!important">Google로 시작하기</button><button id="kakaoLoginBtn" class="btn secondary" type="button">카카오로 시작하기</button></div><p class="tiny">여행 데이터는 로그인 후 내 여행방에 저장됩니다. 체험은 <a href="?demo=1">데모 모드</a>로 볼 수 있어요.</p>
+ <div class="login-methods"><button id="loginBtn" class="btn primary" type="button" hidden aria-hidden="true" tabindex="-1" style="display:none!important">Google로 시작하기</button><a class="btn primary" href="?demo=1">로그인 없이 체험하기</a><button id="kakaoLoginBtn" class="btn secondary" type="button">카카오로 시작하기</button></div><p class="tiny">로그인하면 여행이 내 여행방에 저장되고 친구와 함께 쓸 수 있어요. 체험은 이 기기에만 저장돼요.</p>
  <details class="email-login"><summary>이메일로 로그인 (심사·테스트 계정)</summary><form id="emailLoginForm" class="email-login-form"><label>이메일 <input name="email" type="email" autocomplete="username" required maxlength="120"></label><label>비밀번호 <input name="password" type="password" autocomplete="current-password" required maxlength="120"></label><button class="btn primary" type="submit">로그인</button></form></details>
  <p class="error" id="authError" role="alert"></p>
 </section>

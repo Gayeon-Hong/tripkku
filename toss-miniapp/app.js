@@ -458,10 +458,17 @@ function withTimeout(promise,ms,message){
  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);});
  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
 }
+// 로그인 없는 화면(웹 체험·토스 미니앱): 손님용 함수(tripkku-plan-guest, 횟수 제한 있음)에서 실제 AI 동선을 받는다. 여행이 서버에 없어서 여행 정보를 같이 보낸다.
+async function guestPlan(){const m=activeDoc().meta||{};
+ const r=await fetch(CONFIG.url+'/functions/v1/tripkku-plan-guest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({destination:trip.destination,country:trip.country_code,start:trip.start_date,end:trip.end_date,
+  meta:{travelers:m.travelers,style:m.style,pace:m.pace,budget:m.budget,mustVisit:m.mustVisit,constraints:m.constraints,travelRoute:m.travelRoute,countries:m.countries}})});
+ const d=await r.json().catch(()=>null);if(!r.ok||!d?.plan)throw new Error(d?.error||'guest plan '+r.status);return d.plan;}
 async function generatePlan(afterCreate=false){if(!trip)return;const btn=$('regeneratePlan');setBusy(btn,true);
  const stopStages=startAiStages('✨ AI 동선 다시 추천');
- try{if(DEMO){const raw=activeDoc().meta.mustVisit.split(/[,\n、]/).map(x=>x.trim()).filter(Boolean).slice(0,12);
-  const dates=tripDates();pendingPlan={summary:'체험용 샘플입니다. 실제 AI 동선 생성은 로그인 후 Edge Function 배포가 필요합니다.',tips:['실제 이동시간·영업시간은 Google 지도에서 확인하세요.'],days:dates.map((date,i)=>({date,title:(i+1)+'일 차 · 샘플 일정',events:(raw.length?raw.slice(i*2,i*2+2):['현지 산책','카페 휴식']).map((name,j)=>({start:j?'13:00':'10:00',end:j?'14:00':'11:30',title:name,place:name,note:'체험용. 실제 이동시간을 확인하세요.',kind:'visit'}))}))};}
+ try{if(DEMO){pendingPlan=await withTimeout(guestPlan(),70000,'AI 응답 시간 초과').catch(()=>null);if(!pendingPlan){const raw=activeDoc().meta.mustVisit.split(/[,\n、]/).map(x=>x.trim()).filter(Boolean).slice(0,12);
+  const dates=tripDates(),city=String(trip.destination||'').split(/[,/→]/)[0].trim()||'여행지';
+  pendingPlan={summary:window.TRIPKKU_PLATFORM==='toss'?'예시 일정이에요. 가고 싶은 곳을 추가하거나 바꿔서 나만의 일정으로 만들어 보세요.':'체험용 예시 일정이에요. 로그인하면 AI가 여행지에 맞춰 실제 동선을 짜 줘요.',tips:['실제 이동시간·영업시간은 Google 지도에서 확인하세요.'],days:dates.map((date,i)=>{const mine=raw.slice(i*2,i*2+2);
+   return {date,title:(i+1)+'일 차 · 예시 일정',events:(mine.length?mine.map(n=>[n,n,'visit']):[[city+' 구경',city,'visit'],[city+' 맛집',city,'food']]).map(([title,place,kind],j)=>({start:j?'13:00':'10:00',end:j?'14:00':'11:30',title,place,note:'예시 일정이에요. 실제 이동시간을 확인하세요.',kind}))};})};}}
   else{const {plan}=await withTimeout(aiCall('plan',{request:(activeDoc().meta.constraints||'')+'\n꼭 가고 싶은 곳: '+(activeDoc().meta.mustVisit||'')}),70000,'AI 응답이 70초를 넘어 멈췄어요. 잠시 후 다시 시도해 주세요.');pendingPlan=plan;}
   renderPlanPreview();if(!afterCreate)toast('AI 추천 일정이 준비됐어요. 적용 전에 확인해 주세요.');chooseTab('schedule');
  }catch(e){toast('AI 추천 오류: '+e.message);if(afterCreate)toast('여행은 저장됐어요. AI 추천은 나중에 다시 실행할 수 있어요.');}

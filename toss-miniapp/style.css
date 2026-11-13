@@ -402,3 +402,6 @@ body #journeyDialog #jrCoupon{color:#ffd9cf;margin:0;font-weight:800}
 
 .h2-push{display:block;width:100%;min-height:46px;margin:-6px 0 16px;border:0;border-radius:16px;background:var(--card);color:var(--ink);font-weight:800;font-size:14px}
 .h2-push[aria-pressed="true"]{background:var(--soft);color:var(--muted)}
+
+/* 링크로 만든 버튼(첫 화면 "로그인 없이 체험하기") */
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;text-align:center}

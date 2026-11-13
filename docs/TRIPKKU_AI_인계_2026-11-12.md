@@ -163,3 +163,10 @@
 - 전용 3D 가 없는 장소는 지도 건물 모양 자동 심볼(`buildShape`). 색·지붕 장식은 지역(유럽/동아시아/동남아/중동/아메리카) + 장소 종류(성당/사원/성/모스크/박물관/탑)로 달라지고, 지도에 건물 색(colour)이 있으면 그 색을 씀.
 - 제출 순서: `git pull` → `toss-miniapp\02_build_windows.cmd` → 콘솔 업로드 → QR 테스트(지도·장소 검색·광고·3D) → `toss-miniapp/toss-ads.js` 의 `AD_GROUP_ID` 를 실제 ID `ait.v2.live.7b6b89cdb8104280` 로 교체 → 다시 빌드·업로드 → 심사 제출.
 - 미니앱 번들에 외부 결제 SDK(`tosspayments.com`)가 들어가면 반려됨. `sync-from-web.mjs` 가 자동으로 빼고, 남아 있으면 오류를 냄.
+
+## 2026-11-13 추가 — 로그인 없는 화면의 AI 동선 (Claude Code)
+- 웹 체험 모드(`?demo=1`)와 토스 미니앱은 로그인이 없어 `tripkku-ai` 를 못 쓴다. 그래서 예시 일정만 나왔다.
+- 새 Edge Function `supabase/functions/tripkku-plan-guest`: 여행 정보를 요청 본문으로 받아 같은 프롬프트로 동선을 만든다. **Verify JWT 끄기**, 비밀 값은 기존 `GEMINI_API_KEY` 그대로. 횟수 제한은 메모리 기준(한 IP 10분 4회·하루 12회, 전체 하루 600회).
+- 앱: `next/app.js` 의 `guestPlan()`. 실패하면(미배포·횟수 초과·오프라인) 예시 일정("○○ 구경/맛집")으로 넘어간다. 그래서 함수 배포 전에 앱을 먼저 올려도 깨지지 않는다.
+- **남은 일(사용자)**: Supabase 대시보드에서 `tripkku-plan-guest` 함수를 만들고 JWT 검사를 끈다. 토스 QR 테스트 때 새 여행을 만들어 실제 동선이 나오는지 확인한다(토스 앱 안에서의 호출은 확인 못 함).
+- 첫 화면에 "로그인 없이 체험하기" 버튼 추가(`next/index.html`).
