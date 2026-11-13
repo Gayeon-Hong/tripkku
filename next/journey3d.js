@@ -683,6 +683,21 @@ const PROPS={
 };
 export const PROP_KEYS=Object.keys(PROPS);
 export function buildProp(key){return (PROPS[key]||PROPS.pin)();}
+/**
+ * 지도 데이터의 실제 건물 모양으로 만든 심볼(전용 3D 가 없는 장소용). shape = vtile.js footprints() 결과.
+ * 지름 약 220 안에 들어오게 줄이고, 높이는 조금 과장해(최대 190) 미니어처 블록처럼 보이게 한다.
+ */
+export function buildShape(shape){const g=new THREE.Group(),k=105/shape.R,maxH=Math.max(...shape.buildings.map(b=>b.h)),hk=Math.min(k*1.7,190/Math.max(8,maxH));
+ g.add(mesh(G.cyl(shape.R*k+12,shape.R*k+16,6,48),'#e8e4dc',0,3,0),mesh(G.cyl(shape.R*k+6,shape.R*k+6,1.2,48),'#d9e8d3',0,6.6,0));
+ const walls={main:mat('#f3e7cf',{roughness:.7}),other:mat('#dfe2ea',{roughness:.85})},roofs={main:mat('#d9714a',{roughness:.6}),other:mat('#c9cdd8',{roughness:.85})};
+ for(const b of shape.buildings){const sh=new THREE.Shape(b.outer.map(([x,z])=>new THREE.Vector2(x*k,-z*k)));
+  for(const hole of b.holes)sh.holes.push(new THREE.Path(hole.map(([x,z])=>new THREE.Vector2(x*k,-z*k))));
+  const h=Math.max(4,(b.h-b.min)*hk),geo=new THREE.ExtrudeGeometry(sh,{depth:h,bevelEnabled:false,curveSegments:2});geo.rotateX(-PI/2);
+  const m=new THREE.Mesh(geo,b.main?[roofs.main,walls.main]:[roofs.other,walls.other]);m.position.y=7+b.min*hk;m.castShadow=true;g.add(m);}
+ // 주인공 건물 위에 작은 금빛 별
+ const top=Math.max(...shape.buildings.filter(b=>b.main).map(b=>b.h))*hk+7,mc=shape.buildings.filter(b=>b.main).flatMap(b=>b.outer),cx=mc.reduce((a,p)=>a+p[0],0)/mc.length*k,cz=mc.reduce((a,p)=>a+p[1],0)/mc.length*k;
+ const star=mesh(new THREE.OctahedronGeometry(9),'#f5c542',cx,top+18,cz,{emissive:'#f5c542',emissiveIntensity:.5,metalness:.3});g.add(star);g.userData.spin=[[star,'y',1.2]];
+ return g;}
 
 /* ---------- 장면 ---------- */
 function lights(scene){scene.add(new THREE.HemisphereLight('#ffffff','#b9c6d2',1.55));const sun=new THREE.DirectionalLight('#fff6e8',1.9);sun.position.set(-260,620,380);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
@@ -730,7 +745,7 @@ export function createStage(canvas){
   while(stools.length<members.length){const st=group(mesh(G.cyl(16,16,6,16),'#c2532f',0,24,0),mesh(G.cyl(3,3,22,8),'#8a5a3c',0,11,0));st.visible=false;scene.add(st);stools.push(st);}
   const kinds=['',...new Set(tl.stops.map(s=>s.costume).filter(Boolean))];
   chars=members.map(m=>{const holder=new THREE.Group(),variants={};for(const k of kinds){const c=buildAvatar(m.av,k);c.visible=false;variants[k]=c;holder.add(c);}holder.userData.variants=variants;holder.userData.char=variants[''];dynamic.add(holder);return holder;});
-  props=tl.stops.map(s=>{const p=buildProp(s.react.key);dynamic.add(p);return p;});
+  props=tl.stops.map(s=>{const p=s.shape?buildShape(s.shape):buildProp(s.react.key);dynamic.add(p);return p;});
   // 창문·전구는 밤에 불이 켜진 것처럼 빛나게
   glowMats=[];for(const p of props)p.traverse(o=>{if(o.material?.color&&GLOW.has(o.material.color.getHexString()))glowMats.push(o.material);});
   stopMeshes=tl.stops.map(()=>{const d=new THREE.Mesh(discGeo,stopMat[0]);routeGroup.add(d);return d;});

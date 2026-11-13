@@ -158,3 +158,29 @@ export async function renderTile(z,x,y){
   if(l.dot){ctx.fillStyle=l.color;ctx.beginPath();ctx.arc(l.dot.x-ox,l.dot.y-oy,3*R,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.2*R;ctx.stroke();}
   ctx.font=l.font;ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=3.2*R;ctx.strokeText(l.text,l.x-ox,l.y-oy);ctx.fillStyle=l.color;ctx.fillText(l.text,l.x-ox,l.y-oy);}
  return cv;}
+
+/* ---------- 장소의 실제 건물 모양(3D 심볼용) ---------- */
+/**
+ * lat,lon 주변 R 미터 안 건물의 바닥 모양과 높이. 좌표는 그 지점 기준 미터(x=동쪽, z=남쪽).
+ * 결과: {R, buildings:[{outer:[[x,z]…], holes:[[[x,z]…]…], h, min, main}]} — main 은 그 지점이 안에 있는(없으면 가장 가까운) 건물.
+ * 건물이 없거나 지점 근처(35m)에 건물이 없으면 null.
+ */
+export async function footprints(lat,lon,R=80){
+ const z=14,n=2**z,fx=(lon+180)/360*n,fy=(1-Math.asinh(Math.tan(lat*Math.PI/180))/Math.PI)/2*n,x=Math.floor(fx),y=Math.floor(fy);
+ const src=await source(z,x,y),L=src.layers?.building;if(!L)return null;
+ const ext=L.extent,mpu=40075016.686*Math.cos(lat*Math.PI/180)/n/ext,px=(fx-x)*ext,py=(fy-y)*ext;
+ const area=r=>{let a=0;for(let i=0;i<r.length;i+=2){const j=(i+2)%r.length;a+=r[i]*r[j+1]-r[j]*r[i+1];}return a/2;};
+ const inside=(pts,X,Z)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const [xi,zi]=pts[i],[xj,zj]=pts[j];if((zi>Z)!==(zj>Z)&&X<(xj-xi)*(Z-zi)/(zj-zi)+xi)c=!c;}return c;};
+ const list=[];
+ for(const f of L.feats){if(f.type!==3||f.p.hide_3d)continue;let cur=null;
+  for(const ring of f.rings){const pts=[];for(let i=0;i<ring.length;i+=2)pts.push([(ring[i]-px)*mpu,(ring[i+1]-py)*mpu]);
+   if(pts.length>2&&pts[0][0]===pts.at(-1)[0]&&pts[0][1]===pts.at(-1)[1])pts.pop();if(pts.length<3)continue;
+   if(area(ring)>0||!cur){cur={outer:pts,holes:[],h:Math.max(3,+f.p.render_height||(+f.p.levels||3)*3.2),min:Math.max(0,+f.p.render_min_height||0)};list.push(cur);}
+   else cur.holes.push(pts);}}
+ for(const b of list){let sx=0,sz=0;for(const [a,c] of b.outer){sx+=a;sz+=c;}b.cx=sx/b.outer.length;b.cz=sz/b.outer.length;b.d=Math.hypot(b.cx,b.cz);
+  b.near=Math.min(...b.outer.map(([a,c])=>Math.hypot(a,c)));b.in=inside(b.outer,0,0);}
+ const keep=list.filter(b=>b.in||b.near<R).sort((a,b)=>(b.in-a.in)||a.d-b.d).slice(0,36);
+ const main=keep.find(b=>b.in)||keep.find(b=>b.near<35);if(!main)return null;
+ // 같은 건물이 부분(building:part)으로 나뉜 경우 지점이 들어 있는 것들을 모두 주인공으로
+ for(const b of keep)b.main=b===main||b.in||(Math.hypot(b.cx-main.cx,b.cz-main.cz)<12&&b.near<20);
+ return {R,buildings:keep.map(({outer,holes,h,min,main})=>({outer,holes,h,min,main}))};}
