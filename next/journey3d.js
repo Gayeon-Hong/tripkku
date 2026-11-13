@@ -687,8 +687,12 @@ export function buildProp(key){return (PROPS[key]||PROPS.pin)();}
  * 지도 데이터의 실제 건물 모양으로 만든 심볼(전용 3D 가 없는 장소용). shape = vtile.js footprints() 결과.
  * 지름 약 220 안에 들어오게 줄이고, 높이는 조금 과장해(최대 190) 미니어처 블록처럼 보이게 한다.
  */
-export function buildShape(shape){const g=new THREE.Group(),k=105/shape.R,maxH=Math.max(...shape.buildings.map(b=>b.h)),hk=Math.min(k*1.7,190/Math.max(8,maxH));
- g.add(mesh(G.cyl(shape.R*k+12,shape.R*k+16,6,48),'#e8e4dc',0,3,0),mesh(G.cyl(shape.R*k+6,shape.R*k+6,1.2,48),'#d9e8d3',0,6.6,0));
+export function buildShape(shape){const g=new THREE.Group(),far=b=>Math.max(...b.outer.map(([x,z])=>Math.hypot(x,z)));
+ // 주인공 건물은 다 넣고, 이웃 건물은 받침 밖으로 크게 삐져나오지 않는 것만
+ const list=shape.buildings.filter(b=>b.main||far(b)<=shape.R*1.2),ext=Math.max(45,...list.map(far)),k=105/ext,
+  maxH=Math.max(...list.map(b=>b.h)),hk=Math.min(k*1.7,190/Math.max(8,maxH)),rad=ext*k;
+ shape={...shape,buildings:list};
+ g.add(mesh(G.cyl(rad+12,rad+16,6,48),'#e8e4dc',0,3,0),mesh(G.cyl(rad+6,rad+6,1.2,48),'#d9e8d3',0,6.6,0));
  const walls={main:mat('#f3e7cf',{roughness:.7}),other:mat('#dfe2ea',{roughness:.85})},roofs={main:mat('#d9714a',{roughness:.6}),other:mat('#c9cdd8',{roughness:.85})};
  for(const b of shape.buildings){const sh=new THREE.Shape(b.outer.map(([x,z])=>new THREE.Vector2(x*k,-z*k)));
   for(const hole of b.holes)sh.holes.push(new THREE.Path(hole.map(([x,z])=>new THREE.Vector2(x*k,-z*k))));
