@@ -18,7 +18,7 @@ for(const f of ['app.js','journey.js','journey3d.js','vtile.js','countries.js','
 let html=fix(readFileSync(join(web,'index.html'),'utf8')).replace('../travel-status.js','./travel-status.js')
  .replace(/<link rel="modulepreload"[^>]*>/,'').replace(/<link rel="preconnect" href="https:\/\/(?:cdn\.jsdelivr\.net|[a-z]+\.supabase\.co)"[^>]*>/g,'')
  // 토스 안에서는 토스 로그인만 허용된다. 서버 연동 전까지는 로그인 없이 이 기기에만 저장하는 모드로 연다.
- .replace('<script defer src="./travel-status.js','<script>window.TRIPKKU_LOCAL_ONLY=true;window.TRIPKKU_PLATFORM="toss";</script><script defer src="./travel-status.js')
+ .replace('<script defer src="./travel-status.js','<script>window.TRIPKKU_LOCAL_ONLY=true;window.TRIPKKU_PLATFORM="toss";document.documentElement.classList.add("toss");</script><script defer src="./travel-status.js')
  // 토스 전용 보상형 광고(toss-ads.js, 이 폴더에만 있음). 앱 코드보다 먼저 불러 window.TRIPKKU_ADS 를 만든다.
  .replace('<script type="module" src="./app.js">','<script type="module" src="./toss-ads.js"></script><script type="module" src="./app.js">');
 writeFileSync(join(here,'index.html'),html);

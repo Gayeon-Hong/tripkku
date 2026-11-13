@@ -1001,6 +1001,7 @@ function legacyExpensePayer(entry){
 
 function bindHandlers(){
  $('goHome').addEventListener('click',goHome);$('backHome').addEventListener('click',goHome);
+ window.__tripkkuBack=()=>{const d=[...document.querySelectorAll('dialog[open]')].pop();if(d){d.close();return true;}if(!$('tripScreen').hidden){goHome();return true;}return false;}; // 토스 미니앱: 토스 뒤로가기 버튼이 부른다(toss-ads.js)
  $('editTrip').addEventListener('click',openTripEdit);$('tripEditForm').addEventListener('submit',e=>void saveTripEdit(e));
  $('tripEditAddBtn').addEventListener('click',()=>{const c=$('tripEditAdd').value;if(c&&BY_COUNTRY[c]&&!editCountries.includes(c)){editCountries.push(c);paintEditCountries();}});
  $('tripEditCountries').addEventListener('click',e=>{const r=e.target.closest('[data-remove-country]'),u=e.target.closest('[data-first-country]');

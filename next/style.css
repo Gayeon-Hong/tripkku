@@ -405,3 +405,6 @@ body #journeyDialog #jrCoupon{color:#ffd9cf;margin:0;font-weight:800}
 
 /* 링크로 만든 버튼(첫 화면 "로그인 없이 체험하기") */
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;text-align:center}
+
+/* 토스 미니앱: 토스 내비게이션 바가 있으므로 앱 자체 상단바·뒤로가기 버튼은 숨긴다(앱인토스 검수) */
+html.toss .topbar,html.toss #backHome{display:none!important}
