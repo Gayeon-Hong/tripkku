@@ -514,6 +514,12 @@ export function cameraAt(tl,t){const tt=clamp(t,0,tl.total-1e-4),seg=tl.segs.fin
  if(p<.1)return {seg,p,cx:A.mx,cy:A.my,z:A.z,fade:p/.1,phase:'a'};
  if(p>.9)return {seg,p,cx:B.mx,cy:B.my,z:B.z,fade:1-(p-.9)/.1,phase:'b'};
  const q=ease((p-.1)/.8);return {seg,p,cx:A.mx+(B.mx-A.mx)*q,cy:A.my+(B.my-A.my)*q,z:seg.zMid,fade:p<.2?1-(p-.1)/.1:p>.8?(p-.8)/.1:0,phase:'mid'};}
+/** 전용 3D 가 없는 장소는 지도 데이터의 실제 건물 모양으로 심볼을 만든다(stop.shape → journey3d buildShape). */
+const SHAPE_KEYS=new Set(['museum','church','castle','tower','gate','statue','fountain','pin','camera','pagoda','mosque','stupa','clocktower','hanok']);
+const SHAPE_SKIP=/구경|관광|시내|자유|투어|둘러|산책|올드 ?타운|구시가|거리|시장|공원|해변|호수|숲|정원|등산|하이킹|전망대 ?가기|야경/;
+async function attachShapes(tl,maxMs=7000){const S=tl.stops.filter(s=>s.ll&&!s.home&&s.via!=='plane'&&s.react&&(s.react.generic||SHAPE_KEYS.has(s.react.key))&&!SHAPE_SKIP.test(s.title+' '+(s.placeQ||'')));
+ if(!S.length)return;let vt;try{vt=await loadVT();}catch{return;}
+ await Promise.race([Promise.all(S.map(async s=>{try{const sh=await vt.footprints(s.ll[0],s.ll[1]);if(sh)s.shape=sh;}catch{}})),new Promise(r=>setTimeout(r,maxMs))]);}
 /** 재생에 필요한 타일을 미리 받아 둔다(녹화 중 빈 지도가 찍히지 않게). */
 export async function preloadTiles(tl,maxMs=12000){if(!tl.map)return;const asked=new Set();
  for(let t=0;t<=tl.total;t+=.06)groundTiles(cameraAt(tl,t),(z,x,y)=>asked.add(tile(z,x,y)));
@@ -821,7 +827,7 @@ function mountJourney(){
   s.busy='장소 위치를 찾는 중…';hint.textContent=s.busy;
   try{await locate(tl,(i,n)=>{if(job===s.job){s.busy='장소 위치를 찾는 중… '+i+'/'+n;hint.textContent=s.busy;}});}catch(e){console.error(e);}
   if(job!==s.job)return true;
-  if(tl.map){s.busy='지도·날씨를 불러오는 중…';hint.textContent=s.busy;await Promise.all([preloadTiles(tl),fetchWeather(tl)]);if(job!==s.job)return true;}
+  if(tl.map){s.busy='지도·날씨를 불러오는 중…';hint.textContent=s.busy;await Promise.all([preloadTiles(tl),fetchWeather(tl),attachShapes(tl)]);if(job!==s.job)return true;}
   else api().toast?.('장소 위치를 찾지 못해 지도 없이 보여 드려요.'+(geoErr?' ('+geoErr.slice(0,60)+')':''));
   s.members=party();s.stage.setScene(tl,s.members);s.busy='';s.tl=tl;s.t=0;s.playing=true;paintButtons();return true;};
  const open=async mode=>{if(!dlg.open){dlg.showModal();void paintCoupon();}cancelAnimationFrame(s.raf);s.last=performance.now();s.raf=requestAnimationFrame(tick);
