@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "ait build",
+    "build": "vite build && ait build",
     "build:web": "node sync-from-web.mjs && vite build",
     "preview": "vite preview",
     "sync": "node sync-from-web.mjs",
