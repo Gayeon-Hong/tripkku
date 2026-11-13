@@ -42,7 +42,7 @@ const isTossPlatform=()=>document.documentElement.classList.contains('toss')||wi
  */
 export const AFFILIATE_CONFIG={
  agodaCid:'', // 아고다 파트너스 CID
- klookAid:'', // 클룩 어필리에이트 AID
+ klookAid:'143307', // 클룩 어필리에이트 AID (Tripkku 정산 연동 완료)
  skyscannerRef:'', // 스카이스캐너 레퍼럴
  tripAid:'' // 트립닷컴 AID
 };
