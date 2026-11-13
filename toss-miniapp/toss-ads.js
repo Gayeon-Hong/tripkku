@@ -5,7 +5,7 @@ import {loadFullScreenAd,showFullScreenAd,graniteEvent,closeView} from '@apps-in
 
 // 광고 그룹 ID. 지금은 앱인토스가 제공하는 "테스트용 보상형" ID 다(수익 없음).
 // 출시 전에 앱인토스 콘솔 > 인앱 광고에서 발급받은 보상형 광고 그룹 ID 로 바꿀 것. 개발·QR 테스트 중에는 반드시 테스트 ID 를 쓴다(실제 ID 로 테스트하면 정책 위반).
-const AD_GROUP_ID='ait-ad-test-rewarded-id';
+const AD_GROUP_ID='ait.v2.live.7b6b89cdb8104280';
 
 let loaded=false,loading=false,waiters=[];
 const supported=()=>{try{return !!AD_GROUP_ID&&loadFullScreenAd.isSupported()&&showFullScreenAd.isSupported();}catch{return false;}};

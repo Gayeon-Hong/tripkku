@@ -121,7 +121,7 @@
   - `sync-from-web.mjs` 가 `index.html` 에 `toss-ads.js` 스크립트를 넣는다.
 - **남은 일**
   1. 앱인토스 콘솔 > 인앱 광고에서 **보상형 광고 그룹 ID** 발급.
-  2. `toss-ads.js` 의 `AD_GROUP_ID`(지금 `ait-ad-test-rewarded-id`, 테스트용이라 수익 없음)를 실제 ID 로 교체. 개발·QR 테스트 중에는 테스트 ID 를 써야 한다(실제 ID 로 테스트하면 정책 위반).
+  2. `toss-ads.js` 의 `AD_GROUP_ID` 는 2026-11-13 QR 테스트 뒤 실제 ID 로 교체했다. 다시 개발·QR 테스트를 할 때는 `ait-ad-test-rewarded-id` 로 되돌려 빌드한다. 개발·QR 테스트 중에는 테스트 ID 를 써야 한다(실제 ID 로 테스트하면 정책 위반).
   3. `toss-miniapp` 에서 다시 빌드해 콘솔에 올린다.
 - 확인된 것: SDK 3.10.0 이 두 함수와 이벤트 이름(`userEarnedReward`, `dismissed`, `failedToShow`)을 내보낸다. **확인 못 한 것**: 실제 토스 앱에서의 광고 재생(샌드박스는 광고 미지원, 콘솔 QR 로만 테스트 가능).
 - 앱인토스 정책: "광고" 표시 유지, 뒤로 가기 막지 않기, 보상을 광고 클릭에 묶지 않기, 보상은 `userEarnedReward` 에서만 지급.
