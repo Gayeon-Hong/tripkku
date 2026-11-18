@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>avatar-engine self-test</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head><body><pre id="out">running…</pre>
+<script type="module">
+import * as THREE from 'three';
+import {boneKey, rebindToSkeleton} from './avatar-engine.js';
+const results = [], ok = (cond, msg) => { results.push((cond ? 'PASS ' : 'FAIL ') + msg); if (!cond) window.failed = true; };
+
+ok(boneKey('mixamorig:LeftArm') === boneKey('mixamorigLeftArm') && boneKey('LeftArm') === 'leftarm', 'boneKey: Mixamo 접두어/구분자 무시');
+
+// 아바타 뼈대 Hips>Spine, 의상 뼈대는 같은 이름의 Mixamo 표기
+const mk = names => { const bs = names.map(n => Object.assign(new THREE.Bone(), {name: n})); bs[0].add(bs[1]); return bs; };
+const avatarBones = mk(['Hips', 'Spine']);
+const outfitBones = mk(['mixamorig:Hips', 'mixamorig:Spine']);
+const geo = new THREE.BoxGeometry();
+geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(new Array(geo.attributes.position.count * 4).fill(0), 4));
+geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(new Array(geo.attributes.position.count * 4).fill(0).map((_, i) => i % 4 ? 0 : 1), 4));
+const mesh = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial());
+mesh.add(outfitBones[0]); mesh.bind(new THREE.Skeleton(outfitBones));
+const inv = mesh.skeleton.boneInverses.map(m => m.clone());
+rebindToSkeleton(mesh, avatarBones);
+ok(mesh.skeleton.bones[0] === avatarBones[0] && mesh.skeleton.bones[1] === avatarBones[1], 'rebind: 아바타 뼈로 교체');
+ok(mesh.skeleton.boneInverses.every((m, i) => m.equals(inv[i])), 'rebind: 의상 bind 행렬 유지');
+
+let threw = '';
+const m2 = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial()); const extra = mk(['Hips', 'Tail']);
+m2.add(extra[0]); m2.bind(new THREE.Skeleton(extra));
+try { rebindToSkeleton(m2, avatarBones); } catch (e) { threw = e.message; }
+ok(threw.includes('Tail'), 'rebind: 없는 뼈 이름을 알려주며 실패');
+
+document.getElementById('out').textContent = results.join('\n') + (window.failed ? '\n\nFAILED' : '\n\nALL PASSED');
+</script></body></html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MyTwin 3D</title>
+<meta name="description" content="사진 3장으로 만드는 나의 3D 아바타 · 의상 · 포즈">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+}}</script>
+</head>
+<body>
+<main class="app">
+  <section class="viewer">
+    <canvas id="stage" aria-label="3D 아바타 미리보기"></canvas>
+    <header class="top"><b>MyTwin 3D</b><span class="beta">Beta</span></header>
+    <p id="status" class="status" role="status" aria-live="polite">아바타를 불러오는 중…</p>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="make" aria-selected="true">만들기</button>
+    <button role="tab" data-tab="dress">의상</button>
+    <button role="tab" data-tab="pose">포즈</button>
+    <button role="tab" data-tab="shot">촬영</button>
+  </nav>
+
+  <section class="panel" data-panel="make">
+    <h2>사진 3장으로 내 아바타 만들기</h2>
+    <p class="hint">밝은 곳에서 전신이 나오게, 팔을 살짝 벌리고 찍어주세요.</p>
+    <div class="photos">
+      <label class="photo"><input type="file" accept="image/*" data-view="정면"><span>정면</span></label>
+      <label class="photo"><input type="file" accept="image/*" data-view="측면"><span>측면</span></label>
+      <label class="photo"><input type="file" accept="image/*" data-view="후면"><span>후면</span></label>
+    </div>
+    <label class="check"><input type="checkbox" id="consent"> 본인 사진이며, 3D 생성을 위해 외부 AI(Meshy)로 전송하는 데 동의합니다. 사진은 저장하지 않습니다.</label>
+    <button id="generate" class="primary" disabled>3D 아바타 만들기</button>
+    <div class="row">
+      <button id="sample">기본 아바타</button>
+      <label class="btn">GLB 파일 열기<input type="file" id="openGlb" accept=".glb,.gltf,model/gltf-binary" hidden></label>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="dress" hidden>
+    <h2>의상 입히기</h2>
+    <p class="hint">아바타와 같은 뼈대(Mixamo 호환)로 리깅된 의상 GLB를 입힐 수 있어요.</p>
+    <div class="row">
+      <select id="slot" aria-label="의상 부위">
+        <option value="top">상의</option><option value="bottom">하의</option>
+        <option value="shoes">신발</option><option value="acc">액세서리</option>
+      </select>
+      <label class="btn">의상 GLB 입히기<input type="file" id="outfitGlb" accept=".glb,.gltf" hidden></label>
+      <button id="unequip">벗기기</button>
+    </div>
+    <div class="row">
+      <label class="color">색상 <input type="color" id="tint" value="#ffffff"></label>
+      <select id="tintTarget" aria-label="색을 바꿀 대상"><option value="slot">선택한 의상</option><option value="avatar">아바타 본체</option></select>
+    </div>
+    <ul id="worn" class="chips"></ul>
+  </section>
+
+  <section class="panel" data-panel="pose" hidden>
+    <h2>포즈 · 동작</h2>
+    <div id="clips" class="chips"></div>
+    <div class="row"><button id="stopClip">멈춤</button>
+      <label class="btn">동작 GLB 추가<input type="file" id="clipGlb" accept=".glb,.gltf" hidden></label></div>
+  </section>
+
+  <section class="panel" data-panel="shot" hidden>
+    <h2>360° 보기 · 촬영</h2>
+    <div class="row"><label class="check"><input type="checkbox" id="autoRotate"> 자동 회전</label>
+      <button id="capture" class="primary">턴테이블 촬영 (0°~180°)</button></div>
+    <div id="shots" class="shots"></div>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
