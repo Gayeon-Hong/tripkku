@@ -141,7 +141,12 @@ async function renderSaved() {
   $('#saved').replaceChildren(...list.map(c => {
     const load = el('button', {textContent: '불러오기'}), del = el('button', {textContent: '삭제'});
     load.onclick = () => restore(c.id).catch(fail);
-    del.onclick = async () => { if (confirm(`'${c.name}' 을(를) 이 기기에서 지울까요? 되돌릴 수 없어요.`)) { await deleteCharacter(c.id); renderSaved(); } };
+    // 확인창 대신 두 번 눌러 삭제 (임베드/아티팩트에서는 confirm() 이 막힘)
+    del.onclick = async () => {
+      if (del.dataset.armed) { await deleteCharacter(c.id); say(`'${c.name}' 삭제했어요.`); return renderSaved(); }
+      del.dataset.armed = '1'; del.textContent = '한 번 더 누르면 삭제';
+      setTimeout(() => { delete del.dataset.armed; del.textContent = '삭제'; }, 4000);
+    };
     return el('li', {}, el('img', {src: c.thumb, alt: ''}),
       el('div', {className: 'meta'}, el('b', {textContent: c.name}), el('span', {textContent: new Date(c.savedAt).toLocaleString()})), load, del);
   }));
