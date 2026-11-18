@@ -2,15 +2,27 @@
 
 DailyApps — 실사형 AI 3D 아바타 & 드레스업 웹앱. 빌드 없이 정적 파일로 동작합니다 (트립꾸와 같은 GitHub Pages).
 
-## P0 (지금 들어 있는 것)
+## 지금 들어 있는 것
 
 | 기능 | 위치 |
 | --- | --- |
-| GLB 아바타 보기 · 360° 회전/확대 · 자동 회전 | `avatar-engine/avatar-engine.js` |
-| 의상 GLB 입히기/벗기기 · 색 바꾸기 (뼈 이름으로 아바타 뼈대에 다시 묶음) | 〃 `equip / unequip / tint` |
-| 포즈·동작 재생, 동작 GLB 추가 | 〃 `play / loadClips` |
-| 0°·45°·90°·135°·180° 턴테이블 촬영 → PNG 저장 | 〃 `capture` |
+| GLB / glTF(.gltf + .bin + 텍스처 여러 파일) 불러오기 | `avatar-engine/avatar-engine.js` `loadAvatar` |
+| 360° 회전 · 핀치/휠 확대 · ＋/－ 버튼 · 자동 회전 | 〃 `zoom / setAutoRotate` |
+| 정면 · 측면 · 후면 카메라 전환 | 〃 `view` |
+| 호환성 검사: 리깅 여부, 표준 사람형 뼈대, 동작별 뼈 매칭, 텍스처·폴리곤 크기 경고 | 〃 `inspectModel / report` |
+| 리깅된 모델만 포즈·애니메이션 (뼈 이름 표기 차이 자동 맞춤, 안 맞는 동작은 비활성) | 〃 `play / loadClips` |
+| 의상 교체: 입히기 전 뼈 호환 검사, 안 되면 이유 표시, 바인드 포즈 다르면 경고 | 〃 `equip / unequip / tint` |
+| 0°·45°·90°·135°·180° 턴테이블 촬영 → PNG | 〃 `capture` |
+| 캐릭터 저장·다시 불러오기 (원본 파일+의상+색+동작, 이 기기 IndexedDB) | `store.js` |
 | 사진 3장 → Meshy 3D 생성 → 리깅 → 바로 불러오기 | `app.js` + `supabase/functions/mytwin-avatar` |
+
+리깅 없는 GLB 는 보기·회전·촬영만 되고, 의상·포즈 탭에 "지원 안 됨"과 이유가 표시됩니다.
+
+### 모바일 Safari
+
+- iOS 16.4+ (import map). 파일 선택창에 `accept` 를 걸지 않음 — iOS 는 .glb 를 몰라서 걸면 파일이 회색으로 막힘. 대신 앱에서 검사.
+- 4096px 넘는 텍스처·30만 삼각형 이상·150MB 이상 파일은 경고/거절 (iPhone 메모리 한계로 탭 종료 방지).
+- 저장은 기기 브라우저에만. Safari 는 홈 화면에 추가하지 않으면 7일 미사용 시 지울 수 있음 → 원본 파일 보관 안내 표시.
 
 ## 실행
 

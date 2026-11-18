@@ -4,7 +4,7 @@
 </head><body><pre id="out">running…</pre>
 <script type="module">
 import * as THREE from 'three';
-import {boneKey, rebindToSkeleton} from './avatar-engine.js';
+import {boneKey, rebindToSkeleton, retargetClipNames, inspectModel} from './avatar-engine.js';
 const results = [], ok = (cond, msg) => { results.push((cond ? 'PASS ' : 'FAIL ') + msg); if (!cond) window.failed = true; };
 
 ok(boneKey('mixamorig:LeftArm') === boneKey('mixamorigLeftArm') && boneKey('LeftArm') === 'leftarm', 'boneKey: Mixamo 접두어/구분자 무시');
@@ -28,6 +28,19 @@ const m2 = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial()); const extr
 m2.add(extra[0]); m2.bind(new THREE.Skeleton(extra));
 try { rebindToSkeleton(m2, avatarBones); } catch (e) { threw = e.message; }
 ok(threw.includes('Tail'), 'rebind: 없는 뼈 이름을 알려주며 실패');
+
+// 동작 트랙 이름: 'mixamorig:Spine.quaternion' → 아바타 실제 이름 'Spine.quaternion'
+const root = new THREE.Group(); root.add(avatarBones[0]);
+const clip = new THREE.AnimationClip('walk', 1, [
+  new THREE.QuaternionKeyframeTrack('mixamorig:Spine.quaternion', [0], [0, 0, 0, 1]),
+  new THREE.VectorKeyframeTrack('Tail.position', [0], [0, 0, 0])]);
+const r = retargetClipNames(clip, root);
+ok(r.matched === 1 && r.total === 2 && clip.tracks[0].name === 'Spine.quaternion', 'retarget: 표기 차이 맞춤, 없는 뼈는 세지 않음');
+
+// 검사: 리깅 없는 모델 / 리깅된 모델
+ok(!inspectModel(new THREE.Mesh(new THREE.BoxGeometry())).rigged, 'inspect: 일반 메시는 리깅 아님');
+const rigged = new THREE.Group(); rigged.add(mesh);
+ok(inspectModel(rigged).rigged && !inspectModel(rigged).humanoid, 'inspect: SkinnedMesh 는 리깅, 휴머노이드 뼈 부족 판별');
 
 document.getElementById('out').textContent = results.join('\n') + (window.failed ? '\n\nFAILED' : '\n\nALL PASSED');
 </script></body></html>
