@@ -21,7 +21,8 @@ for (const b of document.querySelectorAll('[data-tab]')) b.onclick = () => {
   for (const x of document.querySelectorAll('[data-tab]')) x.setAttribute('aria-selected', x === b);
   for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== b.dataset.tab;
 };
-for (const b of document.querySelectorAll('[data-view]')) if (b.tagName === 'BUTTON') b.onclick = () => stage.view(b.dataset.view);
+const viewButtons = [...document.querySelectorAll('button[data-view]')];
+for (const b of viewButtons) b.onclick = () => { stage.view(b.dataset.view); for (const x of viewButtons) x.setAttribute('aria-pressed', x === b); };
 for (const b of document.querySelectorAll('[data-zoom]')) b.onclick = () => stage.zoom(+b.dataset.zoom);
 
 const pickFiles = input => { const f = [...input.files]; input.value = ''; return f; };
@@ -45,12 +46,19 @@ function renderReport() {
   const r = stage.report; if (!r) return $('#report').replaceChildren();
   const okClips = r.clips.filter(c => c.ok).length;
   const badge = (yes, text) => el('li', {className: yes ? 'yes' : 'no', textContent: (yes ? '✓ ' : '✕ ') + text});
+  const row = (k, v) => [el('dt', {textContent: k}), el('dd', {textContent: v})];
   $('#report').replaceChildren(
-    el('ul', {}, badge(true, '360° 보기'),
-      badge(r.rigged, r.rigged ? `리깅 (뼈 ${r.bones}개)` : '리깅 없음'),
-      badge(r.rigged, '포즈·애니메이션' + (r.rigged ? ` (동작 ${okClips}개)` : '')),
-      badge(r.rigged, '의상 교체' + (r.rigged && !r.humanoid ? ' (비표준 뼈대)' : ''))),
-    el('p', {textContent: `메시 ${r.meshes}개 · 삼각형 ${r.triangles.toLocaleString()}개 · 최대 텍스처 ${r.maxTexture || '-'}px`}),
+    el('h3', {textContent: current.label}, el('small', {textContent: 'Avatar Result'})),
+    el('ul', {className: 'pills'}, badge(true, '360° 보기'),
+      badge(r.rigged, r.rigged ? '리깅' : '리깅 없음'),
+      badge(r.rigged && okClips > 0, '포즈·동작'),
+      badge(r.rigged, '의상 교체' + (r.rigged && !r.humanoid ? ' (전용 뼈대)' : ''))),
+    el('dl', {className: 'spec'},
+      ...row('포맷', 'GLB / glTF' + (r.rigged ? ' (리깅 포함)' : '')),
+      ...row('뼈대', r.rigged ? `뼈 ${r.bones}개 · ${r.humanoid ? '사람형 표준(Mixamo 호환)' : '전용 뼈대'}` : '없음'),
+      ...row('동작', r.rigged ? `${okClips}개 사용 가능` + (r.clips.length > okClips ? ` · ${r.clips.length - okClips}개 호환 안 됨` : '') : '지원 안 됨'),
+      ...row('모델', `메시 ${r.meshes}개 · 삼각형 ${r.triangles.toLocaleString()}개`),
+      ...row('텍스처', r.maxTexture ? `최대 ${r.maxTexture}px` : '없음 / 단색')),
     ...(!r.rigged ? [el('p', {textContent: '이 모델은 뼈대(리깅)가 없어 보기·회전·촬영만 돼요. 포즈·의상을 쓰려면 Mixamo 등에서 리깅한 GLB를 불러오세요.'})] : []),
     ...(r.rigged && !r.humanoid ? [el('p', {textContent: '사람형 표준 뼈대(Mixamo 호환)가 아니라서, 같은 뼈대로 만든 의상·동작만 맞아요.'})] : []),
     ...r.warnings.map(w => el('p', {textContent: '⚠ ' + w})));
@@ -70,7 +78,8 @@ $('#openModel').onchange = e => {
 };
 
 /* ---------- 의상 ---------- */
-const SLOT_LABEL = {top: '상의', bottom: '하의', shoes: '신발', acc: '액세서리'};
+const SLOT_LABEL = {top: '상의', bottom: '하의', shoes: '신발', acc: '소품'};
+const slotValue = () => $('input[name=slot]:checked').value;
 const renderWorn = () => $('#worn').replaceChildren(...stage.slots.map(s => el('li', {textContent: SLOT_LABEL[s] || s})));
 async function wear(slot, src, tint) {
   const r = await stage.equip(slot, src);
@@ -81,17 +90,17 @@ async function wear(slot, src, tint) {
 }
 $('#outfitFile').onchange = async e => {
   const files = pickFiles(e.target); if (!files.length) return;
-  const slot = $('#slot').value;
+  const slot = slotValue();
   try {
     checkSize(files); say('의상 호환성 검사 중…');
     const r = await wear(slot, files);
     say(`${SLOT_LABEL[slot]} 착용 ✓` + (r.warnings.length ? ' · ⚠ ' + r.warnings.join(' ') : ''));
   } catch (err) { fail(err); }
 };
-$('#unequip').onclick = () => { const s = $('#slot').value; stage.unequip(s); delete current.outfits[s]; renderWorn(); };
+$('#unequip').onclick = () => { const s = slotValue(); stage.unequip(s); delete current.outfits[s]; renderWorn(); };
 $('#tint').oninput = e => {
   if ($('#tintTarget').value === 'avatar') { stage.tint('avatar', e.target.value); current.avatarTint = e.target.value; }
-  else { const s = $('#slot').value; stage.tint(s, e.target.value); if (current.outfits[s]) current.outfits[s].tint = e.target.value; }
+  else { const s = slotValue(); stage.tint(s, e.target.value); if (current.outfits[s]) current.outfits[s].tint = e.target.value; }
 };
 
 /* ---------- 포즈 ---------- */
@@ -150,7 +159,7 @@ async function renderSaved() {
     return el('li', {}, el('img', {src: c.thumb, alt: ''}),
       el('div', {className: 'meta'}, el('b', {textContent: c.name}), el('span', {textContent: new Date(c.savedAt).toLocaleString()})), load, del);
   }));
-  if (!list.length) $('#saved').replaceChildren(el('li', {className: 'small', textContent: '아직 저장한 캐릭터가 없어요.'}));
+  if (!list.length) $('#saved').replaceChildren(el('li', {className: 'empty', textContent: '아직 저장한 캐릭터가 없어요. 캐릭터를 꾸민 뒤 "지금 모습 저장"을 눌러보세요.'}));
 }
 
 $('#save').onclick = async () => {
@@ -227,7 +236,14 @@ async function poll(kind, id, label) {
   }
   throw new Error(label + ' 시간이 너무 오래 걸려요. 잠시 뒤 다시 시도해 주세요.');
 }
+// 생성 서버(Supabase Edge Function)는 트립꾸 도메인에서만 열린다. 그 밖(미리보기 링크 등)에서는 안내만.
+const HOSTED = /(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
 $('#generate').onclick = async () => {
+  if (!HOSTED) {
+    $('#genNote').hidden = false;
+    $('#genNote').textContent = '이 미리보기 링크에서는 3D 생성 서버에 연결할 수 없어요. 정식 주소(트립꾸 /mytwin/)에서 만들거나, 사진 3장을 Claude 채팅으로 보내주시면 만들어서 불러올 수 있게 해드려요.';
+    return;
+  }
   $('#generate').disabled = true;
   try {
     const {data: {session}} = await (await supa()).auth.getSession();

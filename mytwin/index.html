@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MyTwin 3D</title>
-<meta name="description" content="나의 실사형 3D 캐릭터 불러오기 · 의상 · 포즈 · 촬영">
+<meta name="description" content="사진 3장으로 만드는 나의 실사형 3D 캐릭터 · 의상 · 포즈 · 촬영">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <link rel="stylesheet" href="style.css">
 <!-- import map: Safari 16.4+ -->
 <script type="importmap">{"imports":{
@@ -14,88 +16,113 @@
 }}</script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-make" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/><path d="M19 3v4M17 5h4"/></symbol>
+  <symbol id="i-dress" viewBox="0 0 24 24"><path d="M9 3l3 2 3-2 4 3-2 4-2-1v12H9V9l-2 1-2-4z"/></symbol>
+  <symbol id="i-pose" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="M8 11l4-3 3 2 3 1M12 8l-1 6 3 3 1 4M11 14l-3 3-3 1"/></symbol>
+  <symbol id="i-shot" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></symbol>
+  <symbol id="i-front" viewBox="0 0 40 72"><circle cx="20" cy="9" r="7"/><path d="M8 24q12-6 24 0l2 22h-5l-1-12v36h-6V48h-4v22h-6V34l-1 12H6z"/></symbol>
+  <symbol id="i-side" viewBox="0 0 40 72"><circle cx="21" cy="9" r="7"/><path d="M15 22q8-3 12 2l1 22h-4l-1-10v34h-7V48l-1 22h-0V30z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 40 72"><circle cx="20" cy="9" r="7.5"/><path d="M8 24q12-6 24 0l2 22h-5l-1-12v36h-6V48h-4v22h-6V34l-1 12H6z"/></symbol>
+</svg>
+
 <main class="app">
   <section class="viewer">
     <canvas id="stage" aria-label="3D 캐릭터. 드래그로 회전, 두 손가락으로 확대·축소"></canvas>
-    <header class="top"><b>MyTwin 3D</b><span class="beta">Beta</span></header>
-    <div class="views" role="group" aria-label="카메라">
-      <button data-view="front">정면</button><button data-view="side">측면</button><button data-view="back">후면</button>
-      <button data-zoom="0.8" aria-label="확대">＋</button><button data-zoom="1.25" aria-label="축소">－</button>
-    </div>
-    <p id="status" class="status" role="status" aria-live="polite">불러오는 중…</p>
-  </section>
-
-  <nav class="tabs" role="tablist">
-    <button role="tab" data-tab="load" aria-selected="true">캐릭터</button>
-    <button role="tab" data-tab="dress">의상</button>
-    <button role="tab" data-tab="pose">포즈</button>
-    <button role="tab" data-tab="shot">촬영</button>
-  </nav>
-
-  <section class="panel" data-panel="load">
-    <h2>내 3D 캐릭터 불러오기</h2>
-    <p class="hint">GLB 파일 하나, 또는 .gltf 와 .bin·텍스처 파일을 함께 골라주세요.</p>
-    <div class="row">
-      <label class="btn primary-btn">3D 파일 열기<input type="file" id="openModel" multiple hidden></label>
-      <button id="sample">기본 아바타</button>
-    </div>
-    <div id="report" class="report" aria-live="polite"></div>
-
-    <h2 class="gap">저장한 캐릭터</h2>
-    <div class="row">
-      <input id="saveName" placeholder="캐릭터 이름" maxlength="40" aria-label="저장할 캐릭터 이름">
-      <button id="save">현재 상태 저장</button>
-    </div>
-    <p class="hint small">이 기기 브라우저에만 저장돼요. iPhone Safari 는 홈 화면에 추가하지 않으면 7일간 안 열면 지워질 수 있으니 원본 파일도 보관하세요.</p>
-    <ul id="saved" class="saved"></ul>
-
-    <details class="gap">
-      <summary>사진 3장으로 새로 만들기 (Meshy AI)</summary>
-      <div class="photos">
-        <label class="photo"><input type="file" accept="image/*" data-view="정면"><span>정면</span></label>
-        <label class="photo"><input type="file" accept="image/*" data-view="측면"><span>측면</span></label>
-        <label class="photo"><input type="file" accept="image/*" data-view="후면"><span>후면</span></label>
+    <header class="top">
+      <div class="brand"><span class="wordmark">MyTwin<em>3D</em></span><span class="beta">Beta</span></div>
+      <p id="status" class="status" role="status" aria-live="polite">불러오는 중…</p>
+    </header>
+    <div class="dock">
+      <div class="seg" role="group" aria-label="카메라 방향">
+        <button data-view="front" aria-pressed="true">정면</button><button data-view="side">측면</button><button data-view="back">후면</button>
       </div>
-      <label class="check"><input type="checkbox" id="consent"> 본인 사진이며, 3D 생성을 위해 외부 AI(Meshy)로 전송하는 데 동의합니다. 사진은 저장하지 않습니다.</label>
-      <button id="generate" class="primary" disabled>3D 아바타 만들기</button>
-    </details>
-  </section>
-
-  <section class="panel" data-panel="dress" hidden>
-    <h2>의상 교체</h2>
-    <p id="dressNote" class="note" hidden></p>
-    <div id="dressTools">
-      <p class="hint">아바타와 같은 뼈대로 리깅된 의상 GLB만 맞아요. 입히기 전에 자동으로 검사해요.</p>
-      <div class="row">
-        <select id="slot" aria-label="의상 부위">
-          <option value="top">상의</option><option value="bottom">하의</option>
-          <option value="shoes">신발</option><option value="acc">액세서리</option>
-        </select>
-        <label class="btn">의상 파일 입히기<input type="file" id="outfitFile" multiple hidden></label>
-        <button id="unequip">벗기기</button>
+      <div class="seg" role="group" aria-label="확대">
+        <button data-zoom="0.8" aria-label="확대">＋</button><button data-zoom="1.25" aria-label="축소">－</button>
       </div>
     </div>
-    <div class="row">
-      <label class="color">색상 <input type="color" id="tint" value="#ffffff"></label>
-      <select id="tintTarget" aria-label="색을 바꿀 대상"><option value="slot">선택한 의상</option><option value="avatar">캐릭터 본체</option></select>
+  </section>
+
+  <aside class="sheet">
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="load" aria-selected="true"><svg><use href="#i-make"/></svg>만들기</button>
+      <button role="tab" data-tab="dress"><svg><use href="#i-dress"/></svg>옷장</button>
+      <button role="tab" data-tab="pose"><svg><use href="#i-pose"/></svg>포즈</button>
+      <button role="tab" data-tab="shot"><svg><use href="#i-shot"/></svg>촬영</button>
+      <button role="tab" data-tab="saved"><svg><use href="#i-box"/></svg>보관함</button>
+    </nav>
+
+    <div class="panels">
+      <section class="panel" data-panel="load">
+        <h2>사진 3장으로 나를 3D로</h2>
+        <p class="hint">밝은 곳에서 머리부터 발끝까지, 팔은 몸에서 살짝 떼고 찍어주세요.</p>
+        <div class="photos">
+          <label class="photo"><input type="file" accept="image/*" data-view="정면"><svg class="guide"><use href="#i-front"/></svg><span>정면</span></label>
+          <label class="photo"><input type="file" accept="image/*" data-view="측면"><svg class="guide"><use href="#i-side"/></svg><span>측면</span></label>
+          <label class="photo"><input type="file" accept="image/*" data-view="후면"><svg class="guide"><use href="#i-back"/></svg><span>후면</span></label>
+        </div>
+        <label class="check"><input type="checkbox" id="consent"> 본인 사진이며, 3D 생성을 위해 외부 AI(Meshy)로 보내는 데 동의해요. 사진은 저장하지 않아요.</label>
+        <button id="generate" class="primary" disabled>3D 아바타 만들기</button>
+        <p id="genNote" class="note" hidden></p>
+
+        <div class="or"><span>또는</span></div>
+        <label class="btn wide">이미 만든 3D 파일 열기 (GLB · glTF)<input type="file" id="openModel" multiple hidden></label>
+        <button id="sample" class="link">기본 아바타로 둘러보기</button>
+
+        <div id="report" class="report" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" data-panel="dress" hidden>
+        <h2>옷장</h2>
+        <p id="dressNote" class="note" hidden></p>
+        <div id="dressTools">
+          <p class="hint">캐릭터와 같은 뼈대로 리깅된 의상 GLB만 맞아요. 입히기 전에 자동으로 검사해요.</p>
+          <div class="slots" role="radiogroup" aria-label="의상 부위">
+            <label><input type="radio" name="slot" value="top" checked><span>상의</span></label>
+            <label><input type="radio" name="slot" value="bottom"><span>하의</span></label>
+            <label><input type="radio" name="slot" value="shoes"><span>신발</span></label>
+            <label><input type="radio" name="slot" value="acc"><span>소품</span></label>
+          </div>
+          <div class="row">
+            <label class="btn grow">의상 파일 입히기<input type="file" id="outfitFile" multiple hidden></label>
+            <button id="unequip">벗기기</button>
+          </div>
+        </div>
+        <div class="row tintrow">
+          <label class="color"><input type="color" id="tint" value="#ffffff"> 색상</label>
+          <select id="tintTarget" aria-label="색을 바꿀 대상"><option value="slot">선택한 의상</option><option value="avatar">캐릭터 본체</option></select>
+        </div>
+        <ul id="worn" class="chips"></ul>
+      </section>
+
+      <section class="panel" data-panel="pose" hidden>
+        <h2>포즈 · 동작</h2>
+        <p id="poseNote" class="note" hidden></p>
+        <div id="clips" class="chips"></div>
+        <div class="row" id="poseTools"><button id="stopClip">멈춤</button>
+          <label class="btn">동작 파일 추가<input type="file" id="clipFile" multiple hidden></label></div>
+      </section>
+
+      <section class="panel" data-panel="shot" hidden>
+        <h2>360° 촬영</h2>
+        <p class="hint">0° 45° 90° 135° 180° 다섯 장을 찍어요. 사진을 길게 눌러 저장하세요.</p>
+        <div class="row"><label class="toggle"><input type="checkbox" id="autoRotate"><span></span> 자동 회전</label>
+          <button id="capture" class="primary inline">턴테이블 촬영</button></div>
+        <div id="shots" class="shots"></div>
+      </section>
+
+      <section class="panel" data-panel="saved" hidden>
+        <h2>보관함</h2>
+        <div class="row">
+          <input id="saveName" placeholder="캐릭터 이름" maxlength="40" aria-label="저장할 캐릭터 이름">
+          <button id="save" class="dark">지금 모습 저장</button>
+        </div>
+        <ul id="saved" class="saved"></ul>
+        <p class="hint small">이 기기 브라우저에만 저장돼요. iPhone Safari 는 홈 화면에 추가하지 않으면 7일간 안 열 때 지워질 수 있어 원본 파일도 보관하세요.</p>
+      </section>
     </div>
-    <ul id="worn" class="chips"></ul>
-  </section>
-
-  <section class="panel" data-panel="pose" hidden>
-    <h2>포즈 · 동작</h2>
-    <p id="poseNote" class="note" hidden></p>
-    <div id="clips" class="chips"></div>
-    <div class="row" id="poseTools"><button id="stopClip">멈춤</button>
-      <label class="btn">동작 파일 추가<input type="file" id="clipFile" multiple hidden></label></div>
-  </section>
-
-  <section class="panel" data-panel="shot" hidden>
-    <h2>360° 보기 · 촬영</h2>
-    <div class="row"><label class="check inline"><input type="checkbox" id="autoRotate"> 자동 회전</label>
-      <button id="capture" class="primary">턴테이블 촬영 (0°~180°)</button></div>
-    <div id="shots" class="shots"></div>
-  </section>
+  </aside>
 </main>
 <script type="module" src="app.js"></script>
 </body>
