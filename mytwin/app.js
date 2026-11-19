@@ -1,5 +1,6 @@
 import {createAvatarStage} from './avatar-engine/avatar-engine.js';
 import {applyTwin, pickColors} from './avatar-engine/twin-maker.js';
+import {scanFace} from './avatar-engine/face-scan.js';
 import {pack, unpack, listCharacters, getCharacter, putCharacter, deleteCharacter, askPersist} from './store.js';
 
 // 닮은꼴 캐릭터의 바탕 마네킹 (Mixamo 뼈대, 동작 7개 포함)
@@ -69,11 +70,11 @@ function renderReport() {
 }
 
 /* ---------- 닮은꼴 만들기 (사진은 이 기기 안에서만) ---------- */
-let faceBlob = null;
+let faceBlob = null, faceScan = null;   // 사진 + 얼굴 점 (둘 다 이 기기에만)
 const form = $('#maker');
 function readTwin() {
   const f = new FormData(form), v = k => f.get(k);
-  return {skin: v('skin'), body: v('body'), height: +v('height'), face: faceBlob,
+  return {skin: v('skin'), body: v('body'), height: +v('height'), face: faceBlob, faceScan,
     hair: {style: v('hair'), color: v('hairColor')}, top: {style: v('top'), color: v('topColor')},
     bottom: {style: v('bottom'), color: v('bottomColor')}, shoes: {style: v('shoes'), color: v('shoesColor')}};
 }
@@ -81,7 +82,7 @@ function writeTwin(t) {
   const set = (k, val) => { const x = form.elements[k]; if (x && val != null) x.value = val; };
   set('skin', t.skin); set('body', t.body); set('height', t.height);
   for (const s of ['hair', 'top', 'bottom', 'shoes']) { set(s, t[s]?.style); set(s + 'Color', t[s]?.color); }
-  faceBlob = t.face || null; showFace();
+  faceBlob = t.face || null; faceScan = t.faceScan || null; showFace();
   $('#heightOut').textContent = t.height + 'cm';
 }
 function showFace() {
@@ -111,9 +112,12 @@ form.onsubmit = e => e.preventDefault();
 $('#facePhoto').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
-    faceBlob = await (await fetch(await shrink(f, 768))).blob();   // 줄이면서 EXIF(위치 등)도 지운다
-    showFace();
-    const c = await pickColors(faceBlob);
+    const blob = await (await fetch(await shrink(f, 1024))).blob();   // 줄이면서 EXIF(위치 등)도 지운다
+    say('얼굴 인식 중… (처음 한 번은 모델을 받느라 10~20초 걸려요)');
+    const scan = await scanFace(blob);
+    if (!scan) return say('⚠ 사진에서 얼굴을 찾지 못했어요. 얼굴이 크게, 정면으로 나온 사진을 넣어주세요.');
+    faceBlob = blob; faceScan = scan; showFace();
+    const c = await pickColors(faceBlob, faceScan);
     form.elements.skin.value = c.skin; form.elements.hairColor.value = c.hair;
     say('사진에서 피부·머리색을 골랐어요. 마음에 안 들면 직접 바꿔주세요.');
     rebuild();

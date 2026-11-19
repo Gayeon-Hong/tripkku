@@ -5,7 +5,7 @@
  *   await stage.loadAvatar(XBOT);           // 마네킹을 먼저 불러온다
  *   applyTwin(stage, params);                // 바꿀 때마다 다시 부르면 된다
  *   params = {skin:'#e8b9a0', body:'slim'|'normal'|'chubby', height:165,
- *             hair:{style:'short'|'bob'|'long'|'bun'|'none', color}, face: Blob|null,
+ *             hair:{style:'short'|'bob'|'long'|'bun'|'none', color}, face: Blob|null, faceScan: scanFace(face) 결과(face-scan.js),
  *             top:{style:'tee'|'long'|'none', color}, bottom:{style:'pants'|'shorts'|'none', color}, shoes:{style:'shoes'|'none', color}}
  *
  * 옷은 몸 메시에서 해당 부위 삼각형만 떼어 살짝 부풀린 SkinnedMesh 라 같은 뼈대로 포즈·동작을 그대로 따라간다.
@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import {boneKey} from './avatar-engine.js';
 
 export const DEFAULT_TWIN = {
-  skin: '#e9bfa5', body: 'normal', height: 165, face: null,
+  skin: '#e9bfa5', body: 'normal', height: 165, face: null, faceScan: null,
   hair: {style: 'short', color: '#2b211c'},
   top: {style: 'tee', color: '#f4f1ea'}, bottom: {style: 'pants', color: '#3b4a63'}, shoes: {style: 'shoes', color: '#ffffff'},
 };
@@ -104,32 +104,126 @@ function hairMesh(style, color) {
 }
 
 const faceCache = new WeakMap();
-/** 얼굴 사진 → 가운데 정사각형, 가장자리를 투명하게 흐린 텍스처. */
+/** 얼굴 사진 전체를 텍스처로 (UV 는 얼굴 점의 사진 좌표). */
 async function faceTexture(blob) {
   if (faceCache.has(blob)) return faceCache.get(blob);
   const bmp = await createImageBitmap(blob);
-  const n = 512, side = Math.min(bmp.width, bmp.height);
-  const c = Object.assign(document.createElement('canvas'), {width: n, height: n}), x = c.getContext('2d');
-  x.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, n, n); bmp.close?.();
-  x.globalCompositeOperation = 'destination-in';
-  const r = x.createRadialGradient(n / 2, n / 2, n * 0.3, n / 2, n / 2, n * 0.5);
-  r.addColorStop(0, '#000'); r.addColorStop(1, 'rgba(0,0,0,0)');
-  x.fillStyle = r; x.fillRect(0, 0, n, n);
+  const c = Object.assign(document.createElement('canvas'), {width: bmp.width, height: bmp.height});
+  c.getContext('2d').drawImage(bmp, 0, 0); bmp.close?.();
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   faceCache.set(blob, tex); return tex;
 }
 
-/** 사진에서 피부색(가운데)·머리색(위쪽 띠)을 대충 뽑는다. */
-export async function pickColors(blob) {
-  const bmp = await createImageBitmap(blob), n = 64, side = Math.min(bmp.width, bmp.height);
-  const c = Object.assign(document.createElement('canvas'), {width: n, height: n}), x = c.getContext('2d', {willReadFrequently: true});
-  x.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, n, n); bmp.close?.();
-  const avg = (x0, y0, w, h) => {
-    const d = x.getImageData(x0, y0, w, h).data, s = [0, 0, 0];
-    for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++) s[k] += d[i + k];
-    return '#' + s.map(v => Math.round(v / (d.length / 4)).toString(16).padStart(2, '0')).join('');
+/** 2D 들로네 삼각분할 (Bowyer–Watson, 점 수백 개용). 반환: 꼭짓점 인덱스 평면 배열. */
+export function delaunay(P) {
+  const n = P.length, xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+  const minX = Math.min(...xs), minY = Math.min(...ys), d = Math.max(Math.max(...xs) - minX, Math.max(...ys) - minY) * 20;
+  const V = [...P, [minX - d, minY - d], [minX + 2 * d, minY - d], [minX - d, minY + 2 * d]];
+  const circ = (a, b, c) => {
+    const [ax, ay] = V[a], [bx, by] = V[b], [cx, cy] = V[c], D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    const ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / D;
+    const uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / D;
+    return {v: [a, b, c], x: ux, y: uy, r: (ax - ux) ** 2 + (ay - uy) ** 2};
   };
-  return {skin: avg(n * 0.35, n * 0.45, n * 0.3, n * 0.2), hair: avg(n * 0.3, n * 0.02, n * 0.4, n * 0.08)};
+  let tris = [circ(n, n + 1, n + 2)];
+  for (let i = 0; i < n; i++) {
+    const [px, py] = V[i], edges = new Map(), keep = [];
+    for (const t of tris) {
+      if ((px - t.x) ** 2 + (py - t.y) ** 2 < t.r) {
+        for (const [a, b] of [[t.v[0], t.v[1]], [t.v[1], t.v[2]], [t.v[2], t.v[0]]]) {
+          const k = a < b ? a + ',' + b : b + ',' + a;
+          edges.has(k) ? edges.delete(k) : edges.set(k, [a, b]);   // 두 번 나오면 안쪽 변
+        }
+      } else keep.push(t);
+    }
+    for (const [a, b] of edges.values()) keep.push(circ(a, b, i));
+    tris = keep;
+  }
+  return tris.filter(t => t.v.every(v => v < n)).flatMap(t => t.v);
+}
+
+/** 3x3 연립방정식 (크래머). */
+const solve3 = (A, b) => {
+  const det = m => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  const D = det(A) || 1;
+  return [0, 1, 2].map(c => det(A.map((r, i) => r.map((v, j) => j === c ? b[i] : v))) / D);
+};
+
+/**
+ * 스캔한 얼굴 점들로 머리 앞면에 감기는 3D 얼굴 메시를 만든다(메시 원래 좌표).
+ * 얼굴 전체의 큰 곡률은 머리 타원체 곡률로 바꾸고, 코·눈두덩·입술 같은 세부 굴곡만 남겨 얹는다 → 옆에서 봐도 머리와 이어진다.
+ */
+export function faceGeometry(scan, center, half) {
+  const pts = scan.points.map(([x, y, z]) => [(x - 0.5) * scan.aspect, -(y - 0.5), -z * scan.aspect]);
+  const L = i => pts[i], cheekL = L(234), cheekR = L(454), top = L(10), chin = L(152);
+  const cx = (cheekL[0] + cheekR[0]) / 2, cy = (top[1] + chin[1]) / 2, w = Math.abs(cheekR[0] - cheekL[0]);
+  // 얼굴 전체 굴곡 z ≈ a + b·x² + c·y² 를 맞춘 뒤, 그 나머지(세부)만 쓴다
+  const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], B = [0, 0, 0];
+  for (const [x, y, z] of pts) {
+    const r = [1, (x - cx) ** 2, (y - cy) ** 2];
+    for (let i = 0; i < 3; i++) { B[i] += r[i] * z; for (let j = 0; j < 3; j++) A[i][j] += r[i] * r[j]; }
+  }
+  const [a, b, c] = solve3(A, B);
+  const k = (half.x * 2 * 0.86) / w;                       // 볼 너비 = 머리 너비의 86%
+  const pos = [], uv = [];
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y, z] = pts[i];
+    const dx = (x - cx) * k, dy = (y - cy) * k - half.y * 0.12;   // 얼굴은 머리 중심보다 살짝 아래
+    const s = 1 - (dx / half.x) ** 2 - (dy / half.y) ** 2;
+    const surf = half.z * 1.02 * Math.sqrt(Math.max(0, s));
+    const detail = (z - (a + b * (x - cx) ** 2 + c * (y - cy) ** 2)) * k;
+    pos.push(center.x + dx, center.y + dy, center.z + surf + Math.max(detail, -half.z * 0.08) + half.z * 0.015);
+    uv.push(scan.points[i][0], 1 - scan.points[i][1]);
+  }
+  // 삼각분할 후, 얼굴 밖으로 길게 걸친 가장자리 삼각형은 뺀다
+  let idx = delaunay(pts.map(p => [p[0], p[1]]));
+  const far = (p, q) => Math.hypot(pts[p][0] - pts[q][0], pts[p][1] - pts[q][1]) > w * 0.22;
+  const kept = [];
+  for (let t = 0; t < idx.length; t += 3) if (!far(idx[t], idx[t + 1]) && !far(idx[t + 1], idx[t + 2]) && !far(idx[t + 2], idx[t])) kept.push(idx[t], idx[t + 1], idx[t + 2]);
+  idx = kept;
+  // 가장자리(삼각형 하나에만 쓰인 변) 정점은 투명, 그 이웃은 반투명 → 피부와 자연스럽게 이어짐
+  const count = new Map(), add = (p, q) => { const key = p < q ? p + ',' + q : q + ',' + p; count.set(key, (count.get(key) || 0) + 1); };
+  for (let t = 0; t < idx.length; t += 3) { add(idx[t], idx[t + 1]); add(idx[t + 1], idx[t + 2]); add(idx[t + 2], idx[t]); }
+  const alpha = new Float32Array(pts.length).fill(1), edge = new Set();
+  for (const [key, n] of count) if (n === 1) for (const v of key.split(',')) edge.add(+v);
+  for (let t = 0; t < idx.length; t += 3) {
+    const tri = [idx[t], idx[t + 1], idx[t + 2]];
+    if (tri.some(v => edge.has(v))) for (const v of tri) alpha[v] = Math.min(alpha[v], 0.55);
+  }
+  for (const v of edge) alpha[v] = 0;
+  const color = new Float32Array(pts.length * 4);
+  for (let i = 0; i < pts.length; i++) color.set([1, 1, 1, alpha[i]], i * 4);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute('color', new THREE.BufferAttribute(color, 4));
+  // 모든 삼각형이 정면(+z)을 보도록 감기 방향(반시계) 통일
+  for (let t = 0; t < idx.length; t += 3) {
+    const [p, q, r] = [idx[t], idx[t + 1], idx[t + 2]].map(v => pts[v]);
+    if ((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]) < 0) [idx[t + 1], idx[t + 2]] = [idx[t + 2], idx[t + 1]];
+  }
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** 사진에서 피부색(양 볼)·머리색(이마 위)을 뽑는다. scan 이 있으면 얼굴 점 기준, 없으면 사진 가운데·위쪽. */
+export async function pickColors(blob, scan) {
+  const bmp = await createImageBitmap(blob), W = 160, H = Math.max(1, Math.round(W * bmp.height / bmp.width));
+  const c = Object.assign(document.createElement('canvas'), {width: W, height: H}), x = c.getContext('2d', {willReadFrequently: true});
+  x.drawImage(bmp, 0, 0, W, H); bmp.close?.();
+  const avg = (...boxes) => {   // 0~1 좌표 상자들 [x, y, w, h] 평균
+    const s = [0, 0, 0]; let n = 0;
+    for (const [bx, by, bw, bh] of boxes) {
+      const d = x.getImageData(Math.max(0, Math.round(bx * W)), Math.max(0, Math.round(by * H)), Math.max(1, Math.round(bw * W)), Math.max(1, Math.round(bh * H))).data;
+      for (let i = 0; i < d.length; i += 4) { for (let k = 0; k < 3; k++) s[k] += d[i + k]; n++; }
+    }
+    return '#' + s.map(v => Math.round(v / n).toString(16).padStart(2, '0')).join('');
+  };
+  if (!scan) return {skin: avg([0.4, 0.45, 0.2, 0.1]), hair: avg([0.35, 0.02, 0.3, 0.06])};
+  const P = i => scan.points[i], fw = Math.abs(P(454)[0] - P(234)[0]), fh = Math.abs(P(152)[1] - P(10)[1]);
+  const at = (i, dy = 0) => [P(i)[0] - fw * 0.05, P(i)[1] + dy - fh * 0.03, fw * 0.1, fh * 0.06];
+  return {skin: avg(at(205), at(425)), hair: avg(at(10, -fh * 0.12))};   // 205·425: 양 볼 가운데
 }
 
 export async function applyTwin(stage, params) {
@@ -168,9 +262,10 @@ export async function applyTwin(stage, params) {
     stage.attach(slot, obj, sk.bones[hi], false);
   };
   if (p.hair?.style && p.hair.style !== 'none') place('hair', hairMesh(p.hair.style, p.hair.color), 1.1);
-  if (p.face) {
-    const f = part(new THREE.SphereGeometry(1, 32, 16, Math.PI * 0.18, Math.PI * 0.64, Math.PI * 0.2, Math.PI * 0.55), '#ffffff',
-      {map: await faceTexture(p.face), transparent: true, roughness: 0.9, side: THREE.FrontSide});
-    place('face', f, 1.04);
+  if (p.face && p.faceScan) {
+    const f = new THREE.Mesh(faceGeometry(p.faceScan, center, size), new THREE.MeshStandardMaterial({
+      map: await faceTexture(p.face), vertexColors: true, transparent: true, roughness: 0.9}));
+    f.matrix.copy(toBone); f.matrix.decompose(f.position, f.quaternion, f.scale);   // 얼굴 좌표는 이미 메시 좌표
+    stage.attach('face', f, sk.bones[hi], false);
   }
 }
