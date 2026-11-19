@@ -51,15 +51,24 @@ button,input,select{font:inherit;color:inherit}
 .hint{margin:-6px 0 0;color:var(--muted);font-size:13.5px}
 .small{font-size:12px;margin:0}
 
-/* 사진 3장 */
-.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.photo{position:relative;aspect-ratio:3/4;max-width:100%;border-radius:var(--r);background:var(--bg) center/cover no-repeat;border:1.5px dashed var(--line);display:grid;place-items:center;overflow:hidden;cursor:pointer;transition:border-color .2s}
-.photo:hover{border-color:var(--muted)}
-.photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.photo .guide{width:38%;height:62%;fill:var(--line);stroke:none}
-.photo span{position:absolute;bottom:8px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--sheet);box-shadow:0 1px 4px rgb(0 0 0/.08)}
-.photo.filled{border-style:solid;border-color:transparent}
-.photo.filled .guide{display:none}
+/* 닮은꼴 만들기 */
+.maker{display:grid;grid-template-columns:120px 1fr;gap:10px 14px;align-items:start}
+.face{grid-row:span 7;position:relative;aspect-ratio:3/4;max-width:100%;border-radius:var(--r);background:var(--bg) center/cover no-repeat;border:1.5px dashed var(--line);display:grid;place-items:center;overflow:hidden;cursor:pointer}
+.face input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.face .guide{width:46%;height:46%;fill:none;stroke:var(--muted);stroke-width:1.4}
+.face span{position:absolute;bottom:8px;left:6px;right:6px;text-align:center;font-size:12px;font-weight:600;padding:4px 6px;border-radius:10px;background:var(--sheet);box-shadow:0 1px 4px rgb(0 0 0/.08)}
+.face small{display:block;font-weight:400;font-size:10.5px;color:var(--muted)}
+.face.filled{border-style:solid;border-color:transparent}
+.face.filled .guide,.face.filled small{display:none}
+.field{display:flex;align-items:center;gap:8px;min-width:0}
+.field>span{width:2.6em;flex:none;font-size:13px;color:var(--muted)}
+.field select{flex:1;min-width:0}
+.field input[type=color]{width:44px;height:44px;flex:none;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--sheet)}
+.field input[type=range]{flex:1;min-width:0;accent-color:var(--graphite)}
+.field output{font-size:13px;font-variant-numeric:tabular-nums;min-width:3.6em;text-align:right}
+.slots.three{grid-template-columns:repeat(3,1fr);flex:1}
+.slots label{position:relative}
+@media (max-width:380px){.maker{grid-template-columns:1fr}.face{grid-row:auto;max-width:150px;justify-self:center}}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted)}
 .check input{margin-top:3px;accent-color:var(--graphite)}
 

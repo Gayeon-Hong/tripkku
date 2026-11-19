@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MyTwin 3D</title>
-<meta name="description" content="사진 3장으로 만드는 나의 실사형 3D 캐릭터 · 의상 · 포즈 · 촬영">
+<meta name="description" content="내 사진으로 만드는 닮은 3D 캐릭터 · 의상 · 포즈 · 촬영 (사진은 기기 밖으로 안 나감)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <link rel="stylesheet" href="style.css">
@@ -22,9 +22,6 @@
   <symbol id="i-pose" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="M8 11l4-3 3 2 3 1M12 8l-1 6 3 3 1 4M11 14l-3 3-3 1"/></symbol>
   <symbol id="i-shot" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></symbol>
-  <symbol id="i-front" viewBox="0 0 40 72"><circle cx="20" cy="9" r="7"/><path d="M8 24q12-6 24 0l2 22h-5l-1-12v36h-6V48h-4v22h-6V34l-1 12H6z"/></symbol>
-  <symbol id="i-side" viewBox="0 0 40 72"><circle cx="21" cy="9" r="7"/><path d="M15 22q8-3 12 2l1 22h-4l-1-10v34h-7V48l-1 22h-0V30z"/></symbol>
-  <symbol id="i-back" viewBox="0 0 40 72"><circle cx="20" cy="9" r="7.5"/><path d="M8 24q12-6 24 0l2 22h-5l-1-12v36h-6V48h-4v22h-6V34l-1 12H6z"/></symbol>
 </svg>
 
 <main class="app">
@@ -55,20 +52,35 @@
 
     <div class="panels">
       <section class="panel" data-panel="load">
-        <h2>사진 3장으로 나를 3D로</h2>
-        <p class="hint">밝은 곳에서 머리부터 발끝까지, 팔은 몸에서 살짝 떼고 찍어주세요.</p>
-        <div class="photos">
-          <label class="photo"><input type="file" accept="image/*" data-view="정면"><svg class="guide"><use href="#i-front"/></svg><span>정면</span></label>
-          <label class="photo"><input type="file" accept="image/*" data-view="측면"><svg class="guide"><use href="#i-side"/></svg><span>측면</span></label>
-          <label class="photo"><input type="file" accept="image/*" data-view="후면"><svg class="guide"><use href="#i-back"/></svg><span>후면</span></label>
-        </div>
-        <label class="check"><input type="checkbox" id="consent"> 본인 사진이며, 3D 생성을 위해 외부 AI(Meshy)로 보내는 데 동의해요. 사진은 저장하지 않아요.</label>
-        <button id="generate" class="primary" disabled>3D 아바타 만들기</button>
-        <p id="genNote" class="note" hidden></p>
+        <h2>내 사진으로 닮은 캐릭터</h2>
+        <p class="hint">사진은 이 폰 안에서만 써요. 어디에도 보내지 않아요.</p>
+        <form id="maker" class="maker">
+          <label class="face"><input type="file" accept="image/*" id="facePhoto"><svg class="guide"><use href="#i-make"/></svg>
+            <span>얼굴 사진<small>정면 셀카, 얼굴이 가운데</small></span></label>
+          <div class="field"><span>피부</span><input type="color" name="skin" value="#e9bfa5" aria-label="피부색"></div>
+          <div class="field"><span>헤어</span>
+            <select name="hair" aria-label="헤어 스타일"><option value="short">숏컷</option><option value="bob">단발</option><option value="long">긴머리</option><option value="bun">묶음머리</option><option value="none">없음</option></select>
+            <input type="color" name="hairColor" value="#2b211c" aria-label="머리색"></div>
+          <div class="field"><span>체형</span>
+            <div class="slots three" role="radiogroup" aria-label="체형">
+              <label><input type="radio" name="body" value="slim"><span>마른</span></label>
+              <label><input type="radio" name="body" value="normal" checked><span>보통</span></label>
+              <label><input type="radio" name="body" value="chubby"><span>통통</span></label></div></div>
+          <div class="field"><span>키</span><input type="range" name="height" min="140" max="200" value="165" aria-label="키"><output id="heightOut">165cm</output></div>
+          <div class="field"><span>상의</span>
+            <select name="top" aria-label="상의"><option value="tee">반팔</option><option value="long">긴팔</option><option value="none">없음</option></select>
+            <input type="color" name="topColor" value="#f4f1ea" aria-label="상의 색"></div>
+          <div class="field"><span>하의</span>
+            <select name="bottom" aria-label="하의"><option value="pants">긴바지</option><option value="shorts">반바지</option><option value="none">없음</option></select>
+            <input type="color" name="bottomColor" value="#3b4a63" aria-label="하의 색"></div>
+          <div class="field"><span>신발</span>
+            <select name="shoes" aria-label="신발"><option value="shoes">운동화</option><option value="none">없음</option></select>
+            <input type="color" name="shoesColor" value="#ffffff" aria-label="신발 색"></div>
+        </form>
+        <p class="hint small">고를 때마다 바로 바뀌어요. 마음에 들면 보관함에서 저장하세요.</p>
 
         <div class="or"><span>또는</span></div>
         <label class="btn wide">이미 만든 3D 파일 열기 (GLB · glTF)<input type="file" id="openModel" multiple hidden></label>
-        <button id="sample" class="link">기본 아바타로 둘러보기</button>
 
         <div id="report" class="report" aria-live="polite"></div>
       </section>

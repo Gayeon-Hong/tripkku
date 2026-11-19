@@ -5,6 +5,7 @@
  *   const report = await stage.loadAvatar(src);   src: URL | File/Blob | File[] (.gltf + .bin + 텍스처 여러 개)
  *     report = {rigged, humanoid, bones, meshes, triangles, maxTexture, clips:[{name,matched,total,ok}], warnings:[]}
  *   await stage.equip('top', src)                 호환 검사 후 아바타 뼈대에 묶는다. 안 되면 AvatarError(code) throw
+ *   stage.attach('hair', obj, headBone, false)    코드로 만든 물체를 slot 에 (twin-maker.js 가 사용)
  *   stage.unequip('top'); stage.tint('top'|'avatar', '#ff6699');
  *   stage.play(name) / stop(); await stage.loadClips(src, name)   동작 (뼈 이름 표기 차이는 자동으로 맞춤)
  *   stage.view('front'|'side'|'back'); stage.zoom(0.8); stage.setAutoRotate(true)
@@ -235,6 +236,17 @@ export function createAvatarStage(canvas, {background = null, shadows = true, pi
       disposeTree(gltf.scene);             // 옷을 빼낸 나머지(원래 뼈대·빈 노드) 정리
       addClips(gltf.animations);
       return {meshes: skinned.length, warnings};
+    },
+
+    /** 코드로 만든 의상·소품을 slot 에 건다(검사 없음). keepWorld=false 면 object 위치가 이미 parent(예: 머리 뼈) 기준. */
+    attach(slot, object, parent = avatar, keepWorld = true) {
+      if (!avatar) throw new AvatarError('NO_AVATAR', '아바타를 먼저 불러오세요.');
+      stage.unequip(slot);
+      object.name = 'outfit:' + slot;
+      object.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+      keepWorld ? parent.attach(object) : parent.add(object);
+      outfits.set(slot, object);
+      return object;
     },
 
     unequip(slot) {

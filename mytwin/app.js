@@ -1,10 +1,9 @@
 import {createAvatarStage} from './avatar-engine/avatar-engine.js';
+import {applyTwin, pickColors} from './avatar-engine/twin-maker.js';
 import {pack, unpack, listCharacters, getCharacter, putCharacter, deleteCharacter, askPersist} from './store.js';
 
-// 트립꾸(next/)와 같은 공개 값 → 같은 도메인에서 로그인 세션을 그대로 쓴다. 비밀 키는 절대 여기 두지 않는다.
-const CONFIG = {url: 'https://aachvbbblwycutggzdpp.supabase.co', publishable: 'sb_publishable_VeMIoHqNqCTnxZSMCqLHVg_FLQTW6Pq'};
+// 닮은꼴 캐릭터의 바탕 마네킹 (Mixamo 뼈대, 동작 7개 포함)
 const SAMPLE = 'https://raw.githubusercontent.com/mrdoob/three.js/r170/examples/models/gltf/Xbot.glb';
-const FN = 'mytwin-avatar';
 const MAX_MB = 150;   // 모바일 Safari 는 메모리가 작아 큰 파일에서 탭이 종료된다
 
 const $ = s => document.querySelector(s);
@@ -69,7 +68,68 @@ function renderReport() {
   $('#dressTools').hidden = $('#poseTools').hidden = off;
 }
 
-$('#sample').onclick = () => showAvatar(SAMPLE, '기본 아바타').catch(fail);
+/* ---------- 닮은꼴 만들기 (사진은 이 기기 안에서만) ---------- */
+let faceBlob = null;
+const form = $('#maker');
+function readTwin() {
+  const f = new FormData(form), v = k => f.get(k);
+  return {skin: v('skin'), body: v('body'), height: +v('height'), face: faceBlob,
+    hair: {style: v('hair'), color: v('hairColor')}, top: {style: v('top'), color: v('topColor')},
+    bottom: {style: v('bottom'), color: v('bottomColor')}, shoes: {style: v('shoes'), color: v('shoesColor')}};
+}
+function writeTwin(t) {
+  const set = (k, val) => { const x = form.elements[k]; if (x && val != null) x.value = val; };
+  set('skin', t.skin); set('body', t.body); set('height', t.height);
+  for (const s of ['hair', 'top', 'bottom', 'shoes']) { set(s, t[s]?.style); set(s + 'Color', t[s]?.color); }
+  faceBlob = t.face || null; showFace();
+  $('#heightOut').textContent = t.height + 'cm';
+}
+function showFace() {
+  const box = $('.face');
+  if (box.dataset.url) URL.revokeObjectURL(box.dataset.url);
+  box.dataset.url = faceBlob ? URL.createObjectURL(faceBlob) : '';
+  box.style.backgroundImage = faceBlob ? `url(${box.dataset.url})` : '';
+  box.classList.toggle('filled', !!faceBlob);
+}
+let building = null, pending = false;
+async function rebuild() {
+  if (building) { pending = true; return; }     // 슬라이더를 빠르게 움직여도 한 번에 하나씩
+  building = (async () => {
+    if (!current.twin) await showAvatar(SAMPLE, '내 캐릭터');   // 다른 GLB 를 보고 있었다면 마네킹으로
+    const t = readTwin();
+    await applyTwin(stage, t);
+    current.twin = t; renderWorn();
+  })();
+  try { await building; say('내 캐릭터 · 드래그로 회전, 두 손가락으로 확대'); } catch (e) { fail(e); }
+  finally { building = null; if (pending) { pending = false; rebuild(); } }
+}
+form.oninput = e => {
+  if (e.target.name === 'height') $('#heightOut').textContent = e.target.value + 'cm';
+  if (e.target.id !== 'facePhoto') rebuild();
+};
+form.onsubmit = e => e.preventDefault();
+$('#facePhoto').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    faceBlob = await (await fetch(await shrink(f, 768))).blob();   // 줄이면서 EXIF(위치 등)도 지운다
+    showFace();
+    const c = await pickColors(faceBlob);
+    form.elements.skin.value = c.skin; form.elements.hairColor.value = c.hair;
+    say('사진에서 피부·머리색을 골랐어요. 마음에 안 들면 직접 바꿔주세요.');
+    rebuild();
+  } catch (err) { fail(err); }
+};
+
+/** 긴 변 max px JPEG dataURL 로 줄인다. */
+async function shrink(file, max = 1024) {
+  if (!file.type.startsWith('image/')) throw new Error('사진 파일만 넣을 수 있어요.');
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = el('canvas', {width: Math.round(bmp.width * k), height: Math.round(bmp.height * k)});
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+  return c.toDataURL('image/jpeg', 0.88);
+}
+
 $('#openModel').onchange = e => {
   const files = pickFiles(e.target); if (!files.length) return;
   try { checkSize(files); } catch (err) { return fail(err); }
@@ -78,7 +138,7 @@ $('#openModel').onchange = e => {
 };
 
 /* ---------- 의상 ---------- */
-const SLOT_LABEL = {top: '상의', bottom: '하의', shoes: '신발', acc: '소품'};
+const SLOT_LABEL = {top: '상의', bottom: '하의', shoes: '신발', acc: '소품', hair: '헤어', face: '얼굴'};
 const slotValue = () => $('input[name=slot]:checked').value;
 const renderWorn = () => $('#worn').replaceChildren(...stage.slots.map(s => el('li', {textContent: SLOT_LABEL[s] || s})));
 async function wear(slot, src, tint) {
@@ -169,7 +229,7 @@ $('#save').onclick = async () => {
     const [thumb] = await stage.capture([0], {width: 160, height: 240});
     await putCharacter({
       id: crypto.randomUUID?.() || String(Date.now()), name, savedAt: Date.now(), thumb,
-      avatar: pack(current.avatar), avatarTint: current.avatarTint, clip: current.clip,
+      avatar: pack(current.avatar), avatarTint: current.avatarTint, clip: current.clip, twin: current.twin || null,
       outfits: Object.fromEntries(Object.entries(current.outfits).map(([s, o]) => [s, {src: pack(o.src), tint: o.tint}])),
       clipFiles: current.clipFiles.map(c => ({src: pack(c.files), name: c.name || null})),
     });
@@ -181,6 +241,7 @@ $('#save').onclick = async () => {
 async function restore(id) {
   const c = await getCharacter(id); if (!c) throw new Error('저장한 캐릭터를 찾을 수 없어요.');
   await showAvatar(unpack(c.avatar), c.name);
+  if (c.twin) { writeTwin(c.twin); await applyTwin(stage, c.twin); current.twin = c.twin; renderWorn(); }
   if (c.avatarTint) { stage.tint('avatar', c.avatarTint); current.avatarTint = c.avatarTint; }
   const problems = [];
   for (const cf of c.clipFiles || []) {
@@ -194,80 +255,6 @@ async function restore(id) {
   say(`'${c.name}' 불러왔어요.` + (problems.length ? ' ⚠ ' + problems.join(' / ') : ''));
 }
 
-/* ---------- 사진 3장 → 3D (서버: supabase/functions/mytwin-avatar) ---------- */
-let client;
-const supa = async () => client ||= (await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm'))
-  .createClient(CONFIG.url, CONFIG.publishable, {auth: {persistSession: true, autoRefreshToken: true}});
-const picked = new Map();
-const updateGenerate = () => { $('#generate').disabled = picked.size < 3 || !$('#consent').checked; };
-for (const input of document.querySelectorAll('.photo input')) input.onchange = async () => {
-  const f = input.files[0]; if (!f) return;
-  try {
-    const data = await shrink(f);
-    picked.set(input.dataset.view, data);
-    input.parentElement.style.backgroundImage = `url(${data})`;
-    input.parentElement.classList.add('filled');
-  } catch (e) { fail(e); }
-  updateGenerate();
-};
-$('#consent').onchange = updateGenerate;
-
-/** 긴 변 1024px JPEG 로 줄인다: 전송량(서버 한도 ~2MB)을 줄이고 EXIF(위치 등)도 지운다. */
-async function shrink(file, max = 1024) {
-  if (!file.type.startsWith('image/')) throw new Error('사진 파일만 올릴 수 있어요.');
-  const bmp = await createImageBitmap(file);
-  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const c = el('canvas', {width: Math.round(bmp.width * k), height: Math.round(bmp.height * k)});
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
-  return c.toDataURL('image/jpeg', 0.88);
-}
-async function call(body) {
-  const {data, error} = await (await supa()).functions.invoke(FN, {body});
-  if (error) { let msg = error.message; try { msg = (await error.context.json()).error || msg; } catch {} throw new Error(msg); }
-  return data;
-}
-const wait = ms => new Promise(r => setTimeout(r, ms));
-async function poll(kind, id, label) {
-  for (let i = 0; i < 240; i++) {               // 최대 약 20분
-    const s = await call({action: 'status', kind, id});
-    if (s.status === 'SUCCEEDED') return s;
-    if (s.status === 'FAILED' || s.status === 'CANCELED') throw new Error(`${label} 실패: ${s.error || s.status}`);
-    say(`${label} ${s.progress || 0}%…`); await wait(5000);
-  }
-  throw new Error(label + ' 시간이 너무 오래 걸려요. 잠시 뒤 다시 시도해 주세요.');
-}
-// 생성 서버(Supabase Edge Function)는 트립꾸 도메인에서만 열린다. 그 밖(미리보기 링크 등)에서는 안내만.
-const HOSTED = /(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
-$('#generate').onclick = async () => {
-  if (!HOSTED) {
-    $('#genNote').hidden = false;
-    $('#genNote').textContent = '이 미리보기 링크에서는 3D 생성 서버에 연결할 수 없어요. 정식 주소(트립꾸 /mytwin/)에서 만들거나, 사진 3장을 Claude 채팅으로 보내주시면 만들어서 불러올 수 있게 해드려요.';
-    return;
-  }
-  $('#generate').disabled = true;
-  try {
-    const {data: {session}} = await (await supa()).auth.getSession();
-    if (!session) throw new Error('트립꾸에 먼저 로그인해 주세요. (같은 브라우저에서 /next/ 로그인)');
-    say('사진 보내는 중…');
-    const created = await call({action: 'create', images: ['정면', '측면', '후면'].map(v => picked.get(v))});
-    await poll('multi', created.result, '3D 모델 만드는 중');
-    const rig = await call({action: 'rig', id: created.result, heightMeters: 1.7});
-    const done = await poll('rig', rig.result, '뼈대 심는 중');
-    const glb = new File([await call({action: 'download', url: done.glb})], 'mytwin.glb', {type: 'model/gltf-binary'});
-    await showAvatar([glb], '내 아바타');
-    for (const [name, url] of [['walking', done.walking], ['running', done.running]]) {
-      if (!url) continue;
-      try {
-        const f = [new File([await call({action: 'download', url})], name + '.glb', {type: 'model/gltf-binary'})];
-        await stage.loadClips(f, name); current.clipFiles.push({files: f, name});
-      } catch (e) { console.warn(name, e); }
-    }
-    renderClips();
-    say('내 아바타 완성! 저장 버튼으로 이 기기에 보관하세요.');
-  } catch (e) { fail(e); }
-  finally { updateGenerate(); }
-};
-
-/* ---------- 시작 ---------- */
+/* ---------- 시작: 기본 닮은꼴 캐릭터 ---------- */
 renderSaved();
-showAvatar(SAMPLE, '기본 아바타').catch(fail);
+rebuild();

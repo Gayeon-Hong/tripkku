@@ -14,7 +14,7 @@ DailyApps — 실사형 AI 3D 아바타 & 드레스업 웹앱. 빌드 없이 정
 | 의상 교체: 입히기 전 뼈 호환 검사, 안 되면 이유 표시, 바인드 포즈 다르면 경고 | 〃 `equip / unequip / tint` |
 | 0°·45°·90°·135°·180° 턴테이블 촬영 → PNG | 〃 `capture` |
 | 캐릭터 저장·다시 불러오기 (원본 파일+의상+색+동작, 이 기기 IndexedDB) | `store.js` |
-| 사진 3장 → Meshy 3D 생성 → 리깅 → 바로 불러오기 | `app.js` + `supabase/functions/mytwin-avatar` |
+| 닮은꼴 캐릭터: 얼굴 사진(기기 안에서만 사용)·피부·헤어·체형·키·기본 옷 → 뼈대가 있어 포즈·의상 그대로 | `avatar-engine/twin-maker.js` `applyTwin` |
 
 리깅 없는 GLB 는 보기·회전·촬영만 되고, 의상·포즈 탭에 "지원 안 됨"과 이유가 표시됩니다.
 
@@ -32,12 +32,7 @@ http://localhost:8765/mytwin/                 앱
 http://localhost:8765/mytwin/avatar-engine/test.html   엔진 자체 검사 (ALL PASSED 가 떠야 함)
 ```
 
-사진→3D 를 쓰려면 한 번만:
-1. Supabase Edge Function Secrets 에 `MESHY_API_KEY` 등록
-2. `supabase functions deploy mytwin-avatar`
-3. 같은 브라우저에서 트립꾸(`/next/`)에 로그인 (세션을 같이 씀)
-
-사진은 서버에 저장하지 않고, 브라우저에서 1024px JPEG 로 줄여(EXIF 제거) Meshy 로만 보냅니다.
+얼굴 사진은 브라우저 안에서 768px JPEG 로 줄여(EXIF 제거) 머리 앞면 텍스처로만 쓰고, 저장할 때도 이 기기 IndexedDB 에만 들어갑니다. 서버는 없습니다.
 
 ## 다른 앱(트립꾸·씽크칩)에서 쓰기
 
@@ -51,7 +46,10 @@ http://localhost:8765/mytwin/avatar-engine/test.html   엔진 자체 검사 (ALL
   import {createAvatarStage} from '../mytwin/avatar-engine/avatar-engine.js';
   const stage = createAvatarStage(document.querySelector('canvas'));
   await stage.loadAvatar('my-avatar.glb');
-  stage.play('walking');
+  stage.play('walk');
+  // 닮은꼴: 마네킹(Xbot)을 불러온 뒤
+  // import {applyTwin} from '../mytwin/avatar-engine/twin-maker.js';
+  // await applyTwin(stage, {skin: '#e9bfa5', hair: {style: 'bob', color: '#222'}, face: photoBlob});
 </script>
 ```
 
