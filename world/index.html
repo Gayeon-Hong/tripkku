@@ -40,7 +40,7 @@
 <div id="warp">
   <button data-z="dresden">🇩🇪 드레스덴</button>
   <button data-z="prague">🇨🇿 프라하</button>
-  <button data-z="brussels">🇧🇪 브뤼셀</button>
+  <button data-z="berlin">🇩🇪 베를린</button>
 </div>
 <div id="card"><b></b><p></p></div>
 <div id="stick"><i></i></div>
@@ -125,8 +125,8 @@ const ZONES = {
     text: '전쟁 때 무너졌다가 2005년에 원래 돌로 다시 지은 성당이에요. 겨울엔 슈트리첼마르크트(1434년부터 열린 크리스마스 마켓)에서 슈톨렌 먹기!' },
   prague: { ang: Math.PI / 6, name: '🇨🇿 프라하 · 틴 성당',
     text: '구시가지 광장의 뾰족한 쌍둥이 첨탑. 바로 옆 천문시계가 정각마다 움직여요. 광장 크리스마스 마켓에서 뜨르들로 꼭!' },
-  brussels: { ang: Math.PI * 5 / 6, name: '🇧🇪 브뤼셀 · 아토미움 & 그랑플라스',
-    text: '1958년 만국박람회 때 만든 철 원자 모형 아토미움, 그리고 금빛 길드하우스가 둘러싼 그랑플라스. 와플이랑 감자튀김 필수!' },
+  berlin: { ang: Math.PI * 5 / 6, name: '🇩🇪 베를린 · 브란덴부르크 문',
+    text: '1791년에 세운 문. 꼭대기엔 승리의 여신이 모는 네 마리 말 마차(크바드리가)! 뒤로 보이는 TV 타워는 368m. 겨울엔 크리스마스 마켓에서 커리부어스트와 글뤼바인.' },
 };
 const R = 42;
 for (const z of Object.values(ZONES)) z.pos = new THREE.Vector3(Math.cos(z.ang) * R, 0, Math.sin(z.ang) * R);
@@ -314,30 +314,37 @@ function tyn() {
   return g;
 }
 
-// ---------- 브뤼셀: 아토미움 + 길드하우스 ----------
-function brussels() {
-  const g = new THREE.Group(), steel = M(0xd8dde6, { metalness: .9, roughness: .22 });
-  const a = new THREE.Group(); a.position.y = 13; a.rotation.set(Math.atan(1 / Math.SQRT2), 0, Math.PI / 4); g.add(a);
-  const pts = [[0, 0, 0]];
-  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) pts.push([x, y, z]);
-  const s = 5.2, V = pts.map(p => new THREE.Vector3(...p).multiplyScalar(s));
-  V.forEach((v, i) => { mesh(new THREE.SphereGeometry(1.5, 28, 20), steel, v.x, v.y, v.z, a);
-    if (i) for (let k = 0; k < 2; k++) mesh(new THREE.SphereGeometry(.18, 8, 6), glow(0xbfe4ff), v.x + (k ? .9 : -.9), v.y + 1.1, v.z, a); });
-  const tube = (p, q) => { const m = mesh(new THREE.CylinderGeometry(.42, .42, p.distanceTo(q), 12), steel, 0, 0, 0, a);
-    m.position.copy(p).lerp(q, .5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), q.clone().sub(p).normalize()); };
-  for (let i = 1; i < 9; i++) { tube(V[0], V[i]); for (let j = i + 1; j < 9; j++) if (V[i].distanceTo(V[j]) === 2 * s) tube(V[i], V[j]); }
-  // 다리 3개
-  for (let k = 0; k < 3; k++) { const ang = k * 2.094; mesh(new THREE.CylinderGeometry(.35, .5, 8), steel, Math.cos(ang) * 3, 4, Math.sin(ang) * 3, g).rotation.set(Math.sin(ang) * .35, 0, -Math.cos(ang) * .35); }
-  // 길드하우스 줄 (뒤쪽)
-  const cols = [0x6b4a3a, 0xa8743e, 0x56475c, 0x7a5638, 0x4f5f6a];
-  cols.forEach((c, i) => {
-    const h = 9 + (i % 2) * 2, x = -10 + i * 5, hz = -11;
-    mesh(new THREE.BoxGeometry(4.6, h, 4), M(c), x, h / 2, hz, g);
-    for (let st = 0; st < 3; st++) mesh(new THREE.BoxGeometry(3.6 - st * 1.1, 1, 4), M(c), x, h + .5 + st, hz, g);
-    mesh(new THREE.BoxGeometry(4.7, .25, 4.1), M(0xe8c35a, { metalness: .8, roughness: .3, emissive: 0x6a4a00 }), x, h - .3, hz, g);
-    for (const wy of [3, 6]) for (const wx of [-1.1, 1.1]) mesh(new THREE.BoxGeometry(.9, 1.4, .1), glow(0xffb45c, .9), x + wx, wy, hz + 2.03, g);
-  });
-  g.userData.tick = d => { a.rotation.y += d * .08; };
+// ---------- 베를린: 브란덴부르크 문(가운데 통로로 지나갈 수 있음) + 뒤쪽 TV 타워 ----------
+function berlin() {
+  const g = new THREE.Group(), sand = M(0xe3d4b0), sand2 = M(0xcdbb92), copper = M(0x5f9e8a, { roughness: .5, metalness: .3 });
+  mesh(new THREE.BoxGeometry(19, .5, 6), sand2, 0, .25, 0, g); // 받침
+  for (const x of [-8, -5.2, -2.1, 2.1, 5.2, 8]) for (const z of [-2, 2]) { // 기둥 12개, 가운데 통로가 제일 넓다
+    mesh(new THREE.CylinderGeometry(.5, .58, 8, 16), sand, x, 4.5, z, g);
+    mesh(new THREE.BoxGeometry(1.3, .4, 1.3), sand2, x, .7, z, g); mesh(new THREE.BoxGeometry(1.3, .4, 1.3), sand2, x, 8.6, z, g);
+  }
+  for (const x of [-8, 8]) mesh(new THREE.BoxGeometry(1.1, 8, 4.6), sand, x, 4.5, 0, g); // 양끝 벽
+  mesh(new THREE.BoxGeometry(18.6, 2, 5.4), sand, 0, 9.8, 0, g); // 들보
+  mesh(new THREE.BoxGeometry(18.8, .35, 5.6), sand2, 0, 10.9, 0, g);
+  mesh(new THREE.BoxGeometry(9, 1.8, 4), sand, 0, 11.95, 0, g); // 위 계단 단
+  mesh(new THREE.BoxGeometry(6, .8, 3), sand2, 0, 13.2, 0, g);
+  // 크바드리가: 네 마리 말 + 마차 + 여신
+  const q = new THREE.Group(); q.position.y = 13.6; g.add(q);
+  for (let i = 0; i < 4; i++) { const x = -1.8 + i * 1.2, h = new THREE.Group(); h.position.set(x, 0, .9); q.add(h);
+    mesh(new THREE.BoxGeometry(.5, .7, 1.7), copper, 0, 1.1, 0, h); mesh(new THREE.BoxGeometry(.35, .9, .45), copper, 0, 1.7, .9, h).rotation.x = -.5;
+    for (const [lx, lz] of [[-.15, .6], [.15, .6], [-.15, -.6], [.15, -.6]]) mesh(new THREE.BoxGeometry(.14, .8, .14), copper, lx, .4, lz, h); }
+  mesh(new THREE.BoxGeometry(1.6, .9, 1.2), copper, 0, .9, -.9, q);
+  mesh(new THREE.ConeGeometry(.45, 1.6, 10), copper, 0, 2.1, -.9, q); mesh(new THREE.SphereGeometry(.28, 10, 8), copper, 0, 3.1, -.9, q);
+  mesh(new THREE.CylinderGeometry(.05, .05, 2.4, 6), copper, .5, 3, -.9, q); mesh(new THREE.TorusGeometry(.35, .05, 6, 16), copper, .5, 4.2, -.9, q);
+  for (const x of [-6.5, 0, 6.5]) { const l = new THREE.PointLight(0xffd59a, 5, 12); l.position.set(x, 3, 5); g.add(l); } // 아래에서 비추는 조명
+  // TV 타워 (문 뒤 멀리)
+  const tv = new THREE.Group(); tv.position.z = -26; g.add(tv);
+  const steel = M(0xd5d9e0, { metalness: .7, roughness: .3 });
+  mesh(new THREE.CylinderGeometry(.7, 1.5, 34, 16), M(0xe8e8ea), 0, 17, 0, tv);
+  mesh(new THREE.SphereGeometry(3.6, 28, 20), steel, 0, 34, 0, tv);
+  mesh(new THREE.TorusGeometry(3.55, .25, 8, 40), glow(0xffd27a, 1.4), 0, 34.6, 0, tv).rotation.x = Math.PI / 2; // 전망대 창 불빛
+  for (let i = 0; i < 6; i++) mesh(new THREE.CylinderGeometry(.35 - i * .04, .4 - i * .04, 2.2, 10), M(i % 2 ? 0xffffff : 0xd8323a), 0, 38.6 + i * 2.2, 0, tv);
+  const tip = mesh(new THREE.SphereGeometry(.35, 10, 8), glow(0xff4a4a, 3), 0, 51.8, 0, tv);
+  g.userData.tick = d => { tip.material.emissiveIntensity = 1.5 + Math.sin(performance.now() / 300) * 1.5; };
   return g;
 }
 
@@ -520,7 +527,7 @@ function striezelmarkt(c, out, side) {
 }
 
 // ---------- 랜드마크 배치 (Meshy GLB 있으면 교체) ----------
-const builders = { dresden: frauenkirche, prague: tyn, brussels };
+const builders = { dresden: frauenkirche, prague: tyn, berlin };
 const tickers = [];
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 for (const [key, z] of Object.entries(ZONES)) {
@@ -530,10 +537,7 @@ for (const [key, z] of Object.entries(ZONES)) {
   g.position.copy(z.pos).addScaledVector(out, key === 'dresden' ? 19 : 8);
   g.lookAt(0, 0, 0);
   if (g.userData.tick) tickers.push(g.userData.tick);
-  addCol(g.position.x, g.position.z, key === 'brussels' ? 6 : 9);
-  if (key === 'brussels') { // 길드하우스 충돌
-    const back = g.position.clone().addScaledVector(out, 11); addCol(back.x, back.z, 12);
-  }
+  addCol(g.position.x, g.position.z, 9);
   // models/<도시>.glb 가 있으면 절차 모델 대신 사용 (Meshy에서 만든 것)
   loader.load(`models/${key}.glb`, gl => {
     const m = gl.scene, box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3());
