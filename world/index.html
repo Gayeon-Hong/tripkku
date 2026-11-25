@@ -155,7 +155,7 @@ function groundAt(x, z) {
 function noWalk(x, z) {
   const [u, v] = toUV(x, z);
   if (u >= KB.ramp0 && u < KB.river0 && (v <= KB.vmin + .5 || v >= KB.vmax - .5) && v > KB.vmin - 1.5 && v < KB.vmax + 1.5) return true; // 계단 옆 벽
-  if (u >= KB.river0 && u < KB.river1) {
+  if (u >= KB.river0 && u < KB.river1 && u < KB.hill0) { // 언덕(hill0~)부터는 땅이라 탑 문을 나와서 걸을 수 있다
     if (!onDeck(u, v) || v <= KB.vmin + .5 || v >= KB.vmax - .5) return true;
     if (u >= KB.tw0 && u < KB.tw1 && Math.abs(v) > KB.gate) return true;
   }
@@ -202,6 +202,14 @@ function rebuildCollision() {
     if (noWalk((x + .5) * CELL, (z + .5) * CELL)) blocked.add(cellKey(x, z));
 }
 let colTimer = 0; const scheduleCollision = () => { clearTimeout(colTimer); colTimer = setTimeout(rebuildCollision, 150); };
+// 프라하 성 언덕: 성 모델 표면 높이(바위·마당)를 밟는다. 성 밖이면 null
+const castleRay = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0), RAY0 = new THREE.Vector3();
+function castleGround(x, z) {
+  if (!castleObj?.children.length) return null;
+  const [u, v] = toUV(x, z); if (u < 97 || u > 131 || v < -60 || v > -8) return null;
+  castleRay.set(RAY0.set(x, 80, z), DOWN); const h = castleRay.intersectObject(castleObj, true)[0]; return h ? h.point.y : null;
+}
+const surfaceAt = (x, z) => { const c = castleGround(x, z), g = groundAt(x, z); return c == null ? g : Math.max(c, g); };
 const PR = .45; // 캐릭터 반지름
 function isBlocked(x, z) {
   const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
@@ -592,6 +600,7 @@ for (const [key, z] of Object.entries(ZONES)) {
 }
 
 // ---------- 블타바 강 + 까를교 + 계단 + 언덕 + 천문시계 + 카누 ----------
+let castleObj = null; // 프라하 성 모델(밟고 올라갈 수 있음)
 const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.userData.noLift = KBG.userData.noCol = true; scene.add(KBG); // 안: x = u, z = v
 {
   // 강물: 물결 그림이 옆으로 천천히 흐른다
@@ -623,9 +632,9 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   const br = new THREE.Group(); br.userData.noLift = br.userData.noCol = true;
   br.position.copy(fromUV(KB.mid, 0, KB.w + .59 * KB.S)); br.rotation.y = Math.atan2(OUT.z, -OUT.x); br.scale.setScalar(KB.S); scene.add(br);
   loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
-  // 프라하 성(Meshy): 언덕 너머 큰 배경. 받침대는 잘라냈고 바위 언덕째 놓는다. 걸어서 가지는 못한다.
+  // 프라하 성(Meshy): 언덕 너머. 받침대는 잘라냈고 바위 언덕째 놓는다. 바위·마당을 밟고 걸어 올라갈 수 있다(castleGround).
   const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
-  castle.position.copy(fromUV(112, -34, KB.top - .6 + .5 * 26)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(26); scene.add(castle);
+  castle.position.copy(fromUV(112, -34, KB.top - .6 + .5 * 26)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(26); scene.add(castle); castleObj = castle;
   loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); castle.add(gl.scene); }, undefined, () => {});
   for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
@@ -684,9 +693,10 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
 const CARDS = { charles: { name: '🇨🇿 까를교 · 블타바 강', text: '1357년에 짓기 시작한 돌다리. 양쪽 난간에 조각상 30개! 성 요한 네포무크 상 아래 청동 부조를 만지면 프라하에 다시 온대요.' } };
 
 // 중앙 허브: 큰 트리 + 이정표
-const hubStar = xmasTree(0, 0, 1.6); tickers.push(d => hubStar.rotation.y += d);
+// 트리는 까를교 계단 입구를 막지 않게 프라하 반대쪽(드레스덴·베를린 길 사이)으로 비켜 둔다
+const HUB = fromUV(-8, 0), hubStar = xmasTree(HUB.x, HUB.z, 1.6); tickers.push(d => hubStar.rotation.y += d);
 {
-  const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(0, 6, 0); scene.add(pl);
+  const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(HUB.x, 6, HUB.z); scene.add(pl);
 }
 // 숲 (가장자리 눈 덮인 나무)
 for (let i = 0; i < 90; i++) {
@@ -1007,12 +1017,15 @@ function frame() {
     const P = me.root.position;
     if (mv.lengthSq() > .01) {
       mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+      const ox = P.x, oz = P.z;
       moveWithCollision(P, mv.x * d * 9, mv.z * d * 9);
+      // 성 언덕: 바위·지붕 위로 자유롭게 올라가되(장난감 월드), 언덕 끝 너머 허공으로는 못 나간다
+      if (toUV(P.x, P.z)[0] > 102 && castleGround(P.x, P.z) == null) { P.x = ox; P.z = oz; }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else walkT = 0;
-    { const [pu, pv] = toUV(P.x, P.z), lim = pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
-    P.y = groundAt(P.x, P.z);
+    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 160 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
     me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
     player.position.copy(P); net.send(false);
   }
@@ -1021,7 +1034,7 @@ function frame() {
     const c = o.char, dv = new THREE.Vector3(o.to.x - c.root.position.x, 0, o.to.z - c.root.position.z), dl = dv.length();
     if (dl > 6) c.root.position.set(o.to.x, 0, o.to.z); // 순간이동
     else if (dl > .05) { c.root.position.addScaledVector(dv, Math.min(1, d * 8)); c.walk += d * 12; } else c.walk = 0;
-    c.root.position.y = groundAt(c.root.position.x, c.root.position.z);
+    c.root.position.y = surfaceAt(c.root.position.x, c.root.position.z);
     c.body.rotation.y = THREE.MathUtils.lerp(c.body.rotation.y, o.to.ry, .2);
     c.body.position.y = Math.abs(Math.sin(c.walk)) * .22; c.body.rotation.z = Math.sin(c.walk) * .07;
   }
