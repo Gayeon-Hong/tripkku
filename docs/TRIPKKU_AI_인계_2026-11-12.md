@@ -177,3 +177,17 @@
 - 소품 키 `pragxmas`. "프라하 크리스마스 마켓", "틴 성당 크리스마스" 처럼 프라하·틴 성당 + 크리스마스/마켓/트리 글자가 있으면 나오고, 프라하 크리스마스 마켓 차례(CITY_XMAS)의 첫 번째 소품이다. 크리스마스 글자가 없는 "프라하 구시가지 광장"은 손으로 만든 `tyn`.
 - 코드: `journey3d.js` 의 `MODELS` 표에 키·파일·크기를 적으면 된다. 처음 쓸 때 한 번만 받고(캐시), 받는 동안·실패하면 `fallback` 소품을 보여준다. 디코더는 three 의 `meshopt_decoder.module.js` (토스판은 sync 스크립트가 npm three 경로로 바꿈).
 - 새 Meshy 모델 넣는 순서: `gltf-transform simplify`(삼각형 3~8만 개 목표) → 색이 없으면 꼭짓점 색(COLOR_0, 선형 색값) 입히기 → `quantize` → `meshopt` → `next/assets/models/` 에 넣고 `MODELS` 에 한 줄.
+
+## 2026-11-26 추가 — 겨울 여행 월드 `world/index.html` (Claude Code, 로컬 세션)
+- 인스타 릴스(three.js + Meshy GLB 메타버스)처럼 걸어다니는 3D 월드. 단일 HTML, three@0.160.0 CDN, 블룸·눈·별. 주소: https://gayeon-hong.github.io/tripkku/world/ (`?close` = 캐릭터 가까이 보기)
+- 사용자 이번 여행지 3곳 광장: 드레스덴(프라우엔 교회·슈트리첼마르크트) / 프라하(틴 성당·천문시계) / 브뤼셀(아토미움·그랑플라스). 중앙 허브 트리, 위쪽 버튼으로 순간이동.
+- `world/models/<dresden|prague|brussels|character>.glb` 가 있으면 손으로 만든 랜드마크 대신 자동 사용(높이 22로 맞춤). 현재: `prague.glb`(= next 의 prague_tyn_xmas.glb, 트리에 전구·별 코드로 추가), `dresden-market.glb`(사용자가 Meshy 앱으로 만든 색 없는 마켓 → 높이별 나무색 칠함, 35MB→0.6MB, 있으면 손으로 만든 마켓·전구 숨김, 충돌판정 없음).
+- 캐릭터: 가족 3명 코드 미니 캐릭터(`FAMILY` 배열, `chibi()`). 나=긴 갈색머리·커튼 앞머리·검정 숏패딩·숏치마·부츠 / 엄마·아빠=카키 롱패딩 커플+후드 퍼(에코백/백팩). 엄마·아빠는 따라 걷기.
+- **다음 할 일**: 사용자가 Meshy로 만든 가족 3D 캐릭터 GLB를 보낼 예정.
+  - 가족 캐릭터는 **관리자(사용자) 계정이 만든 여행에서만** 사용: `trip.owner_id` 가 `tripkku_beta_admins` 에 있을 때만(`next/app.js` `isBetaAdmin`, `window.__tripkku.ownerId()`). 다른 여행은 기본 캐릭터.
+  - 파일 공개 범위 미정: 화면에서만 숨길지(정적 파일이라 주소 알면 열람 가능) vs Supabase 비공개 Storage + 서명 URL. 사용자에게 확인 필요.
+  - 옷 갈아입히기: Meshy 모델은 옷·몸 한 덩어리 → 옷마다 별도 모델로 바꿔 끼우기(권장) / Meshy retexture(모양 그대로 색·무늬만) / 코드 색 변경. 걷는 동작은 Meshy 리깅·애니메이션 받아야 함.
+  - 엄마·아빠 캐릭터는 사용자가 직접 바꿔둔다고 함 → 덮어쓰지 말 것.
+- 작업 방식 주의: 사용자는 요청 범위만 정확히 고치길 원함(예: "앞머리만" → 앞머리만). 결과가 맘에 안 들면 전체 롤백 말고 해당 부분만 되돌리기.
+- 깃 푸시(로컬 PC): GCM 에 깃허브 계정 2개(Gayeon-Hong, GayoenHong) → 저장소에 `credential.https://github.com.username=Gayeon-Hong` 설정함. 여러 세션이 동시에 올리니 `git pull --rebase` 후 push.
+- Meshy CLI 로그인은 PC 에서 기기 코드가 계속 만료돼 실패. 사용자가 폰 Meshy 앱(무료 70크레딧)에서 만들어 GLB/zip 으로 보내주는 방식이 현실적.
