@@ -130,7 +130,7 @@ for (const z of Object.values(ZONES)) {
 function lamp(x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
   mesh(new THREE.CylinderGeometry(.08, .12, 3.4), M(0x2b2f45, { metalness: .6 }), 0, 1.7, 0, g);
-  mesh(new THREE.SphereGeometry(.32, 16, 12), glow(0xffd58a, 1), 0, 3.5, 0, g);
+  mesh(new THREE.SphereGeometry(.32, 16, 12), glow(0xffd58a, 1.6), 0, 3.5, 0, g);
   addCol(x, z, .4);
 }
 
@@ -358,22 +358,67 @@ for (let i = 0; i < 90; i++) {
   scene.add(im);
 }
 
-// ---------- 캐릭터 (눈사람 꾸꾸) ----------
+// ---------- 캐릭터: 우리 가족 3명 (같은 미니 스타일) ----------
+const SKIN = 0xf3cdb0;
+function chibi(o, parent) {
+  const g = new THREE.Group(); g.scale.setScalar(o.scale || 1); parent.add(g);
+  const skin = M(SKIN, { roughness: .7 }), top = M(o.top), pants = M(o.pants), hair = M(o.hair, { roughness: .55 });
+  for (const x of [-.18, .18]) { // 다리 + 신발
+    mesh(new THREE.CylinderGeometry(.13, .12, .55, 10), pants, x, .35, 0, g);
+    mesh(new THREE.SphereGeometry(.16, 12, 8), M(o.shoes || 0xf2f2f2), x, .08, .05, g).scale.set(1, .6, 1.4);
+  }
+  mesh(new THREE.CapsuleGeometry(.36, .45, 6, 16), top, 0, 1.0, 0, g).scale.set(1, 1, .8); // 몸통
+  for (const s of [-1, 1]) { // 팔 (반팔이면 아래쪽은 피부)
+    const arm = new THREE.Group(); arm.position.set(.42 * s, 1.25, 0); arm.rotation.z = .25 * s; g.add(arm);
+    mesh(new THREE.CapsuleGeometry(.1, .25, 4, 8), top, 0, -.17, 0, arm);
+    mesh(new THREE.CapsuleGeometry(.09, .22, 4, 8), o.shortSleeve ? skin : top, 0, -.45, 0, arm);
+    mesh(new THREE.SphereGeometry(.1, 8, 6), skin, 0, -.62, 0, arm);
+  }
+  if (o.turtleneck) mesh(new THREE.CylinderGeometry(.2, .24, .2, 14), top, 0, 1.52, 0, g);
+  const head = new THREE.Group(); head.position.y = 2.05; g.add(head);
+  mesh(new THREE.SphereGeometry(.62, 28, 20), skin, 0, 0, 0, head).scale.set(1, .95, .95);
+  for (const x of [-.22, .22]) { // 눈 + 반짝임 + 볼터치
+    mesh(new THREE.SphereGeometry(.085, 12, 10), M(0x2a1e1a, { roughness: .2 }), x, -.02, .55, head).scale.set(1, 1.2, .6);
+    mesh(new THREE.SphereGeometry(.028, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), x + .03, .03, .6, head);
+    mesh(new THREE.SphereGeometry(.09, 10, 8), M(0xff9fae, { transparent: true, opacity: .7 }), x * 1.6, -.17, .48, head).scale.set(1, .55, .4);
+  }
+  mesh(new THREE.TorusGeometry(.07, .018, 6, 12, Math.PI), M(o.lips || 0xb8504f), 0, -.2, .57, head).rotation.z = Math.PI; // 웃는 입
+  // 머리카락: 뒤통수 캡 + 앞머리 + 길이
+  mesh(new THREE.SphereGeometry(.67, 28, 20, Math.PI / 2 + .85, Math.PI * 2 - 1.7, 0, 1.9), hair, 0, .04, -.03, head); mesh(new THREE.SphereGeometry(.67, 28, 12, 0, 6.29, 0, .95), hair, 0, .04, -.03, head);
+  const bang = (x, w, len, tilt) => { const b = mesh(new THREE.CapsuleGeometry(w, len, 4, 8), hair, x, .4, .48, head); b.rotation.set(-.75, 0, tilt); b.scale.z = .4; };
+  if (o.bangs === 'curtain') { bang(-.26, .12, .2, .75); bang(.26, .12, .2, -.75); bang(0, .16, .02, 1.57); }
+  else if (o.bangs === 'full') for (const x of [-.3, -.1, .1, .3]) bang(x, .13, .06, x * -.6);
+  else if (o.bangs === 'side') { bang(-.15, .17, .25, 1.3); bang(.25, .14, .1, 1.1); }
+  if (o.hairLen === 'long') {
+    mesh(new THREE.CapsuleGeometry(.5, 1.1, 6, 16), hair, 0, -.75, -.32, head).scale.set(1.15, 1, .45);
+    for (const s of [-1, 1]) mesh(new THREE.CapsuleGeometry(.14, .9, 4, 10), hair, .5 * s, -.55, .12, head).rotation.z = -.12 * s;
+  } else if (o.hairLen === 'bob') {
+    mesh(new THREE.SphereGeometry(.7, 24, 16, Math.PI / 2 + .85, Math.PI * 2 - 1.7, 1.2, 1.1), hair, 0, -.05, -.05, head).scale.set(1, 1.1, 1);
+  }
+  if (o.necklace) { mesh(new THREE.TorusGeometry(.2, .012, 6, 24, Math.PI), M(0xdfe3ea, { metalness: 1, roughness: .2 }), 0, 1.45, .2, g).rotation.set(Math.PI, 0, 0);
+    mesh(new THREE.SphereGeometry(.04, 8, 6), M(0xdfe3ea, { metalness: 1, roughness: .2 }), 0, 1.25, .25, g); }
+  if (o.tote) { const bag = mesh(new THREE.BoxGeometry(.5, .55, .12), M(0xeee6d6), -.55, .75, .05, g); bag.rotation.z = .1;
+    mesh(new THREE.BoxGeometry(.05, .75, .05), M(0xeee6d6), -.45, 1.3, .05, g).rotation.z = -.25; }
+  if (o.backpack) { mesh(new THREE.CapsuleGeometry(.3, .35, 4, 12), M(0x24262c), 0, 1.05, -.42, g).scale.set(1.1, 1, .6);
+    for (const x of [-.22, .22]) mesh(new THREE.TorusGeometry(.33, .035, 6, 16, Math.PI), M(0x24262c), x, 1.05, -.05, g).rotation.set(0, Math.PI / 2, Math.PI / 2); }
+  return g;
+}
+const FAMILY = [
+  { name: '나', scale: .95, hair: 0x3b2a22, hairLen: 'long', bangs: 'curtain', top: 0x8b8e96, pants: 0x2b2b33, necklace: true, lips: 0xc9505a },
+  { name: '엄마', scale: .93, hair: 0x1c1919, hairLen: 'bob', bangs: 'full', top: 0x857a70, pants: 0x4c6286, turtleneck: true, shortSleeve: true, tote: true },
+  { name: '아빠', scale: 1.02, hair: 0x1c1919, hairLen: 'short', bangs: 'side', top: 0x1f2026, pants: 0x30343d, shoes: 0x2a2a2a, shortSleeve: true, backpack: true },
+];
 const player = new THREE.Group(); scene.add(player);
 const body = new THREE.Group(); player.add(body);
-{
-  const white = M(0xffffff, { roughness: .6 });
-  mesh(new THREE.SphereGeometry(.9, 24, 18), white, 0, .9, 0, body).scale.set(1, .9, 1);
-  mesh(new THREE.SphereGeometry(.7, 24, 18), white, 0, 2, 0, body);
-  mesh(new THREE.TorusGeometry(.55, .17, 10, 24), M(0xe0475f), 0, 1.55, 0, body).rotation.x = Math.PI / 2;
-  mesh(new THREE.BoxGeometry(.22, .5, .12), M(0xe0475f), .3, 1.3, .55, body);
-  for (const x of [-.24, .24]) mesh(new THREE.SphereGeometry(.08, 10, 8), M(0x222233), x, 2.1, .63, body);
-  for (const x of [-.4, .4]) mesh(new THREE.SphereGeometry(.12, 10, 8), M(0xffa6b8), x, 1.92, .55, body).scale.set(1, .6, .4);
-  mesh(new THREE.ConeGeometry(.09, .4, 8), M(0xff9a3c), 0, 1.98, .82, body).rotation.x = Math.PI / 2;
-  mesh(new THREE.SphereGeometry(.68, 20, 12, 0, 6.3, 0, 1.4), M(0x5a7bd8), 0, 2.15, 0, body); // 털모자
-  mesh(new THREE.SphereGeometry(.2, 12, 10), white, 0, 2.85, 0, body);
-}
+chibi(FAMILY[0], body);
+// 엄마·아빠는 뒤에서 따라와요
+const followers = FAMILY.slice(1).map((f, i) => {
+  const root = new THREE.Group(), b = new THREE.Group(); root.add(b); scene.add(root); chibi(f, b);
+  root.position.set(i ? 1.1 : -1.1, 0, 6.2); return { root, b, walk: 0 };
+});
 player.position.set(0, 0, 8);
+const CLOSE = new URLSearchParams(location.search).has("close"); // ?close = 가족 가까이 보기
+{ const fl = new THREE.PointLight(0xffe2c0, 9, 9); fl.position.set(0, 4, 3); player.add(fl); } // 가족 비추는 따뜻한 조명
 loader.load('models/character.glb', gl => {
   const m = gl.scene, s = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
   m.scale.setScalar(3 / s.y); m.traverse(o => o.isMesh && (o.castShadow = true));
@@ -408,7 +453,7 @@ const endPtr = e => {
 };
 addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
 document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
-  const z = ZONES[b.dataset.z]; player.position.copy(z.pos).multiplyScalar(.6); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3;
+  const z = ZONES[b.dataset.z]; player.position.copy(z.pos).multiplyScalar(.6); followers.forEach(f => f.root.position.copy(player.position).add(new THREE.Vector3(Math.random() - .5, 0, Math.random() - .5).multiplyScalar(3))); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3;
 });
 
 // ---------- 루프 ----------
@@ -434,8 +479,19 @@ function frame() {
     if (dist < min && dist > 0) { player.position.x = c.x + dx / dist * min; player.position.z = c.z + dz / dist * min; }
   }
   if (player.position.length() > 64) player.position.setLength(64);
+  // 따라오기: 내 뒤 양옆 자리로 걸어옴
+  followers.forEach((f, i) => {
+    const back = new THREE.Vector3(Math.sin(body.rotation.y), 0, Math.cos(body.rotation.y)).multiplyScalar(-1.8);
+    const side = new THREE.Vector3(Math.cos(body.rotation.y), 0, -Math.sin(body.rotation.y)).multiplyScalar(i ? 1.1 : -1.1);
+    const goal = player.position.clone().add(back).add(side), dv = goal.sub(f.root.position), dl = dv.length();
+    if (dl > .25) {
+      f.root.position.addScaledVector(dv.normalize(), Math.min(dl, d * Math.max(6, dl * 4)));
+      f.b.rotation.y = THREE.MathUtils.lerp(f.b.rotation.y, Math.atan2(dv.x, dv.z), .15); f.walk += d * 12;
+    } else { f.walk = 0; f.b.rotation.y = THREE.MathUtils.lerp(f.b.rotation.y, body.rotation.y, .08); }
+    f.b.position.y = Math.abs(Math.sin(f.walk)) * .2; f.b.rotation.z = Math.sin(f.walk) * .07;
+  });
   // 카메라
-  const dist = 13;
+  const dist = CLOSE ? 5.5 : 13;
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
   camera.lookAt(tmp.copy(player.position).setY(2.2));
