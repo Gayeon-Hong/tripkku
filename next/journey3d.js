@@ -803,7 +803,7 @@ function loadGlb(url){if(!modelCache.has(url))modelCache.set(url,(async()=>{
   return new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(new T(u.buffer,u.byteOffset,u.byteLength/b),stride/b),n,(a.byteOffset||0)/b,norm);};
  const NAME={POSITION:'position',NORMAL:'normal',COLOR_0:'color',TEXCOORD_0:'uv'};
  // 색 그림(baseColorTexture)이 파일 안에 들어 있으면 붙인다 — Meshy 캐릭터는 색이 그림으로 온다
- const tex=pr=>{const ti=json.materials?.[pr.material]?.pbrMetallicRoughness?.baseColorTexture?.index,im=json.images?.[json.textures?.[ti]?.source];if(im?.bufferView==null)return null;
+ const tex=pr=>{const ti=json.materials?.[pr.material]?.pbrMetallicRoughness?.baseColorTexture?.index,tx=json.textures?.[ti],im=json.images?.[tx?.source??tx?.extensions?.EXT_texture_webp?.source];if(im?.bufferView==null)return null;
   const t=new THREE.TextureLoader().load(URL.createObjectURL(new Blob([views[im.bufferView]],{type:im.mimeType||'image/png'})));t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;return t;};
  return json.scenes[json.scene||0].nodes.map(ni=>{const nd=json.nodes[ni],m=json.meshes[nd.mesh],pr=m.primitives[0],geo=new THREE.BufferGeometry();
   for(const [k,i] of Object.entries(pr.attributes))if(NAME[k])geo.setAttribute(NAME[k],attr(i));
