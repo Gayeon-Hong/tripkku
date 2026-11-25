@@ -612,6 +612,11 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   const br = new THREE.Group(); br.userData.noLift = br.userData.noCol = true;
   br.position.copy(fromUV(KB.mid, 0, KB.w + .59 * KB.S)); br.rotation.y = Math.atan2(OUT.z, -OUT.x); br.scale.setScalar(KB.S); scene.add(br);
   loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
+  // 프라하 성(Meshy): 언덕 너머 큰 배경. 받침대는 잘라냈고 바위 언덕째 놓는다. 걸어서 가지는 못한다.
+  const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
+  castle.position.copy(fromUV(112, -34, KB.top - .6 + .5 * 26)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(26); scene.add(castle);
+  loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); castle.add(gl.scene); }, undefined, () => {});
+  for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 카누: 강을 따라 천천히 오간다(다리 밑으로도)
   const canoe = (u, speed, hue) => {
     const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; scene.add(g);
