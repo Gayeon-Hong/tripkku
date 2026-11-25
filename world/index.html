@@ -22,6 +22,7 @@
   #warp button,#zoom button,#pick button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer;white-space:nowrap}
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
   #zoom button{width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
+  #touch{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#ffd27a;color:#3a2a10;box-shadow:0 4px 18px rgba(255,200,90,.6);cursor:pointer}
   #online{position:fixed;top:12px;right:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px;max-width:40vw;text-align:right;line-height:1.4}
   #pick{position:fixed;inset:0;background:rgba(8,12,40,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:5;text-align:center;padding:16px}
   #pick h2{margin:0;font-weight:400;font-size:clamp(20px,6vw,28px)}
@@ -45,6 +46,7 @@
 <div id="stick"><i></i></div>
 <div id="zoom"><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
 <div id="online"></div>
+<button id="touch" hidden>🙏 네포무크 상 만지기</button>
 <div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
 
 <script type="importmap">
@@ -128,6 +130,32 @@ const ZONES = {
 };
 const R = 42;
 for (const z of Object.values(ZONES)) z.pos = new THREE.Vector3(Math.cos(z.ang) * R, 0, Math.sin(z.ang) * R);
+// ---------- 프라하 가는 길: 중앙 → 계단 → 까를교(블타바 강 위) → 탑 문 → 언덕 → 틴 성당 광장 ----------
+// u = 프라하 쪽으로 간 거리, v = 옆 방향. 다리 모델(Meshy)은 받침대를 잘라내고 19배로 키워 탑 문을 캐릭터가 지나가게 했다.
+const OUT = new THREE.Vector3(Math.cos(ZONES.prague.ang), 0, Math.sin(ZONES.prague.ang)), SIDE = new THREE.Vector3(-OUT.z, 0, OUT.x);
+const KB = { S: 19, mid: 28.07, w: .06, deck: 4.15, vmin: -3.4, vmax: 3.0, ramp0: 3, ramp1: 11.5, river0: 10, river1: 46.2, tw0: 40.6, tw1: 44.6, gate: 1.2, hill0: 44.5, plat: 52, top: 7 };
+ZONES.prague.pos.copy(OUT).multiplyScalar(72); ZONES.prague.warp = OUT.clone().multiplyScalar(56);
+const toUV = (x, z) => [x * OUT.x + z * OUT.z, x * SIDE.x + z * SIDE.z];
+const fromUV = (u, v, y = 0) => new THREE.Vector3(OUT.x * u + SIDE.x * v, y, OUT.z * u + SIDE.z * v);
+const smooth = (a, b, t) => { t = Math.min(1, Math.max(0, (t - a) / (b - a))); return t * t * (3 - 2 * t); };
+const onDeck = (u, v) => v > KB.vmin && v < KB.vmax && u >= KB.ramp0 && u < KB.hill0;
+function groundAt(x, z) {
+  const [u, v] = toUV(x, z);
+  if (u >= KB.hill0) return (KB.deck + (KB.top - KB.deck) * smooth(KB.hill0 + 2, KB.plat, u)) * (1 - smooth(30, 40, Math.abs(v)));
+  if (onDeck(u, v)) return u < KB.ramp1 ? KB.deck * (u - KB.ramp0) / (KB.ramp1 - KB.ramp0) : KB.deck;
+  return 0;
+}
+// 사람이 못 들어가는 곳: 강물, 계단·다리 옆, 탑 벽(가운데 문만 통과)
+function noWalk(x, z) {
+  const [u, v] = toUV(x, z);
+  if (u >= KB.ramp0 && u < KB.river0 && (v <= KB.vmin + .5 || v >= KB.vmax - .5) && v > KB.vmin - 1.5 && v < KB.vmax + 1.5) return true; // 계단 옆 벽
+  if (u >= KB.river0 && u < KB.river1) {
+    if (!onDeck(u, v) || v <= KB.vmin + .5 || v >= KB.vmax - .5) return true;
+    if (u >= KB.tw0 && u < KB.tw1 && Math.abs(v) > KB.gate) return true;
+  }
+  return false;
+}
+
 
 const colliders = []; // (예전 원형 충돌 — 지금은 아래 격자를 씀)
 const addCol = (x, z, r) => colliders.push({ x, z, r });
@@ -148,17 +176,24 @@ function rebuildCollision() {
         for (let i = 0; i < n; i += 3) {
           const i0 = idx ? idx.getX(i) : i, i1 = idx ? idx.getX(i + 1) : i + 1, i2 = idx ? idx.getX(i + 2) : i + 2;
           a.fromBufferAttribute(pos, i0).applyMatrix4(m); b.fromBufferAttribute(pos, i1).applyMatrix4(m); c.fromBufferAttribute(pos, i2).applyMatrix4(m);
-          if (Math.max(a.y, b.y, c.y) < BAND[0] || Math.min(a.y, b.y, c.y) > BAND[1]) continue;
+          const gy = groundAt((a.x + b.x + c.x) / 3, (a.z + b.z + c.z) / 3);
+          if (Math.max(a.y, b.y, c.y) < gy + BAND[0] || Math.min(a.y, b.y, c.y) > gy + BAND[1]) continue;
           markRect(Math.min(a.x, b.x, c.x), Math.min(a.z, b.z, c.z), Math.max(a.x, b.x, c.x), Math.max(a.z, b.z, c.z));
         }
       } else {
         box.setFromObject(o);
-        if (box.max.y >= BAND[0] && box.min.y <= BAND[1] && (box.max.x - box.min.x) * (box.max.z - box.min.z) < 900) markRect(box.min.x, box.min.z, box.max.x, box.max.z);
+        const gy = groundAt((box.min.x + box.max.x) / 2, (box.min.z + box.max.z) / 2);
+        if (box.max.y >= gy + BAND[0] && box.min.y <= gy + BAND[1] && (box.max.x - box.min.x) * (box.max.z - box.min.z) < 900) markRect(box.min.x, box.min.z, box.max.x, box.max.z);
       }
     }
     for (const k of o.children) walk(k);
   };
   walk(scene);
+  // 강물·계단 옆·탑 벽
+  const cs = [[KB.ramp0, -95], [KB.ramp0, 95], [KB.river1, -95], [KB.river1, 95]].map(([u, v]) => fromUV(u, v));
+  const x0 = Math.min(...cs.map(p => p.x)), x1 = Math.max(...cs.map(p => p.x)), z0 = Math.min(...cs.map(p => p.z)), z1 = Math.max(...cs.map(p => p.z));
+  for (let x = Math.floor(x0 / CELL); x <= Math.floor(x1 / CELL); x++) for (let z = Math.floor(z0 / CELL); z <= Math.floor(z1 / CELL); z++)
+    if (noWalk((x + .5) * CELL, (z + .5) * CELL)) blocked.add(cellKey(x, z));
 }
 let colTimer = 0; const scheduleCollision = () => { clearTimeout(colTimer); colTimer = setTimeout(rebuildCollision, 150); };
 const PR = .45; // 캐릭터 반지름
@@ -179,6 +214,7 @@ function moveWithCollision(p, dx, dz) {
 
 // 길 + 가로등
 for (const z of Object.values(ZONES)) {
+  if (z === ZONES.prague) { const plaza = mesh(new THREE.CircleGeometry(20, 48), M(0x9ba5c9, { roughness: 1 })); plaza.rotation.x = -Math.PI / 2; plaza.position.set(z.pos.x, .03, z.pos.z); plaza.castShadow = false; scene.add(plaza); continue; }
   const path = mesh(new THREE.PlaneGeometry(6, R - 8), M(0x8d97bd, { roughness: 1 }));
   path.rotation.x = -Math.PI / 2; path.rotation.z = -z.ang - Math.PI / 2;
   path.position.set(z.pos.x / 2, .02, z.pos.z / 2); path.castShadow = false; scene.add(path);
@@ -534,6 +570,78 @@ for (const [key, z] of Object.entries(ZONES)) {
   const pl = new THREE.PointLight(0xffb86b, 14, 24); pl.position.copy(z.pos).setY(5); scene.add(pl);
 }
 
+// ---------- 블타바 강 + 까를교 + 계단 + 언덕 + 천문시계 + 카누 ----------
+const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.userData.noLift = KBG.userData.noCol = true; scene.add(KBG); // 안: x = u, z = v
+{
+  // 강물: 물결 그림이 옆으로 천천히 흐른다
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  x.fillStyle = '#16325f'; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 140; i++) { x.strokeStyle = `rgba(${150 + Math.random() * 80},${180 + Math.random() * 60},255,${.08 + Math.random() * .18})`; x.lineWidth = 1 + Math.random() * 2; const y = Math.random() * 256, x0 = Math.random() * 256; x.beginPath(); x.moveTo(x0, y); x.quadraticCurveTo(x0 + 12, y - 3, x0 + 26 + Math.random() * 30, y); x.stroke(); }
+  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(6, 26); tex.colorSpace = THREE.SRGBColorSpace;
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(KB.river1 - KB.river0, 180), new THREE.MeshStandardMaterial({ map: tex, roughness: .12, metalness: .35, emissive: 0x0c1c40, emissiveIntensity: .6 }));
+  water.rotation.x = -Math.PI / 2; water.position.set((KB.river0 + KB.river1) / 2, KB.w, 0); water.receiveShadow = true; KBG.add(water);
+  tickers.push(d => { tex.offset.y -= d * .05; });
+  for (const u of [KB.river0, KB.river1]) mesh(new THREE.BoxGeometry(.8, .7, 180), M(0x7d7a86), u, .2, 0, KBG); // 강둑 돌벽
+  // 다리로 올라가는 돌계단 + 옆 난간
+  const stone = M(0x8f8a92, { roughness: .95 }), n = 12, len = KB.ramp1 - KB.ramp0, wv = KB.vmax - KB.vmin, vc = (KB.vmax + KB.vmin) / 2;
+  for (let i = 0; i < n; i++) { const h = KB.deck * (i + 1) / n; mesh(new THREE.BoxGeometry(len / n + .02, h, wv), stone, KB.ramp0 + len / n * (i + .5), h / 2, vc, KBG); }
+  for (const v of [KB.vmin - .3, KB.vmax + .3]) { const wall = mesh(new THREE.BoxGeometry(len, 1, .6), stone, KB.ramp0 + len / 2, KB.deck / 2 + .6, v, KBG); wall.rotation.z = Math.atan2(KB.deck, len); wall.scale.x = Math.hypot(len, KB.deck) / len; }
+  // 언덕: 다리 끝(탑 문)에서 틴 성당 광장까지 오르막. 가운데는 돌길.
+  const U0 = KB.hill0 - .1, UL = 58, VL = 90, geo = new THREE.PlaneGeometry(UL, VL, 70, 60); geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, col = [], cc = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) + U0 + UL / 2, v = pos.getZ(i), w = fromUV(u, v);
+    const y = u < KB.hill0 ? 0 : groundAt(w.x, w.z); pos.setY(i, y);
+    const path = Math.abs(v) < 3.2 && u < KB.plat + 6, steep = Math.abs(v) > 30;
+    cc.set(path ? 0x8d97bd : steep ? 0xb9c3dc : 0xdfe6f5); col.push(cc.r, cc.g, cc.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+  const hill = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 })); hill.position.x = U0 + UL / 2; hill.receiveShadow = true; KBG.add(hill);
+  for (const u of [48.5, 54, 60]) for (const v of [-4.6, 4.6]) { const w = fromUV(u, v); lamp(w.x, w.z); } // 언덕길 가로등 (아래 높이 맞추기에서 올라감)
+  // 까를교 (Meshy). 받침대는 잘라냈고 물 높이를 강물에 맞춘다.
+  const br = new THREE.Group(); br.userData.noLift = br.userData.noCol = true;
+  br.position.copy(fromUV(KB.mid, 0, KB.w + .59 * KB.S)); br.rotation.y = Math.atan2(OUT.z, -OUT.x); br.scale.setScalar(KB.S); scene.add(br);
+  loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
+  // 카누: 강을 따라 천천히 오간다(다리 밑으로도)
+  const canoe = (u, speed, hue) => {
+    const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; scene.add(g);
+    const hull = mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M(hue, { roughness: .6, side: THREE.DoubleSide }), 0, .32, 0, g); hull.scale.set(2.6, .45, .55);
+    mesh(new THREE.BoxGeometry(5, .08, 1.05), M(0x5a3a22), 0, .3, 0, g);
+    for (const [px, c] of [[-1, 0xd94b4b], [1, 0x3d5bb0]]) { // 노 젓는 사람
+      mesh(new THREE.CylinderGeometry(.22, .28, .6, 10), M(c), px, .6, 0, g); mesh(new THREE.SphereGeometry(.22, 12, 8), M(0xf3cdb0), px, 1.05, 0, g); mesh(new THREE.SphereGeometry(.23, 12, 8, 0, 6.3, 0, 1.4), M(0x222222), px, 1.1, 0, g);
+      const oar = mesh(new THREE.BoxGeometry(.08, .08, 2.2), M(0xc79a6b), px, .7, 0, g); oar.userData.oar = true;
+    }
+    const dir = Math.sign(speed), base = Math.atan2(-SIDE.z * dir, SIDE.x * dir); let v = (Math.random() - .5) * 160;
+    tickers.push(d => { v += speed * d; if (v > 85) v = -85; if (v < -85) v = 85; g.position.copy(fromUV(u, v, KB.w)); g.rotation.y = base; g.position.y += Math.sin(performance.now() / 600 + u) * .05;
+      g.children.forEach(o => { if (o.userData.oar) o.rotation.x = Math.sin(performance.now() / 300 + u) * .6; }); });
+  };
+  canoe(15, 3.2, 0xc8402f); canoe(21, -2.4, 0xe8c35a); canoe(31, 2.8, 0x2f6d4f); canoe(38, -3.6, 0xc8402f);
+  // 성 요한 네포무크 상 앞 청동 부조: 만지면 다시 프라하에 온대요
+  const plaque = new THREE.Group(); plaque.userData.noLift = plaque.userData.noCol = true; scene.add(plaque);
+  plaque.position.copy(fromUV(26.2, KB.vmax - .55, KB.deck + 1.05)); plaque.lookAt(fromUV(26.2, 0, KB.deck + 1.05));
+  mesh(new THREE.BoxGeometry(.9, .6, .06), new THREE.MeshStandardMaterial({ color: 0xe6bd45, metalness: .9, roughness: .25, emissive: 0x8a6510, emissiveIntensity: .5 }), 0, 0, 0, plaque);
+  for (let k = 0; k < 5; k++) mesh(new THREE.SphereGeometry(.05, 8, 6), glow(0xffe9a0, 3), -.3 + k * .15, .36, .05, plaque); // 별 다섯 개
+  const pl = new THREE.PointLight(0xffd98a, 6, 5); pl.position.set(0, .4, .6); plaque.add(pl);
+  window.__plaque = plaque;
+  // 천문시계 탑: 틴 성당 앞
+  const ot = new THREE.Group(); scene.add(ot); ot.position.copy(fromUV(75, 7.5)); ot.lookAt(fromUV(0, 7.5));
+  const gold = M(0xe0b84a, { metalness: .8, roughness: .3 }), roofM = M(0x2e3340, { roughness: .6 });
+  mesh(new THREE.BoxGeometry(4.4, 17, 4.4), M(0xcab89a), 0, 8.5, 0, ot);
+  mesh(new THREE.ConeGeometry(3.3, 4, 4), roofM, 0, 19, 0, ot).rotation.y = Math.PI / 4;
+  for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) mesh(new THREE.ConeGeometry(.35, 2.2, 6), roofM, dx, 18.4, dz, ot);
+  mesh(new THREE.SphereGeometry(.3, 12, 8), gold, 0, 21.2, 0, ot);
+  mesh(new THREE.CircleGeometry(1.5, 40), glow(0x3f7fe0, 1.3), 0, 9, 2.22, ot); // 천문 시계판
+  mesh(new THREE.RingGeometry(1.5, 1.8, 40), gold, 0, 9, 2.23, ot);
+  mesh(new THREE.RingGeometry(.7, .8, 40), gold, 0, 9, 2.24, ot);
+  mesh(new THREE.CircleGeometry(1.2, 40), glow(0xe6bd45, .9), 0, 5.4, 2.22, ot); // 아래 달력판
+  const sunH = mesh(new THREE.BoxGeometry(.12, 1.4, .05), glow(0xffe08a), 0, 9, 2.27, ot); sunH.geometry.translate(0, .6, 0);
+  const moonH = mesh(new THREE.BoxGeometry(.08, 1.1, .05), M(0xdfe3ea, { metalness: 1 }), 0, 9, 2.28, ot); moonH.geometry.translate(0, .45, 0);
+  for (const sx of [-1, 1]) { mesh(new THREE.BoxGeometry(.5, .9, .3), M(0xd8c7a8), 1.7 * sx, 11.4, 2.2, ot); mesh(new THREE.SphereGeometry(.2, 8, 6), M(0xffffff), 1.7 * sx, 12.05, 2.2, ot); } // 시계 옆 인형
+  tickers.push(d => { sunH.rotation.z -= d * .4; moonH.rotation.z -= d * .27; });
+  const ol = new THREE.PointLight(0x8fb4ff, 6, 10); ol.position.set(0, 9, 4); ot.add(ol);
+}
+const CARDS = { charles: { name: '🇨🇿 까를교 · 블타바 강', text: '1357년에 짓기 시작한 돌다리. 양쪽 난간에 조각상 30개! 성 요한 네포무크 상 아래 청동 부조를 만지면 프라하에 다시 온대요.' } };
+
 // 중앙 허브: 큰 트리 + 이정표
 const hubStar = xmasTree(0, 0, 1.6); tickers.push(d => hubStar.rotation.y += d);
 {
@@ -542,11 +650,15 @@ const hubStar = xmasTree(0, 0, 1.6); tickers.push(d => hubStar.rotation.y += d);
 // 숲 (가장자리 눈 덮인 나무)
 for (let i = 0; i < 90; i++) {
   const a = Math.random() * 6.28, r = 68 + Math.random() * 22, x = Math.cos(a) * r, z = Math.sin(a) * r, s = .8 + Math.random() * 1.2;
+  { const [u, v] = toUV(x, z); if (u > 6 && Math.abs(v) < 46) continue; }
   const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
   mesh(new THREE.ConeGeometry(2, 5, 8), M(0x1c4a3a), 0, 3, 0, g);
   mesh(new THREE.ConeGeometry(1.2, 1.6, 8), M(0xf4f7ff), 0, 5, 0, g);
 }
 
+// 언덕 위에 놓인 물건(광장·노점·트리·조명·가로등)을 땅 높이만큼 올린다
+for (const o of scene.children) { if (o.userData.noLift || o.isPoints) continue; const h = groundAt(o.position.x, o.position.z); if (h > 0) o.position.y += h; }
+for (const b of bulbData) b.p.y += groundAt(b.p.x, b.p.z);
 // 전구 InstancedMesh 생성
 {
   const im = bulbIM = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), bulbData.length);
@@ -696,6 +808,7 @@ const net = (() => {
       ch = sb.channel('tripkku-world:' + ROOM, { config: { broadcast: { self: false }, presence: { key: id } } });
       ch.on('broadcast', { event: 'p' }, ({ payload }) => upsert(payload));
       ch.on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.id));
+      ch.on('broadcast', { event: 'touch' }, () => window.__plaque && sparkle(window.__plaque.position));
       ch.on('presence', { event: 'leave' }, ({ key }) => drop(key));
       ch.subscribe(async st => { if (st === 'SUBSCRIBED') { ready = true; await ch.track({ who: me?.who }); send(true); } });
       addEventListener('pagehide', () => ch?.send({ type: 'broadcast', event: 'bye', payload: { id } }));
@@ -710,7 +823,7 @@ const net = (() => {
     last = key; lastAt = now; ch.send({ type: 'broadcast', event: 'p', payload: msg });
   }
   setInterval(() => { const now = performance.now(); for (const [k, o] of others) if (now - (o.seen || 0) > 12000) drop(k); }, 3000);
-  return { join, send };
+  return { join, send, touch: () => ready && ch.send({ type: 'broadcast', event: 'touch', payload: { id } }) };
 })();
 { const saved = params.get('who') || (() => { try { return localStorage.getItem('tk-world-who'); } catch { return null; } })();
   if (saved && WHO[saved] && params.get('who')) enter(saved); // 앱의 입장 버튼은 내 캐릭터를 정해서 보낸다
@@ -757,12 +870,15 @@ document.getElementById('zin').onclick = () => setDist(camDist / 1.4);
 document.getElementById('zout').onclick = () => setDist(camDist * 1.4);
 document.getElementById('zall').onclick = () => { if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
 document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
-  const z = ZONES[b.dataset.z]; (me ? me.root : player).position.copy(z.pos).multiplyScalar(.6); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); net.send(true);
+  const z = ZONES[b.dataset.z]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); net.send(true);
 });
 
 // ---------- 루프 ----------
 const card = document.getElementById('card'), cardB = card.querySelector('b'), cardP = card.querySelector('p');
-let shown = null, walkT = 0;
+let shown = null, walkT = 0, touchMsg = 0, reach = 0;
+const sparks = [], touchBtn = document.getElementById('touch');
+function sparkle(at) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.08), new THREE.MeshBasicMaterial({ color: [0xffe08a, 0xffffff, 0xffc35a][i % 3], transparent: true, toneMapped: false })); m.position.copy(at); scene.add(m); sparks.push({ m, life: 1.4, v: new THREE.Vector3((Math.random() - .5) * 2.4, 1 + Math.random() * 2, (Math.random() - .5) * 2.4) }); } }
+touchBtn.onclick = () => { if (!me) return; const pq = window.__plaque; me.body.rotation.y = Math.atan2(pq.position.x - me.root.position.x, pq.position.z - me.root.position.z); reach = 1.2; sparkle(pq.position); touchMsg = clock.elapsedTime + 4; net.touch(); };
 const clock = new THREE.Clock(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3();
 function frame() {
   const d = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
@@ -778,7 +894,8 @@ function frame() {
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else walkT = 0;
-    if (P.length() > 64) P.setLength(64);
+    { const [pu, pv] = toUV(P.x, P.z), lim = pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    P.y = groundAt(P.x, P.z);
     me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
     player.position.copy(P); net.send(false);
   }
@@ -787,6 +904,7 @@ function frame() {
     const c = o.char, dv = new THREE.Vector3(o.to.x - c.root.position.x, 0, o.to.z - c.root.position.z), dl = dv.length();
     if (dl > 6) c.root.position.set(o.to.x, 0, o.to.z); // 순간이동
     else if (dl > .05) { c.root.position.addScaledVector(dv, Math.min(1, d * 8)); c.walk += d * 12; } else c.walk = 0;
+    c.root.position.y = groundAt(c.root.position.x, c.root.position.z);
     c.body.rotation.y = THREE.MathUtils.lerp(c.body.rotation.y, o.to.ry, .2);
     c.body.position.y = Math.abs(Math.sin(c.walk)) * .22; c.body.rotation.z = Math.sin(c.walk) * .07;
   }
@@ -794,7 +912,7 @@ function frame() {
   const dist = camDist;
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
-  camera.lookAt(tmp.copy(player.position).setY(2.2));
+  camera.lookAt(tmp.copy(player.position).setY(player.position.y + 2.2));
   scene.fog.near = 45 + dist; scene.fog.far = 150 + dist * 2.2;
   moon.position.copy(player.position).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(player.position);
   // 눈
@@ -806,11 +924,19 @@ function frame() {
   tickers.forEach(f => f(d));
   // 근처 도시 카드
   let near = null;
-  for (const [k, z] of Object.entries(ZONES)) if (player.position.distanceTo(z.pos) < 20) near = k;
+  for (const [k, z] of Object.entries(ZONES)) if (Math.hypot(player.position.x - z.pos.x, player.position.z - z.pos.z) < 20) near = k;
+  { const [pu, pv] = toUV(player.position.x, player.position.z); if (onDeck(pu, pv) && pu > KB.ramp1) near = 'charles'; }
+  if (touchMsg && t < touchMsg) near = 'touched';
   if (near !== shown) {
     shown = near; card.classList.toggle('on', !!near);
-    if (near) { cardB.textContent = ZONES[near].name; cardP.textContent = ZONES[near].text; }
+    const info = near === 'touched' ? { name: '✨ 소원 빌었어요!', text: '네포무크 상을 만졌어요. 언젠가 프라하에 꼭 다시 오게 된대요.' } : ZONES[near] || CARDS[near];
+    if (info) { cardB.textContent = info.name; cardP.textContent = info.text; }
   }
+  // 네포무크 부조 가까이 가면 '만지기' 버튼
+  const pq = window.__plaque, canTouch = me && pq && Math.hypot(player.position.x - pq.position.x, player.position.z - pq.position.z) < 2.8;
+  touchBtn.hidden = !canTouch;
+  for (let i = sparks.length - 1; i >= 0; i--) { const sp = sparks[i]; sp.life -= d; sp.m.position.addScaledVector(sp.v, d); sp.v.y -= d * 1.5; sp.m.material.opacity = Math.max(0, sp.life); if (sp.life <= 0) { scene.remove(sp.m); sparks.splice(i, 1); } }
+  if (reach > 0 && me) { reach -= d; me.body.rotation.x = Math.sin(Math.min(1, (1.2 - reach) / 1.2) * Math.PI) * .35; } else if (me) me.body.rotation.x = 0;
   composer.render();
   requestAnimationFrame(frame);
 }
