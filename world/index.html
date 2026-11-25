@@ -8,23 +8,34 @@
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#0b1230;font-family:'Jua',system-ui,sans-serif;touch-action:none;user-select:none}
   canvas{display:block}
-  #title{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:22px;text-shadow:0 2px 0 #24306b,0 0 12px #8fb4ff;white-space:nowrap;pointer-events:none}
+  #title{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:clamp(15px,4.6vw,22px);text-shadow:0 2px 0 #24306b,0 0 12px #8fb4ff;white-space:nowrap;pointer-events:none;max-width:calc(100vw - 190px);overflow:hidden;text-overflow:ellipsis}
   #card{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;transition:.35s;background:rgba(255,255,255,.93);color:#2a2f55;border-radius:22px;padding:14px 18px;max-width:min(360px,calc(100vw - 32px));box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none}
   #card.on{opacity:1;transform:translate(-50%,0)}
   #card b{font-size:20px;display:block;margin-bottom:4px}
   #card p{margin:0;font-size:15px;line-height:1.45;font-family:system-ui,sans-serif}
-  #help{position:fixed;top:48px;left:50%;transform:translateX(-50%);color:#cfe0ff;font-size:13px;opacity:.85;pointer-events:none;white-space:nowrap}
+  #help{position:fixed;top:48px;left:50%;transform:translateX(-50%);color:#cfe0ff;font-size:13px;opacity:.85;pointer-events:none;text-align:center;width:max-content;max-width:calc(100vw - 24px);line-height:1.35}
+  #help .m{display:none}
+  #title .d{display:inline}
   #stick{position:fixed;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none}
   #stick i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.7)}
-  #warp{position:fixed;top:76px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
-  #warp button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer}
+  #warp{position:fixed;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:max-content;max-width:calc(100vw - 16px)}
+  #warp button,#zoom button,#pick button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer;white-space:nowrap}
+  #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+  #zoom button{width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
+  #online{position:fixed;top:12px;right:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px;max-width:40vw;text-align:right;line-height:1.4}
+  #pick{position:fixed;inset:0;background:rgba(8,12,40,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:5;text-align:center;padding:16px}
+  #pick h2{margin:0;font-weight:400;font-size:clamp(20px,6vw,28px)}
+  #pick div{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  #pick button{font-size:18px;padding:12px 18px}
+  #pick p{margin:0;font-size:13px;opacity:.8;font-family:system-ui,sans-serif}
+  @media (max-width:560px){#title .d{display:none}#online{top:104px;right:8px;font-size:12px}#help .d{display:none}#help .m{display:inline}#help{top:44px;font-size:12px}#warp{top:66px}#warp button{font-size:13px;padding:5px 8px}#back{font-size:13px;padding:5px 8px}#card{bottom:84px}}
   #back{position:fixed;top:12px;left:12px;color:#fff;text-decoration:none;font-size:15px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px}
 </style>
 </head>
 <body>
 <a id="back" href="../index.html">← 트립꾸</a>
-<div id="title">❄️ 트립꾸 겨울 여행 월드</div>
-<div id="help">PC: WASD/방향키 · 드래그로 시점 &nbsp;|&nbsp; 폰: 왼쪽 손가락 이동 · 오른쪽 시점</div>
+<div id="title">❄️ <span class="d">트립꾸 겨울 여행 </span>월드</div>
+<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 왼쪽 손가락 이동 · 오른쪽 시점 · 두 손가락 확대</span><span class="m">왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대</span></div>
 <div id="warp">
   <button data-z="dresden">🇩🇪 드레스덴</button>
   <button data-z="prague">🇨🇿 프라하</button>
@@ -32,6 +43,9 @@
 </div>
 <div id="card"><b></b><p></p></div>
 <div id="stick"><i></i></div>
+<div id="zoom"><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
+<div id="online"></div>
+<div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
 
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
@@ -44,6 +58,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm';
+import { CONFIG } from '../next/config.js';
 
 // ---------- 기본 세팅 ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -113,8 +129,53 @@ const ZONES = {
 const R = 42;
 for (const z of Object.values(ZONES)) z.pos = new THREE.Vector3(Math.cos(z.ang) * R, 0, Math.sin(z.ang) * R);
 
-const colliders = []; // {x,z,r}
+const colliders = []; // (예전 원형 충돌 — 지금은 아래 격자를 씀)
 const addCol = (x, z, r) => colliders.push({ x, z, r });
+// ---------- 충돌 격자: 실제 모양(상자·Meshy 삼각형)이 캐릭터 몸 높이(0.4~2.2)에 걸치는 칸을 막는다 ----------
+const CELL = .5, BAND = [.4, 2.2], blocked = new Set();
+const cellKey = (x, z) => x + ',' + z;
+function markRect(x0, z0, x1, z1) {
+  for (let x = Math.floor(x0 / CELL); x <= Math.floor(x1 / CELL); x++) for (let z = Math.floor(z0 / CELL); z <= Math.floor(z1 / CELL); z++) blocked.add(cellKey(x, z));
+}
+function rebuildCollision() {
+  blocked.clear(); scene.updateMatrixWorld(true);
+  const box = new THREE.Box3(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const walk = o => {
+    if (!o.visible || o.userData.noCol) return;
+    if (o.isMesh && !o.isInstancedMesh && o.geometry?.attributes?.position) {
+      if (o.userData.glb) { // Meshy 모델: 삼각형마다
+        const pos = o.geometry.attributes.position, idx = o.geometry.index, n = idx ? idx.count : pos.count, m = o.matrixWorld;
+        for (let i = 0; i < n; i += 3) {
+          const i0 = idx ? idx.getX(i) : i, i1 = idx ? idx.getX(i + 1) : i + 1, i2 = idx ? idx.getX(i + 2) : i + 2;
+          a.fromBufferAttribute(pos, i0).applyMatrix4(m); b.fromBufferAttribute(pos, i1).applyMatrix4(m); c.fromBufferAttribute(pos, i2).applyMatrix4(m);
+          if (Math.max(a.y, b.y, c.y) < BAND[0] || Math.min(a.y, b.y, c.y) > BAND[1]) continue;
+          markRect(Math.min(a.x, b.x, c.x), Math.min(a.z, b.z, c.z), Math.max(a.x, b.x, c.x), Math.max(a.z, b.z, c.z));
+        }
+      } else {
+        box.setFromObject(o);
+        if (box.max.y >= BAND[0] && box.min.y <= BAND[1] && (box.max.x - box.min.x) * (box.max.z - box.min.z) < 900) markRect(box.min.x, box.min.z, box.max.x, box.max.z);
+      }
+    }
+    for (const k of o.children) walk(k);
+  };
+  walk(scene);
+}
+let colTimer = 0; const scheduleCollision = () => { clearTimeout(colTimer); colTimer = setTimeout(rebuildCollision, 150); };
+const PR = .45; // 캐릭터 반지름
+function isBlocked(x, z) {
+  const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
+  for (let i = cx - 1; i <= cx + 1; i++) for (let j = cz - 1; j <= cz + 1; j++) {
+    if (!blocked.has(cellKey(i, j))) continue;
+    const nx = Math.max(i * CELL, Math.min(x, (i + 1) * CELL)), nz = Math.max(j * CELL, Math.min(z, (j + 1) * CELL));
+    if ((x - nx) ** 2 + (z - nz) ** 2 < PR * PR) return true;
+  }
+  return false;
+}
+// p 를 (dx,dz)만큼 옮긴다. 막히면 x·z 한 방향씩 미끄러지고, 처음부터 갇혀 있었으면 그냥 빠져나오게 둔다.
+function moveWithCollision(p, dx, dz) {
+  if (isBlocked(p.x, p.z) || !isBlocked(p.x + dx, p.z + dz)) { p.x += dx; p.z += dz; return; }
+  if (!isBlocked(p.x + dx, p.z)) p.x += dx; else if (!isBlocked(p.x, p.z + dz)) p.z += dz;
+}
 
 // 길 + 가로등
 for (const z of Object.values(ZONES)) {
@@ -353,7 +414,8 @@ function marketModel(c, out, side, n0, c0, b0, at) {
     });
     m.position.copy(at(0, -5)).setY(-minY);
     m.rotation.y = Math.atan2(out.x, out.z);
-    scene.add(m);
+    m.traverse(o => { if (o.isMesh) o.userData.glb = true; });
+    scene.add(m); scheduleCollision();
     const pl = new THREE.PointLight(0xffc27a, 16, 30); pl.position.copy(at(0, -5, 8)); scene.add(pl);
   }, undefined, () => {});
 }
@@ -413,7 +475,7 @@ function striezelmarkt(c, out, side) {
   tickers.push(d => { wheel.rotation.z += d * .15; cars.forEach(cr => cr.rotation.z = -wheel.rotation.z); });
   addCol(fw.position.x, fw.position.z, 3);
   // 노란 트램 (광장 뒤를 왔다갔다)
-  const tram = new THREE.Group(); scene.add(tram);
+  const tram = new THREE.Group(); tram.userData.noCol = true; scene.add(tram);
   mesh(new THREE.BoxGeometry(12, 2.6, 2.4), M(0xf2c230, { roughness: .5 }), 0, 1.6, 0, tram);
   mesh(new THREE.BoxGeometry(11.4, .9, 2.45), glow(0xfff0c8, 1.1), 0, 2, 0, tram);
   mesh(new THREE.BoxGeometry(12, .3, 2.4), M(0x333344), 0, .3, 0, tram);
@@ -441,8 +503,8 @@ for (const [key, z] of Object.entries(ZONES)) {
     const m = gl.scene, box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3());
     m.scale.setScalar(22 / size.y);
     const b2 = new THREE.Box3().setFromObject(m); m.position.y -= b2.min.y;
-    m.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
-    g.clear(); g.add(m); g.userData.tick && tickers.splice(tickers.indexOf(g.userData.tick), 1);
+    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.glb = true; } });
+    g.clear(); g.add(m); scheduleCollision(); g.userData.tick && tickers.splice(tickers.indexOf(g.userData.tick), 1);
     const tree = m.getObjectByName('tree');
     if (tree) { // 프라하 모델 트리는 색만 있어서 전구 + 별을 감아줌
       g.updateMatrixWorld(true);
@@ -567,37 +629,115 @@ const FAMILY = [
   { name: '엄마', scale: .93, hair: 0x1c1919, hairLen: 'bob', bangs: 'full', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x3a3f4a, shoes: 0xe8e2d6, tote: true },
   { name: '아빠', scale: 1.02, hair: 0x1c1919, hairLen: 'short', bangs: 'side', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x2e3138, shoes: 0x2a2a2a, backpack: true },
 ];
-const player = new THREE.Group(); scene.add(player);
-const body = new THREE.Group(); player.add(body);
-chibi(FAMILY[0], body);
-// 엄마·아빠는 뒤에서 따라와요
-const followers = FAMILY.slice(1).map((f, i) => {
-  const root = new THREE.Group(), b = new THREE.Group(); root.add(b); scene.add(root); chibi(f, b);
-  root.position.set(i ? 1.1 : -1.1, 0, 6.2); return { root, b, walk: 0 };
-});
+// ---------- 캐릭터: 각자 자기 캐릭터를 조종하고, 같은 월드(room)에 들어온 가족이 보인다 ----------
+const WHO = { me: { i: 0, label: '나' }, mom: { i: 1, label: '엄마' }, dad: { i: 2, label: '아빠' } };
+const params = new URLSearchParams(location.search);
+const ROOM = (params.get('room') || 'family').slice(0, 64);
+const glbCache = {};
+// 가족 3D 모델(next/assets/models/family_*.glb)을 받는 동안은 손으로 만든 미니 캐릭터를 보여준다
+function makeChar(who, label) {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData.noCol = true; scene.add(root);
+  chibi(FAMILY[WHO[who].i], body);
+  const url = `../next/assets/models/family_${who}.glb`;
+  (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => ok(gl.scene), undefined, no))).then(src => {
+    const m = src.clone(), sz = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
+    m.scale.setScalar(3 / sz.y); const bb = new THREE.Box3().setFromObject(m); m.position.y -= bb.min.y;
+    m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    body.clear(); body.add(m);
+  }).catch(() => {});
+  root.add(nameTag(label)); return { root, body, who, walk: 0 };
+}
+function nameTag(text) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 72; const x = c.getContext('2d');
+  x.font = '36px Jua, sans-serif'; const w = Math.min(244, x.measureText(text).width + 36);
+  x.fillStyle = 'rgba(20,28,74,.72)'; x.beginPath(); x.roundRect((256 - w) / 2, 8, w, 54, 27); x.fill();
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 128, 37);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
+  sp.scale.set(2.2, .62, 1); sp.position.y = 3.6; sp.renderOrder = 9; return sp;
+}
+let me = null; // 내 캐릭터
+const player = new THREE.Group(); // 입장 전에도 카메라가 볼 자리
 player.position.set(0, 0, 8);
-const CLOSE = new URLSearchParams(location.search).has("close"); // ?close = 가족 가까이 보기
-{ const fl = new THREE.PointLight(0xffe2c0, 16, 10); fl.position.set(0, 4, 3); player.add(fl); } // 가족 비추는 따뜻한 조명
-loader.load('models/character.glb', gl => {
-  const m = gl.scene, s = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
-  m.scale.setScalar(3 / s.y); m.traverse(o => o.isMesh && (o.castShadow = true));
-  body.clear(); body.add(m);
-}, undefined, () => {});
+const CLOSE = params.has("close"); // ?close = 가까이 보기
+const pick = document.getElementById('pick');
+function enter(who) {
+  try { localStorage.setItem('tk-world-who', who); } catch {}
+  pick.style.display = 'none';
+  if (me) scene.remove(me.root);
+  me = makeChar(who, who === 'me' ? '나' : WHO[who].label + ' (나)'); me.root.position.copy(player.position);
+  { const fl = new THREE.PointLight(0xffe2c0, 16, 10); fl.position.set(0, 4, 3); me.root.add(fl); } // 내 캐릭터 비추는 따뜻한 조명
+  net.join(who);
+}
+pick.querySelectorAll('button').forEach(b => b.onclick = () => enter(b.dataset.who));
+
+// ---------- 동시 접속 (Supabase Realtime 방송 채널, 저장은 안 함) ----------
+const others = new Map(); // id → {char, to:{x,z,ry}, seen}
+const onlineBox = document.getElementById('online');
+const net = (() => {
+  const id = (crypto.randomUUID?.() || String(Math.random()).slice(2)).slice(0, 12);
+  let ch = null, last = '', lastAt = 0, ready = false;
+  function showOnline() {
+    const names = [me && (me.who === 'me' ? '나' : WHO[me.who].label + '(나)'), ...[...others.values()].map(o => WHO[o.char.who].label)].filter(Boolean);
+    onlineBox.textContent = names.length ? '👥 ' + names.join(' · ') : '';
+  }
+  function upsert(p) {
+    if (!p || p.id === id || !WHO[p.who]) return;
+    let o = others.get(p.id);
+    if (o && o.char.who !== p.who) { scene.remove(o.char.root); o = null; }
+    if (!o) { const c = makeChar(p.who, WHO[p.who].label); c.root.position.set(p.x, 0, p.z); o = { char: c, to: { x: p.x, z: p.z, ry: p.ry } }; others.set(p.id, o); showOnline(); }
+    o.to = { x: p.x, z: p.z, ry: p.ry }; o.seen = performance.now();
+  }
+  function drop(pid) { const o = others.get(pid); if (o) { scene.remove(o.char.root); others.delete(pid); showOnline(); } }
+  function join(who) {
+    showOnline();
+    if (ch) { ch.track({ who }); return; }
+    try {
+      const sb = createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 20 } } });
+      ch = sb.channel('tripkku-world:' + ROOM, { config: { broadcast: { self: false }, presence: { key: id } } });
+      ch.on('broadcast', { event: 'p' }, ({ payload }) => upsert(payload));
+      ch.on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.id));
+      ch.on('presence', { event: 'leave' }, ({ key }) => drop(key));
+      ch.subscribe(async st => { if (st === 'SUBSCRIBED') { ready = true; await ch.track({ who: me?.who }); send(true); } });
+      addEventListener('pagehide', () => ch?.send({ type: 'broadcast', event: 'bye', payload: { id } }));
+    } catch (e) { console.warn('동시 접속 연결 실패', e); }
+  }
+  function send(force) {
+    if (!ready || !me) return;
+    const p = me.root.position, ry = me.body.rotation.y, now = performance.now();
+    const msg = { id, who: me.who, x: +p.x.toFixed(2), z: +p.z.toFixed(2), ry: +ry.toFixed(2) }, key = msg.x + ',' + msg.z + ',' + msg.ry + msg.who;
+    if (!force && key === last && now - lastAt < 2000) return; // 가만히 있으면 2초마다 한 번만
+    if (!force && now - lastAt < 90) return;
+    last = key; lastAt = now; ch.send({ type: 'broadcast', event: 'p', payload: msg });
+  }
+  setInterval(() => { const now = performance.now(); for (const [k, o] of others) if (now - (o.seen || 0) > 12000) drop(k); }, 3000);
+  return { join, send };
+})();
+{ const saved = params.get('who') || (() => { try { return localStorage.getItem('tk-world-who'); } catch { return null; } })();
+  if (saved && WHO[saved] && params.get('who')) enter(saved); // 앱의 입장 버튼은 내 캐릭터를 정해서 보낸다
+  else if (saved && WHO[saved]) pick.querySelector(`[data-who="${saved}"]`).style.outline = '3px solid #ffd27a'; }
 
 // ---------- 입력 ----------
 const keys = {};
 addEventListener('keydown', e => keys[e.code] = true);
 addEventListener('keyup', e => keys[e.code] = false);
-let camYaw = 0, camPitch = .42, joy = null, look = null;
+let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 5.5 : 14, pinch = null;
+const touches = new Map();
+const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 95);
 const stick = document.getElementById('stick'), knob = stick.firstElementChild;
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' && joy == null) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType !== 'mouse' && touches.size >= 2 && !joy) { // 두 손가락 = 확대/축소
+    const [p, q] = [...touches.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist }; look = null; return;
+  }
   if (e.pointerType !== 'mouse' && e.clientX < innerWidth / 2 && !joy) {
     joy = { id: e.pointerId, x: e.clientX, y: e.clientY };
     Object.assign(stick.style, { display: 'block', left: e.clientX - 55 + 'px', top: e.clientY - 55 + 'px' });
   } else look = { id: e.pointerId, x: e.clientX, y: e.clientY };
 });
 addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && touches.size >= 2) { const [p, q] = [...touches.values()]; setDist(pinch.dist * pinch.d / Math.max(20, Math.hypot(p.x - q.x, p.y - q.y))); return; }
   if (joy && e.pointerId === joy.id) {
     jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 45) jv.setLength(45);
     knob.style.transform = `translate(${jv.x}px,${jv.y}px)`;
@@ -607,12 +747,17 @@ addEventListener('pointermove', e => {
   }
 });
 const endPtr = e => {
+  touches.delete(e.pointerId); if (touches.size < 2) pinch = null;
   if (joy && e.pointerId === joy.id) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
   if (look && e.pointerId === look.id) look = null;
 };
 addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); setDist(camDist * Math.exp(e.deltaY * .0012)); }, { passive: false });
+document.getElementById('zin').onclick = () => setDist(camDist / 1.4);
+document.getElementById('zout').onclick = () => setDist(camDist * 1.4);
+document.getElementById('zall').onclick = () => { if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
 document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
-  const z = ZONES[b.dataset.z]; player.position.copy(z.pos).multiplyScalar(.6); followers.forEach(f => f.root.position.copy(player.position).add(new THREE.Vector3(Math.random() - .5, 0, Math.random() - .5).multiplyScalar(3))); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3;
+  const z = ZONES[b.dataset.z]; (me ? me.root : player).position.copy(z.pos).multiplyScalar(.6); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); net.send(true);
 });
 
 // ---------- 루프 ----------
@@ -621,39 +766,36 @@ let shown = null, walkT = 0;
 const clock = new THREE.Clock(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3();
 function frame() {
   const d = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
-  // 이동 입력 (카메라 기준)
+  // 이동 입력 (카메라 기준) — 내 캐릭터만
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jv.x / 45;
   let iz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + jv.y / 45;
   const mv = new THREE.Vector3(ix, 0, iz);
-  if (mv.lengthSq() > .01) {
-    mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
-    player.position.addScaledVector(mv, d * 9);
-    body.rotation.y = THREE.MathUtils.lerp(body.rotation.y, Math.atan2(mv.x, mv.z), .2);
-    walkT += d * 12;
+  if (me) {
+    const P = me.root.position;
+    if (mv.lengthSq() > .01) {
+      mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+      moveWithCollision(P, mv.x * d * 9, mv.z * d * 9);
+      me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
+      walkT += d * 12;
+    } else walkT = 0;
+    if (P.length() > 64) P.setLength(64);
+    me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
+    player.position.copy(P); net.send(false);
   }
-  body.position.y = Math.abs(Math.sin(walkT)) * .25; body.rotation.z = Math.sin(walkT) * .08;
-  // 충돌
-  for (const c of colliders) {
-    const dx = player.position.x - c.x, dz = player.position.z - c.z, dist = Math.hypot(dx, dz), min = c.r + .9;
-    if (dist < min && dist > 0) { player.position.x = c.x + dx / dist * min; player.position.z = c.z + dz / dist * min; }
+  // 다른 가족: 받은 위치로 부드럽게 걸어간다
+  for (const o of others.values()) {
+    const c = o.char, dv = new THREE.Vector3(o.to.x - c.root.position.x, 0, o.to.z - c.root.position.z), dl = dv.length();
+    if (dl > 6) c.root.position.set(o.to.x, 0, o.to.z); // 순간이동
+    else if (dl > .05) { c.root.position.addScaledVector(dv, Math.min(1, d * 8)); c.walk += d * 12; } else c.walk = 0;
+    c.body.rotation.y = THREE.MathUtils.lerp(c.body.rotation.y, o.to.ry, .2);
+    c.body.position.y = Math.abs(Math.sin(c.walk)) * .22; c.body.rotation.z = Math.sin(c.walk) * .07;
   }
-  if (player.position.length() > 64) player.position.setLength(64);
-  // 따라오기: 내 뒤 양옆 자리로 걸어옴
-  followers.forEach((f, i) => {
-    const back = new THREE.Vector3(Math.sin(body.rotation.y), 0, Math.cos(body.rotation.y)).multiplyScalar(-1.8);
-    const side = new THREE.Vector3(Math.cos(body.rotation.y), 0, -Math.sin(body.rotation.y)).multiplyScalar(i ? 1.1 : -1.1);
-    const goal = player.position.clone().add(back).add(side), dv = goal.sub(f.root.position), dl = dv.length();
-    if (dl > .25) {
-      f.root.position.addScaledVector(dv.normalize(), Math.min(dl, d * Math.max(6, dl * 4)));
-      f.b.rotation.y = THREE.MathUtils.lerp(f.b.rotation.y, Math.atan2(dv.x, dv.z), .15); f.walk += d * 12;
-    } else { f.walk = 0; f.b.rotation.y = THREE.MathUtils.lerp(f.b.rotation.y, body.rotation.y, .08); }
-    f.b.position.y = Math.abs(Math.sin(f.walk)) * .2; f.b.rotation.z = Math.sin(f.walk) * .07;
-  });
-  // 카메라
-  const dist = CLOSE ? 5.5 : 13;
+  // 카메라 (멀리 볼수록 위에서, 안개도 멀리)
+  const dist = camDist;
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
   camera.lookAt(tmp.copy(player.position).setY(2.2));
+  scene.fog.near = 45 + dist; scene.fog.far = 150 + dist * 2.2;
   moon.position.copy(player.position).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(player.position);
   // 눈
   for (let i = 0; i < SN; i++) {
@@ -672,6 +814,7 @@ function frame() {
   composer.render();
   requestAnimationFrame(frame);
 }
+rebuildCollision(); setTimeout(rebuildCollision, 1500);
 frame();
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();

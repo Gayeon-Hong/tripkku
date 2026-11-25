@@ -701,7 +701,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261126_glb1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261126_fam1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -990,6 +990,11 @@ function mountAvatar(){
   try{if(!s.preview)s.preview=(await load3d()).createPreview(canvas);refresh();}catch(e){console.error(e);api().toast?.('이 기기에서는 3D 미리보기를 열 수 없어요.');}
   cancelAnimationFrame(s.raf);s.raf=requestAnimationFrame(tick);};}
 
+// 겨울 월드 입장 버튼: 관리자 본인 여행이거나 가족 3D 캐릭터가 정해진 여행에서만(엄마·아빠도 참여자로 들어갈 수 있게). 토스판엔 월드가 없다.
+function worldLink(){if(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss')return;const a=api(),t=a.getTrip?.(),doc=a.activeDoc?.()||{},me=a.getMyId?.();let b=document.getElementById('worldBtn');
+ if(!b){const play=document.getElementById('journeyPlay');if(!play)return;b=el('a',{id:'worldBtn',class:'btn'},[document.createTextNode('❄️ 겨울 월드')]);play.after(b);}
+ const fam=Object.values(doc.avatars||{}).some(v=>v?.family),ok=!!t&&(fam||!!(a.isAdmin?.()&&a.isOwner?.()));b.hidden=!ok;
+ if(ok){const who=doc.avatars?.[me]?.family||'';b.href='../world/?room='+encodeURIComponent(t.id)+(who?'&who='+who:'');}}
 function init(){
  const play=document.getElementById('journeyPlay'),edit=document.getElementById('avatarEdit');if(!play||!edit)return;
  document.head.append(el('style',{text:CSS}));
@@ -998,13 +1003,13 @@ function init(){
  play.addEventListener('click',()=>void openJourney(ended()?'trip':'day'));
  edit.addEventListener('click',()=>void openAvatar());
  // 여행 마지막 날부터는 버튼이 '여행 영상 만들기'로 바뀐다.
- const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());renderPartyStrip(openAvatar);autoApply();};
+ const label=()=>{play.textContent=ended()?'🎬 여행 영상 만들기':'🎬 동선 재생';play.classList.toggle('primary',ended());renderPartyStrip(openAvatar);autoApply();worldLink();};
  const title=document.getElementById('activeTripTitle');if(title)new MutationObserver(label).observe(title,{childList:true,characterData:true,subtree:true});
  label();
  // 홈 화면·여행 카드·초대 창에도 캐릭터를 넣는다. 화면이 다시 그려질 때마다 빠진 곳만 채운다.
  const watch=(id,fn,opt={childList:true})=>{const n=document.getElementById(id);if(n)new MutationObserver(fn).observe(n,opt);};
  const home=()=>{renderHomeHero(openAvatar);decorateTripCards();renderNextTrip();};mountDock(openAvatar);
- watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;renderJourneyCard();if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
+ watch('timeline',()=>{const b=document.getElementById('timeline');if(!b)return;renderJourneyCard();worldLink();if(!b.querySelector('.tk-pieces'))placePieces();});setInterval(placePieces,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)placePieces();});
  watch('tripList',()=>{decorateTripCards();renderNextTrip();});watch('hiddenTripList',decorateTripCards);watch('inviteMemberList',decorateInvite);watch('homeScreen',home,{attributes:true,attributeFilter:['hidden']});
  document.addEventListener('tripkku-avatar-saved',()=>{renderHomeHero(openAvatar);renderNextTrip();});home();}
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();}

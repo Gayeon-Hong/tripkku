@@ -196,3 +196,14 @@
 - `next/journey.js`: 캐릭터 값에 `family: ''|'me'|'mom'|'dad'` 추가. 꾸미기 창 '옷' 탭에 '가족 3D 캐릭터' 칩 — **관리자이면서 이 여행 주인일 때만** 보임. 저장도 그때만 바뀌고, 기기(localStorage)에는 안 남겨 다른 여행으로 새지 않음.
 - `next/journey3d.js`: `FAMILY` 표 → `next/assets/models/family_me.glb / family_mom.glb / family_dad.glb`. `buildAvatar` 가 기본 캐릭터를 숨기고 모델을 캐릭터 키에 맞춰 세움. 파일이 없으면 기본 캐릭터 그대로. `loadGlb` 가 이제 색 그림(baseColorTexture, 파일 안에 든 것)도 붙임.
 - 모델 넣는 법: 노드 하나짜리로 정리(`gltf-transform flatten`→`join`), 그림 1024 webp, `meshopt` 압축. 정면이 +z. 받은 텍스처 모델로는 아직 확인 못 함(색 있는 정점 모델로만 확인).
+
+### 2026-11-26 — 가족 3D 모델 완성 + 겨울 월드 동시 접속 (claude.ai 세션)
+- `next/assets/models/family_{me,mom,dad}.glb` 넣음(각 1.1~1.3MB). 엄마·아빠는 색 없는 Meshy 모델이라 정면 레퍼런스 사진을 실루엣에 맞춰 비춰 1024 그림으로 구움(`xatlas` 펼치기 → 사진 투영, 뒤쪽은 머리·털·겉옷 색). 나는 Meshy 색 그림 그대로.
+- 겨울 월드(`world/index.html`):
+  - 입장 때 나/엄마/아빠 고르기(`?who=me|mom|dad` 면 바로 입장). 각자 자기 캐릭터만 조종, 따라오기 없앰.
+  - 동시 접속: Supabase Realtime 방송 채널 `tripkku-world:<room>` (저장 없음, publishable 키). `?room=<여행 id>`, 없으면 `family`. 위치는 움직일 때 약 10번/초, 가만히 있으면 2초마다. 12초 소식 없으면 지움. 이름표 스프라이트, 오른쪽 위 접속자 목록.
+  - 확대·축소: 휠, 두 손가락, ＋/－ 버튼, 🗺 전체 보기(한 번 더 누르면 원래대로). 멀리 볼수록 안개도 멀리.
+  - 충돌: 원형 대신 0.5 격자. 캐릭터 몸 높이(0.4~2.2)에 걸치는 상자·Meshy 삼각형 칸을 막음. GLB 가 들어올 때마다 다시 계산. 움직이는 트램은 제외(`userData.noCol`).
+  - 모바일: 제목 줄임, 도움말 짧은 문장, 버튼 줄바꿈.
+- 앱 입장 버튼: 일정 화면 `🎬 동선 재생` 옆 `❄️ 겨울 월드`. 관리자 본인 여행이거나 여행 캐릭터 중 `family` 가 정해진 경우에만 보임(엄마·아빠는 참여자라 이 조건으로 보임). 토스판엔 안 보임.
+- 확인 못 한 것: 실제 Supabase Realtime 연결(개발 환경에서 외부 접속이 막혀 가짜 채널로만 확인). Realtime 설정에서 공개 채널이 막혀 있으면 혼자만 보임.
