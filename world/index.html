@@ -530,8 +530,19 @@ function striezelmarkt(c, out, side) {
   mesh(new THREE.BoxGeometry(12, .3, 2.4), M(0x333344), 0, .3, 0, tram);
   tram.rotation.y = Math.atan2(side.x, side.z) - Math.PI / 2;
   tickers.push(d => { tram.position.copy(at(Math.sin(performance.now() / 6000) * 30, 24)); });
+  tramModel(tram, 12);
 }
 
+// ---------- Meshy 트램(models/tram.glb): 받으면 코드로 만든 노란 트램 대신. 길이 len 에 맞춤 ----------
+let tramSrc = null;
+function tramModel(group, len) {
+  (tramSrc ||= new Promise((ok, no) => loader.load('models/tram.glb', gl => ok(gl.scene), undefined, no))).then(src => {
+    const m = src.clone(), b = new THREE.Box3().setFromObject(m), k = len / (b.max.x - b.min.x);
+    m.scale.setScalar(k); m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
+    m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    for (const c of group.children) c.visible = false; group.add(m);
+  }).catch(() => {});
+}
 // ---------- 랜드마크 배치 (Meshy GLB 있으면 교체) ----------
 const builders = { dresden: frauenkirche, prague: tyn, berlin };
 const tickers = [];
@@ -617,6 +628,13 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   castle.position.copy(fromUV(112, -34, KB.top - .6 + .5 * 26)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(26); scene.add(castle);
   loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); castle.add(gl.scene); }, undefined, () => {});
   for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
+  // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
+  { const rails = new THREE.Group(); rails.userData.noLift = rails.userData.noCol = true; scene.add(rails);
+    for (const dv of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 58), M(0x4a4d55, { metalness: .6 }), 0, 0, 0, rails); r.position.copy(fromUV(95 + dv, 0, KB.top + .04)); r.rotation.y = Math.atan2(SIDE.x, SIDE.z); r.castShadow = false; }
+    const tr = new THREE.Group(); tr.userData.noLift = tr.userData.noCol = true; scene.add(tr);
+    mesh(new THREE.BoxGeometry(12, 3, 2.6), M(0xd8323a, { roughness: .5 }), 0, 1.8, 0, tr); mesh(new THREE.BoxGeometry(11.4, .9, 2.65), glow(0xfff0c8, 1.1), 0, 2.3, 0, tr); // 받기 전 임시 모양
+    tr.rotation.y = Math.atan2(-SIDE.z, SIDE.x); tramModel(tr, 12);
+    tickers.push(() => { const v = Math.sin(performance.now() / 7000) * 22; tr.position.copy(fromUV(95, v)); tr.position.y = groundAt(tr.position.x, tr.position.z); }); }
   // 카누: 강을 따라 천천히 오간다(다리 밑으로도)
   const canoe = (u, speed, hue) => {
     const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; scene.add(g);
