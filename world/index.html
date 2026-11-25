@@ -362,19 +362,36 @@ for (let i = 0; i < 90; i++) {
 const SKIN = 0xf3cdb0;
 function chibi(o, parent) {
   const g = new THREE.Group(); g.scale.setScalar(o.scale || 1); parent.add(g);
-  const skin = M(SKIN, { roughness: .7 }), top = M(o.top), pants = M(o.pants), hair = M(o.hair, { roughness: .55 });
-  for (const x of [-.18, .18]) { // 다리 + 신발
-    mesh(new THREE.CylinderGeometry(.13, .12, .55, 10), pants, x, .35, 0, g);
+  const skin = M(SKIN, { roughness: .7 }), top = M(o.top, { roughness: .45 }), pants = M(o.pants), hair = M(o.hair, { roughness: .55 });
+  const seam = M(new THREE.Color(o.top).multiplyScalar(.75).getHex(), { roughness: .5 }); // 패딩 누빔선
+  for (const x of [-.18, .18]) { // 다리 + 신발/부츠
+    mesh(new THREE.CylinderGeometry(.13, .12, .55, 10), o.skirt ? M(o.pants) : pants, x, .35, 0, g);
+    if (o.boots) mesh(new THREE.CylinderGeometry(.15, .15, .42, 12), M(0x141416, { roughness: .35 }), x, .21, .01, g);
     mesh(new THREE.SphereGeometry(.16, 12, 8), M(o.shoes || 0xf2f2f2), x, .08, .05, g).scale.set(1, .6, 1.4);
   }
-  mesh(new THREE.CapsuleGeometry(.36, .45, 6, 16), top, 0, 1.0, 0, g).scale.set(1, 1, .8); // 몸통
-  for (const s of [-1, 1]) { // 팔 (반팔이면 아래쪽은 피부)
-    const arm = new THREE.Group(); arm.position.set(.42 * s, 1.25, 0); arm.rotation.z = .25 * s; g.add(arm);
-    mesh(new THREE.CapsuleGeometry(.1, .25, 4, 8), top, 0, -.17, 0, arm);
-    mesh(new THREE.CapsuleGeometry(.09, .22, 4, 8), o.shortSleeve ? skin : top, 0, -.45, 0, arm);
-    mesh(new THREE.SphereGeometry(.1, 8, 6), skin, 0, -.62, 0, arm);
+  if (o.coat === 'long') { // 무릎까지 오는 롱패딩
+    mesh(new THREE.CylinderGeometry(.43, .5, 1.25, 20), top, 0, .92, 0, g).scale.z = .85;
+    for (let y = .45; y < 1.5; y += .22) mesh(new THREE.TorusGeometry(.47 - (y - .3) * .06, .025, 6, 24), seam, 0, y, 0, g).rotation.x = Math.PI / 2;
+    mesh(new THREE.BoxGeometry(.04, 1.2, .04), seam, 0, .92, .43, g); // 지퍼
+  } else if (o.coat === 'short') { // 엉덩이까지 오는 숏패딩 + 숏치마
+    mesh(new THREE.CylinderGeometry(.33, .42, .32, 18), M(o.skirt), 0, .72, 0, g).scale.z = .85;
+    mesh(new THREE.CapsuleGeometry(.4, .35, 6, 18), top, 0, 1.12, 0, g).scale.set(1, 1, .85);
+    for (const y of [.92, 1.12, 1.32]) mesh(new THREE.TorusGeometry(.42, .03, 6, 24), seam, 0, y, 0, g).rotation.x = Math.PI / 2;
+  } else mesh(new THREE.CapsuleGeometry(.36, .45, 6, 16), top, 0, 1.0, 0, g).scale.set(1, 1, .8); // 몸통
+  for (const s of [-1, 1]) { // 팔 (반팔이면 아래쪽은 피부, 패딩이면 통통)
+    const fat = o.coat ? 1.3 : 1;
+    const arm = new THREE.Group(); arm.position.set((o.coat ? .47 : .42) * s, 1.27, 0); arm.rotation.z = .28 * s; g.add(arm);
+    mesh(new THREE.CapsuleGeometry(.1 * fat, .25, 4, 8), top, 0, -.17, 0, arm);
+    mesh(new THREE.CapsuleGeometry(.09 * fat, .22, 4, 8), o.shortSleeve ? skin : top, 0, -.45, 0, arm);
+    mesh(new THREE.SphereGeometry(.1, 8, 6), skin, 0, -.64, 0, arm);
   }
   if (o.turtleneck) mesh(new THREE.CylinderGeometry(.2, .24, .2, 14), top, 0, 1.52, 0, g);
+  if (o.furHood) { // 모자에 달린 야상 퍼 (목 뒤로 넘긴 후드)
+    const fur = M(0xd8c7a8, { roughness: 1 });
+    mesh(new THREE.SphereGeometry(.42, 18, 12, 0, 6.29, 0, 1.6), top, 0, 1.5, -.3, g).rotation.x = -1.2;
+    const ring = mesh(new THREE.TorusGeometry(.4, .12, 8, 24), fur, 0, 1.6, -.05, g); ring.rotation.x = Math.PI / 2 - .3;
+    for (let k = 0; k < 18; k++) { const a = k / 18 * 6.28; mesh(new THREE.SphereGeometry(.08, 6, 5), fur, Math.cos(a) * .44, 1.6 - Math.sin(a) * .13, -.05 + Math.sin(a) * .42, g); }
+  } else if (o.coat === 'short') mesh(new THREE.TorusGeometry(.24, .07, 8, 20), top, 0, 1.5, 0, g).rotation.x = Math.PI / 2; // 패딩 깃
   const head = new THREE.Group(); head.position.y = 2.05; g.add(head);
   mesh(new THREE.SphereGeometry(.62, 28, 20), skin, 0, 0, 0, head).scale.set(1, .95, .95);
   for (const x of [-.22, .22]) { // 눈 + 반짝임 + 볼터치
@@ -386,27 +403,34 @@ function chibi(o, parent) {
   // 머리카락: 뒤통수 캡 + 앞머리 + 길이
   mesh(new THREE.SphereGeometry(.67, 28, 20, Math.PI / 2 + .85, Math.PI * 2 - 1.7, 0, 1.9), hair, 0, .04, -.03, head); mesh(new THREE.SphereGeometry(.67, 28, 12, 0, 6.29, 0, .95), hair, 0, .04, -.03, head);
   const bang = (x, w, len, tilt) => { const b = mesh(new THREE.CapsuleGeometry(w, len, 4, 8), hair, x, .4, .48, head); b.rotation.set(-.75, 0, tilt); b.scale.z = .4; };
+  // 시스루 앞머리: 얇고 납작한 가닥이 바깥으로 퍼짐 (동그란 덩어리 없이)
+  const strand = (x, y, len, tilt, w = .07) => { const s = mesh(new THREE.ConeGeometry(w, len, 4), hair, x, y, .55 - Math.abs(x) * .45, head); s.rotation.set(-.22, 0, Math.PI + tilt); s.scale.z = .3; };
+  if (o.bangs === 'wispy') {
+    for (let k = -5; k <= 5; k++) { const x = k * .07; strand(x, .3 - Math.abs(k) * .006, .34 + Math.abs(k) * .025, k * .13); }
+    for (const s of [-1, 1]) for (const dx of [0, .06]) strand((.44 + dx) * s, .02, .6, .2 * s, .09); // 얼굴 옆 긴 가닥
+  }
   if (o.bangs === 'curtain') { bang(-.26, .12, .2, .75); bang(.26, .12, .2, -.75); bang(0, .16, .02, 1.57); }
   else if (o.bangs === 'full') for (const x of [-.3, -.1, .1, .3]) bang(x, .13, .06, x * -.6);
   else if (o.bangs === 'side') { bang(-.15, .17, .25, 1.3); bang(.25, .14, .1, 1.1); }
   if (o.hairLen === 'long') {
     mesh(new THREE.CapsuleGeometry(.5, 1.1, 6, 16), hair, 0, -.75, -.32, head).scale.set(1.15, 1, .45);
-    for (const s of [-1, 1]) mesh(new THREE.CapsuleGeometry(.14, .9, 4, 10), hair, .5 * s, -.55, .12, head).rotation.z = -.12 * s;
+    for (const s of [-1, 1]) { const side = mesh(new THREE.ConeGeometry(.17, 1.3, 6), hair, .52 * s, -.6, .08, head); side.rotation.set(0, 0, Math.PI - .1 * s); side.scale.z = .35; }
   } else if (o.hairLen === 'bob') {
     mesh(new THREE.SphereGeometry(.7, 24, 16, Math.PI / 2 + .85, Math.PI * 2 - 1.7, 1.2, 1.1), hair, 0, -.05, -.05, head).scale.set(1, 1.1, 1);
   }
   if (o.necklace) { mesh(new THREE.TorusGeometry(.2, .012, 6, 24, Math.PI), M(0xdfe3ea, { metalness: 1, roughness: .2 }), 0, 1.45, .2, g).rotation.set(Math.PI, 0, 0);
     mesh(new THREE.SphereGeometry(.04, 8, 6), M(0xdfe3ea, { metalness: 1, roughness: .2 }), 0, 1.25, .25, g); }
-  if (o.tote) { const bag = mesh(new THREE.BoxGeometry(.5, .55, .12), M(0xeee6d6), -.55, .75, .05, g); bag.rotation.z = .1;
-    mesh(new THREE.BoxGeometry(.05, .75, .05), M(0xeee6d6), -.45, 1.3, .05, g).rotation.z = -.25; }
-  if (o.backpack) { mesh(new THREE.CapsuleGeometry(.3, .35, 4, 12), M(0x24262c), 0, 1.05, -.42, g).scale.set(1.1, 1, .6);
+  if (o.tote) { const bag = mesh(new THREE.BoxGeometry(.5, .55, .12), M(0xeee6d6), -.66, .8, .05, g); bag.rotation.z = .1;
+    mesh(new THREE.BoxGeometry(.05, .75, .05), M(0xeee6d6), -.52, 1.32, .08, g).rotation.z = -.2; }
+  if (o.backpack) { mesh(new THREE.CapsuleGeometry(.3, .35, 4, 12), M(0x24262c), 0, 1.05, -.55, g).scale.set(1.1, 1, .6);
     for (const x of [-.22, .22]) mesh(new THREE.TorusGeometry(.33, .035, 6, 16, Math.PI), M(0x24262c), x, 1.05, -.05, g).rotation.set(0, Math.PI / 2, Math.PI / 2); }
   return g;
 }
 const FAMILY = [
-  { name: '나', scale: .95, hair: 0x3b2a22, hairLen: 'long', bangs: 'curtain', top: 0x8b8e96, pants: 0x2b2b33, necklace: true, lips: 0xc9505a },
-  { name: '엄마', scale: .93, hair: 0x1c1919, hairLen: 'bob', bangs: 'full', top: 0x857a70, pants: 0x4c6286, turtleneck: true, shortSleeve: true, tote: true },
-  { name: '아빠', scale: 1.02, hair: 0x1c1919, hairLen: 'short', bangs: 'side', top: 0x1f2026, pants: 0x30343d, shoes: 0x2a2a2a, shortSleeve: true, backpack: true },
+  // 나: 검정 숏패딩 + 숏치마 + 부츠 / 엄마·아빠: 카키 롱패딩 커플 (후드 퍼)
+  { name: '나', scale: .95, hair: 0x3b2a22, hairLen: 'long', bangs: 'wispy', top: 0x1b1b20, coat: 'short', skirt: 0x45454f, pants: SKIN, boots: true, shoes: 0x141416, lips: 0xc9505a },
+  { name: '엄마', scale: .93, hair: 0x1c1919, hairLen: 'bob', bangs: 'full', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x3a3f4a, shoes: 0xe8e2d6, tote: true },
+  { name: '아빠', scale: 1.02, hair: 0x1c1919, hairLen: 'short', bangs: 'side', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x2e3138, shoes: 0x2a2a2a, backpack: true },
 ];
 const player = new THREE.Group(); scene.add(player);
 const body = new THREE.Group(); player.add(body);
@@ -418,7 +442,7 @@ const followers = FAMILY.slice(1).map((f, i) => {
 });
 player.position.set(0, 0, 8);
 const CLOSE = new URLSearchParams(location.search).has("close"); // ?close = 가족 가까이 보기
-{ const fl = new THREE.PointLight(0xffe2c0, 9, 9); fl.position.set(0, 4, 3); player.add(fl); } // 가족 비추는 따뜻한 조명
+{ const fl = new THREE.PointLight(0xffe2c0, 16, 10); fl.position.set(0, 4, 3); player.add(fl); } // 가족 비추는 따뜻한 조명
 loader.load('models/character.glb', gl => {
   const m = gl.scene, s = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
   m.scale.setScalar(3 / s.y); m.traverse(o => o.isMesh && (o.castShadow = true));
