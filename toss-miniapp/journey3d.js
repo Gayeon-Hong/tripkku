@@ -777,6 +777,38 @@ const PROPS={
   g.add(rot(mesh(G.cyl(70,70,46,8),tile,0,31,0,{flatShading:true}),0,PI/8,0),rot(mesh(G.cyl(71,71,10,8),'#f1ede4',0,12,0,{flatShading:true}),0,PI/8,0),mesh(G.cyl(34,34,22,24),tile,0,65,0),
    scl(mesh(new THREE.SphereGeometry(38,24,16,0,PI*2,0,PI/2),mat('#e6bd45',{metalness:.7,roughness:.25,emissive:'#7a5a10',emissiveIntensity:.25}),0,76,0),1,1.15,1),mesh(G.cyl(1.4,1.4,20,6),'#e6bd45',0,126,0));return g;},
 };
+/* ---------- Meshy 로 만든 실제 3D 모델(.glb, meshopt 압축). 처음 쓸 때 한 번만 받고, 받는 동안·실패하면 손으로 만든 소품을 보여준다. ---------- */
+const MESHOPT='three/examples/jsm/libs/meshopt_decoder.module.js';
+const MODELS={pragxmas:{url:'./assets/models/prague_tyn_xmas.glb',size:118,fallback:()=>{const g=PROPS.tyn(),t=PROPS.tree();t.scale.setScalar(.7);t.position.set(-70,0,46);g.add(t);return g;}}};
+const modelCache=new Map();
+function loadGlb(url){if(!modelCache.has(url))modelCache.set(url,(async()=>{
+ const [{MeshoptDecoder},buf]=await Promise.all([import(MESHOPT),fetch(url).then(r=>{if(!r.ok)throw new Error('model '+r.status);return r.arrayBuffer();})]);await MeshoptDecoder.ready;
+ const dv=new DataView(buf),jl=dv.getUint32(12,true),json=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,20,jl))),bin=new Uint8Array(buf,28+jl,dv.getUint32(20+jl,true));
+ const part=(o,l)=>new Uint8Array(bin.buffer,bin.byteOffset+(o||0),l);
+ const views=json.bufferViews.map(v=>{const e=v.extensions?.EXT_meshopt_compression;if(!e)return part(v.byteOffset,v.byteLength);
+  const out=new Uint8Array(e.count*e.byteStride);MeshoptDecoder.decodeGltfBuffer(out,e.count,e.byteStride,part(e.byteOffset,e.byteLength),e.mode,e.filter);return out;});
+ const TA={5120:Int8Array,5121:Uint8Array,5122:Int16Array,5123:Uint16Array,5125:Uint32Array,5126:Float32Array},N={SCALAR:1,VEC2:2,VEC3:3,VEC4:4};
+ const attr=i=>{const a=json.accessors[i],bv=json.bufferViews[a.bufferView],T=TA[a.componentType],u=views[a.bufferView],n=N[a.type],b=T.BYTES_PER_ELEMENT,
+   stride=bv.extensions?.EXT_meshopt_compression?.byteStride||bv.byteStride||n*b,norm=!!a.normalized;
+  if(stride===n*b)return new THREE.BufferAttribute(new T(u.buffer,u.byteOffset+(a.byteOffset||0),a.count*n),n,norm);
+  return new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(new T(u.buffer,u.byteOffset,u.byteLength/b),stride/b),n,(a.byteOffset||0)/b,norm);};
+ const NAME={POSITION:'position',NORMAL:'normal',COLOR_0:'color'};
+ return json.scenes[json.scene||0].nodes.map(ni=>{const nd=json.nodes[ni],m=json.meshes[nd.mesh],pr=m.primitives[0],geo=new THREE.BufferGeometry();
+  for(const [k,i] of Object.entries(pr.attributes))if(NAME[k])geo.setAttribute(NAME[k],attr(i));
+  if(pr.indices!=null)geo.setIndex(attr(pr.indices));
+  return {name:nd.name||m.name,geo,t:nd.translation||[0,0,0],s:nd.scale||[1,1,1]};});})());
+ return modelCache.get(url);}
+function modelProp(key){const M=MODELS[key],g=new THREE.Group(),fb=M.fallback();g.add(fb);
+ loadGlb(M.url).then(parts=>{const box=new THREE.Group();
+  for(const p of parts){const m=new THREE.Mesh(p.geo,mat('#ffffff',{vertexColors:true,roughness:.86}));m.position.fromArray(p.t);m.scale.fromArray(p.s);m.castShadow=true;m.name=p.name;box.add(m);}
+  const S=M.size;box.scale.setScalar(S);box.position.y=.952*S;g.add(box);
+  if(key==='pragxmas'){ // 모델은 색이 없는 트리라서 전구와 별을 달아 밤 크리스마스 느낌을 낸다(트리 중심 x≈0, z≈.235, 높이 -.95~-.21)
+   const cx=-.005*S,cz=.235*S,y0=0,y1=.74*S,R=.24*S,cols=['#ffd84a','#ff5a6e','#6fb8ff','#ffffff','#ffb347'];
+   for(let i=0;i<34;i++){const h=(i+.5)/34,y=y0+8+h*(y1-18),r=R*(1-h)*.92+3,a=i*2.4;g.add(mesh(G.sphere(2.6,10,8),cols[i%cols.length],cx+Math.sin(a)*r,y,cz+Math.cos(a)*r,{emissive:cols[i%cols.length],emissiveIntensity:1.1}));}
+   const star=mesh(new THREE.OctahedronGeometry(7),'#ffd84a',cx,y1+6,cz,{emissive:'#ffb400',emissiveIntensity:1.2});g.add(star);(g.userData.spin=g.userData.spin||[]).push([star,'y',1.6]);}
+  g.remove(fb);freeTree(fb);}).catch(e=>console.warn('3D 모델을 못 받아서 기본 소품으로 보여줘요',key,e));
+ return g;}
+for(const k of Object.keys(MODELS))PROPS[k]=()=>modelProp(k);
 export const PROP_KEYS=Object.keys(PROPS);
 export function buildProp(key){return (PROPS[key]||PROPS.pin)();}
 /**

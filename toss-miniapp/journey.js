@@ -75,6 +75,8 @@ export function party(){const a=api(),doc=a.activeDoc?.()||{},me=a.getMyId?.();
    규칙은 위에서부터 먼저 맞는 것을 쓴다. 소품·말풍선이 여러 개면 같은 종류가 다시 나올 때마다 차례로 바꾼다
    (크리스마스 마켓 → 트리, 다음엔 산타, 그다음엔 가판대 …). */
 const RULES=[
+ // 프라하 구시가지 광장 크리스마스(틴 성당 + 큰 트리, Meshy 3D 모델)
+ [/^(?=.*(크리스마스|성탄|마켓|트리|christmas|xmas|weihnacht|v[aá]noč|advent))(?=.*(프라하|praha|prague|틴 ?성당|t[yý]n|staro[mě]stsk)).*/i,['pragxmas'],'cheer',['우와, 트리 진짜 크다!','메리 크리스마스!','반짝반짝!']],
  // 2026-11-13 추가 2: 싱가포르·동남아·동아시아·유럽·이집트·중앙아시아·중동
  [/멀라이언|머라이언|merlion/i,['merlion'],'pose',['물 뿜는다!','찰칵!']],
  [/가든스 ?바이 ?더 ?베이|가든스바이|슈퍼 ?트리|gardens ?by ?the ?bay|supertree/i,['gardensbay'],'pose',['미래 도시 같아!']],
@@ -223,6 +225,7 @@ const RULES=[
  [/프라하 ?성|성 ?비투스|비투스|흐라트차니|hrad|prague ?castle/i,['pragcastle'],'pose',['동화 속 같아!','찰칵!']],
  [/카를 ?교|까를 ?교|카렐 ?교|charles ?bridge|karl[uů]v/i,['charlesbridge'],'pose',['경치 좋다!','찰칵!']],
  [/천문 ?시계|오를로이|orloj|구시청사/i,['orloj'],'pose',['정각이다!','인형 나온다!']],
+ [/(프라하|praha|prague).{0,12}(구시가|광장)|(구시가 ?지? ?광장|old ?town ?square).{0,12}(프라하|praha|prague)|staro[mě]stsk/i,['tyn'],'pose',['여기가 구시가지 광장!','찰칵!']],
  [/틴 ?성당|틴 ?교회|t[yý]n/i,['tyn'],'pose',['뾰족뾰족!']],
  [/성모 ?교회|프라우엔|frauenkirche/i,['frauenkirche'],'pose',['웅장하다…','찰칵!']],
  [/츠빙거|쯔빙거|zwinger/i,['zwinger'],'pose',['화려하다!','찰칵!']],
@@ -318,7 +321,7 @@ const CITY_SIGHTS=[
  [/런던|london/i,['bigben','towerbridge','londoneye']],[/파리|paris/i,['eiffel','louvre','notredame','arc']],[/로마|roma|rome/i,['colosseum','trevi']],
  [/뮌헨|퓌센|m[uü]nchen|munich|f[uü]ssen/i,['neuschwanstein']],[/브뤼셀|bruxelles|brussels/i,['atomium']],[/부다페스트|budapest/i,['budaparliament']]];
 // 크리스마스 마켓은 도시마다 다르게: 드레스덴은 대관람차·피라미드부터
-const CITY_XMAS=[[/드레스덴|dresden/i,['xferris','xpyramid','stall','gluhwein','tree']],[/베를린|berlin/i,['tree','xpyramid','gluhwein','xferris','santa']],[/프라하|praha|prague/i,['tree','stall','santa','gluhwein']],[/바르샤바|warszawa|warsaw/i,['tree','xferris','stall']]];
+const CITY_XMAS=[[/드레스덴|dresden/i,['xferris','xpyramid','stall','gluhwein','tree']],[/베를린|berlin/i,['tree','xpyramid','gluhwein','xferris','santa']],[/프라하|praha|prague/i,['pragxmas','stall','santa','gluhwein','tree']],[/바르샤바|warszawa|warsaw/i,['tree','xferris','stall']]];
 function sightFor(country,n){const list=SIGHT_BY_COUNTRY[country]||['camera'];return list[n%list.length];}
 const WESTERN=['steak','pasta','pizza','burger'],WEST=/^(SE|NO|DK|FI|IS|LU|SK|SI|HR|RO|BG|RS|EE|LV|LT|MT|CY|BR|AR|CL|ZA)$/;
 function foodFor(country,n){const list=FOOD_BY_COUNTRY[country]||(WEST.test(country)?WESTERN:['dish']);return list[n%list.length];}
@@ -506,7 +509,7 @@ export function sunTimes(lat,lon,date,offset){const d=new Date(date+'T12:00:00Z'
 // 머무는 동안의 카메라 연출: 볼거리는 건물 쪽으로 다가가 옆으로 돌며 훑고 → 물러나 기념사진, 식사는 식탁으로 천천히 다가가기, 신나는 곳은 살짝 흔들며 돌기
 // 산타 썰매는 가끔만: 장소마다 정해진 무작위 값으로 약 30%에서만 날아간다(같은 영상은 항상 같게)
 const santaToday=(i,t)=>{let h=2166136261;for(const c of i+'|'+t){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%100)<30;};
-const XMAS_KEYS=new Set(['tree','santa','stall','snowman','gluhwein','xferris','xpyramid']);
+const XMAS_KEYS=new Set(['pragxmas','tree','santa','stall','snowman','gluhwein','xferris','xpyramid']);
 const smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v);};
 function camMoveAt(act,p){const io=smooth(Math.min(p/.14,(1-p)/.12)); // 들어오고 나갈 때는 기본 구도로
  if(act==='pose'){const a=smooth((p-.08)/.2),b=smooth((p-.34)/.06),c=smooth((p-.74)/.1),k=a*(1-b)+c; // 훑어보기 → 기념사진(물러남) → 반대쪽에서 한 번 더 가까이
@@ -601,7 +604,7 @@ const ICON={
  merlion:['🦁',C.sight],gardensbay:['🌳',C.nature],watarun:['🛕',C.sight],angkorwat:['🛕',C.sight],goldenbridge:['🌉',C.sight],halong:['⛰️',C.nature],borobudur:['🛕',C.sight],bigbuddha:['🧘',C.sight],
  fuji:['🗻',C.nature],seongsan:['🌋',C.nature],belem:['🏰',C.sight],santorini:['🏘️',C.sight],matterhorn:['🏔️',C.nature],canalhouses:['🏘️',C.sight],hallgrimskirkja:['⛪',C.sight],montstmichel:['🏰',C.sight],
  sphinx:['🦁',C.sight],abusimbel:['🗿',C.sight],registan:['🕌',C.sight],ger:['⛺',C.stay],bayterek:['🌟',C.sight],burjalarab:['⛵',C.sight],petra:['🏛️',C.sight],domeofrock:['🕌',C.sight],
-tree:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
+tree:['🎄',C.xmas],pragxmas:['🎄',C.xmas],santa:['🎅',C.xmas],stall:['🎪',C.xmas],snowman:['⛄',C.xmas],gluhwein:['🍷',C.xmas],bowl:['🍜',C.food],dish:['🍽️',C.food],steak:['🥩',C.food],pasta:['🍝',C.food],pizza:['🍕',C.food],burger:['🍔',C.food],
  sushi:['🍣',C.food],curry:['🍛',C.food],sausage:['🌭',C.food],pretzel:['🥨',C.food],schnitzel:['🍖',C.food],dumpling:['🥟',C.food],taco:['🌮',C.food],fishchips:['🍟',C.food],paella:['🥘',C.food],kebab:['🥙',C.food],bibimbap:['🍲',C.food],
  grill:['🥓',C.food],chicken:['🍗',C.food],seafood:['🦞',C.food],breakfast:['🍳',C.food],cake:['🍰',C.cafe],bread:['🥐',C.cafe],icecream:['🍦',C.cafe],cup:['☕',C.cafe],beer:['🍺',C.drink],wine:['🍷',C.drink],cocktail:['🍸',C.drink],
  castle:['🏰',C.sight],xferris:['🎡',C.sight],xpyramid:['🎄',C.sight],berlindom:['⛪',C.sight],siegessaeule:['🗽',C.sight],charlottenburg:['🏰',C.sight],dancinghouse:['🏢',C.sight],powdertower:['🏰',C.sight],fuerstenzug:['🖼️',C.sight],pkin:['🏙️',C.sight],warsawcastle:['🏰',C.sight],brandenburg:['🏛️',C.sight],berlinwall:['🧱',C.sight],checkpoint:['🛂',C.sight],fernsehturm:['📡',C.sight],reichstag:['🏛️',C.sight],pragcastle:['🏰',C.sight],charlesbridge:['🌉',C.sight],orloj:['🕰️',C.sight],tyn:['⛪',C.sight],frauenkirche:['⛪',C.sight],zwinger:['👑',C.sight],semperoper:['🎭',C.sight],church:['⛪',C.sight],gate:['🏛️',C.sight],eiffel:['🗼',C.sight],pagoda:['🛕',C.sight],torii:['⛩️',C.sight],bridge:['🌉',C.sight],tower:['🗼',C.sight],skyline:['🌃',C.sight],museum:['🖼️',C.sight],fountain:['⛲',C.sight],statue:['🗽',C.sight],camera:['📷',C.sight],

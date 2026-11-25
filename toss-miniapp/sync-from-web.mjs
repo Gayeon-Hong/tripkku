@@ -7,6 +7,7 @@ const here=dirname(fileURLToPath(import.meta.url)),root=join(here,'..'),web=join
 const fix=s=>s.replaceAll('../assets/','./assets/').replace(/(\.(?:js|css))\?v=[A-Za-z0-9_]+/g,'$1')
  .replaceAll('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm','@supabase/supabase-js')
  .replaceAll('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js','three')
+ .replaceAll('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/meshopt_decoder.module.js','three/examples/jsm/libs/meshopt_decoder.module.js')
  .replaceAll('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm','mp4-muxer');
 // 예전 로컬 데모 파일 정리
 for(const f of ['ai.js','collab.js','destination-map.js','earth-avatar.js','i18n.js','presets.js','world-coasts.js','config.js'])rmSync(join(here,f),{force:true});

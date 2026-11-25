@@ -171,3 +171,9 @@
 - 앱: `next/app.js` 의 `guestPlan()`. 실패하면(미배포·횟수 초과·오프라인) 예시 일정("○○ 구경/맛집")으로 넘어간다. 그래서 함수 배포 전에 앱을 먼저 올려도 깨지지 않는다.
 - **남은 일(사용자)**: Supabase 대시보드에서 `tripkku-plan-guest` 함수를 만들고 JWT 검사를 끈다. 토스 QR 테스트 때 새 여행을 만들어 실제 동선이 나오는지 확인한다(토스 앱 안에서의 호출은 확인 못 함).
 - 첫 화면에 "로그인 없이 체험하기" 버튼 추가(`next/index.html`).
+
+## 2026-11-26 추가 — Meshy 3D 모델(.glb) 쓰기 시작
+- 첫 모델: 프라하 구시가지 광장 크리스마스(틴 성당 + 큰 트리) `next/assets/models/prague_tyn_xmas.glb`. 원본 Meshy 파일 58MB(삼각형 240만 개) → 성당·트리를 나눠 줄이고 색을 입힌 뒤 meshopt 압축해 약 380KB.
+- 소품 키 `pragxmas`. "프라하 크리스마스 마켓", "틴 성당 크리스마스" 처럼 프라하·틴 성당 + 크리스마스/마켓/트리 글자가 있으면 나오고, 프라하 크리스마스 마켓 차례(CITY_XMAS)의 첫 번째 소품이다. 크리스마스 글자가 없는 "프라하 구시가지 광장"은 손으로 만든 `tyn`.
+- 코드: `journey3d.js` 의 `MODELS` 표에 키·파일·크기를 적으면 된다. 처음 쓸 때 한 번만 받고(캐시), 받는 동안·실패하면 `fallback` 소품을 보여준다. 디코더는 three 의 `meshopt_decoder.module.js` (토스판은 sync 스크립트가 npm three 경로로 바꿈).
+- 새 Meshy 모델 넣는 순서: `gltf-transform simplify`(삼각형 3~8만 개 목표) → 색이 없으면 꼭짓점 색(COLOR_0, 선형 색값) 입히기 → `quantize` → `meshopt` → `next/assets/models/` 에 넣고 `MODELS` 에 한 줄.
