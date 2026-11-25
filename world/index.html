@@ -39,6 +39,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -324,8 +325,41 @@ function toyTrain(p, rotY) {
   for (const x of [-1.8, -1.1, -.4, .45]) for (const z of [-.42, .42]) mesh(new THREE.CylinderGeometry(.2, .2, .1, 14), wheel, x, .22, z, g).rotation.x = Math.PI / 2;
   addCol(p.x, p.z, 1.6);
 }
+// Meshy로 만든 마켓 모델(models/dresden-market.glb)이 있으면 손으로 만든 마켓 대신 사용
+let bulbIM = null;
+function marketModel(c, out, side, n0, c0, b0, at) {
+  const n1 = scene.children.length, c1 = colliders.length, b1 = bulbData.length;
+  loader.load('models/dresden-market.glb', gl => {
+    scene.children.slice(n0, n1).forEach(o => o.visible = false);
+    colliders.splice(c0, c1 - c0);
+    if (bulbIM) { const zero = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = b0; i < b1; i++) bulbIM.setMatrixAt(i, zero); bulbIM.instanceMatrix.needsUpdate = true; }
+    const m = gl.scene, size = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
+    m.scale.setScalar(28 / Math.max(size.x, size.z));
+    const box = new THREE.Box3().setFromObject(m), minY = box.min.y, h = box.max.y - minY;
+    // 색이 없는 모델이라 높이에 따라 눈 바닥 → 짙은 나무 → 밝은 나무 → 촛불빛 색을 칠함
+    const snow = new THREE.Color(0xdfe5f3), dark = new THREE.Color(0x5a3d29), light = new THREE.Color(0xc79a6b), warm = new THREE.Color(0xffd58a), col = new THREE.Color(), v = new THREE.Vector3();
+    m.traverse(o => {
+      if (!o.isMesh) return;
+      const pos = o.geometry.attributes.position, cols = new Float32Array(pos.count * 3);
+      o.updateMatrixWorld(true);
+      for (let i = 0; i < pos.count; i++) {
+        const t = (v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).y - minY) / h;
+        if (t < .06) col.copy(snow); else if (t > .93) col.copy(warm); else col.copy(dark).lerp(light, Math.min(1, (t - .06) * 1.6) * (.75 + .25 * Math.sin(i * 12.9898)));
+        col.toArray(cols, i * 3);
+      }
+      o.geometry.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      o.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .85, emissive: 0x3a2410, emissiveIntensity: .35 });
+      o.castShadow = o.receiveShadow = true;
+    });
+    m.position.copy(at(0, -5)).setY(-minY);
+    m.rotation.y = Math.atan2(out.x, out.z);
+    scene.add(m);
+    const pl = new THREE.PointLight(0xffc27a, 16, 30); pl.position.copy(at(0, -5, 8)); scene.add(pl);
+  }, undefined, () => {});
+}
 function striezelmarkt(c, out, side) {
   const at = (s, f, y = 0) => c.clone().addScaledVector(side, s).addScaledVector(out, f).setY(y);
+  const n0 = scene.children.length, c0 = colliders.length, b0 = bulbData.length;
   const face = (s) => Math.atan2(-side.x * Math.sign(s), -side.z * Math.sign(s));
   // 나무 판자 노점 골목: 가운데 길은 비우고 양옆으로 2줄씩
   for (const s of [-7.5, -12.5, 7.5, 12.5]) for (let f = -14; f <= 2; f += 4) {
@@ -363,6 +397,7 @@ function striezelmarkt(c, out, side) {
   tickers.push(d => { tiers.forEach((t, i) => t.rotation.y += d * (i % 2 ? -.35 : .35)); prop.rotation.y += d * .7; });
   addCol(py.position.x, py.position.z, 4.5);
   const pl = new THREE.PointLight(0xffb05a, 10, 18); pl.position.copy(py.position).setY(6); scene.add(pl);
+  marketModel(c, out, side, n0, c0, b0, at);
   // 관람차
   const fw = new THREE.Group(); fw.position.copy(at(-21, -6)); fw.rotation.y = Math.atan2(out.x, out.z) + Math.PI / 2; scene.add(fw);
   const steel = M(0xe6e9f2, { metalness: .7, roughness: .3 });
@@ -389,12 +424,12 @@ function striezelmarkt(c, out, side) {
 // ---------- 랜드마크 배치 (Meshy GLB 있으면 교체) ----------
 const builders = { dresden: frauenkirche, prague: tyn, brussels };
 const tickers = [];
-const loader = new GLTFLoader();
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 for (const [key, z] of Object.entries(ZONES)) {
   const g = builders[key](); scene.add(g);
   // 랜드마크는 광장 안쪽(바깥 방향)에, 입구가 중앙을 보게
   const out = z.pos.clone().normalize();
-  g.position.copy(z.pos).addScaledVector(out, 8);
+  g.position.copy(z.pos).addScaledVector(out, key === 'dresden' ? 19 : 8);
   g.lookAt(0, 0, 0);
   if (g.userData.tick) tickers.push(g.userData.tick);
   addCol(g.position.x, g.position.z, key === 'brussels' ? 6 : 9);
@@ -439,7 +474,7 @@ for (let i = 0; i < 90; i++) {
 
 // 전구 InstancedMesh 생성
 {
-  const im = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), bulbData.length);
+  const im = bulbIM = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), bulbData.length);
   const mtx = new THREE.Matrix4(), col = new THREE.Color();
   bulbData.forEach((b, i) => { im.setMatrixAt(i, mtx.makeTranslation(b.p.x, b.p.y, b.p.z)); im.setColorAt(i, col.set(b.c).multiplyScalar(2.5)); });
   scene.add(im);
