@@ -994,7 +994,11 @@ function mountAvatar(){
 function worldLink(){if(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss')return;const a=api(),t=a.getTrip?.(),doc=a.activeDoc?.()||{},me=a.getMyId?.();let b=document.getElementById('worldBtn');
  if(!b){const play=document.getElementById('journeyPlay');if(!play)return;b=el('a',{id:'worldBtn',class:'btn'},[document.createTextNode('❄️ 겨울 월드')]);play.after(b);}
  const fam=Object.values(doc.avatars||{}).some(v=>v?.family),ok=!!t&&(fam||!!(a.isAdmin?.()&&a.isOwner?.()));b.hidden=!ok;
- if(ok){const who=doc.avatars?.[me]?.family||'';b.href='../world/?room='+encodeURIComponent(t.id)+(who?'&who='+who:'');}}
+ if(ok){const who=doc.avatars?.[me]?.family||'',date=a.getActiveDate?.(),day=(doc.days||[]).find(d=>d.date===date);
+  // 고른 날짜 일정에 나오는 도시를 월드에 '오늘 일정'으로 표시
+  const txt=[day?.title,day?.city,...(a.activeDayEvents?.(day)||[]).map(e=>[e.title,e.place,e.city,e.note].filter(Boolean).join(' '))].filter(Boolean).join(' ');
+  const today=[['dresden',/드레스덴|dresden/i],['prague',/프라하|praha|prague/i],['berlin',/베를린|berlin/i]].filter(([,r])=>r.test(txt)).map(([k])=>k).join(',');
+  b.href='../world/?room='+encodeURIComponent(t.id)+(who?'&who='+who:'')+(today?'&today='+today:'');}}
 function init(){
  const play=document.getElementById('journeyPlay'),edit=document.getElementById('avatarEdit');if(!play||!edit)return;
  document.head.append(el('style',{text:CSS}));

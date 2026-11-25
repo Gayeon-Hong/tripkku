@@ -23,13 +23,17 @@
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
   #zoom button{width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
   #touch{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#ffd27a;color:#3a2a10;box-shadow:0 4px 18px rgba(255,200,90,.6);cursor:pointer}
+  #env{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:5px 9px;border-radius:12px;pointer-events:none;max-width:44vw}
+  #env:empty{display:none}
+  #card .wx{font-size:13px;color:#4a5a8a}
+  #warp button.today{background:#ffd27a;color:#3a2a10}
   #online{position:fixed;top:12px;right:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px;max-width:40vw;text-align:right;line-height:1.4}
   #pick{position:fixed;inset:0;background:rgba(8,12,40,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:5;text-align:center;padding:16px}
   #pick h2{margin:0;font-weight:400;font-size:clamp(20px,6vw,28px)}
   #pick div{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
   #pick button{font-size:18px;padding:12px 18px}
   #pick p{margin:0;font-size:13px;opacity:.8;font-family:system-ui,sans-serif}
-  @media (max-width:560px){#title .d{display:none}#online{top:104px;right:8px;font-size:12px}#help .d{display:none}#help .m{display:inline}#help{top:44px;font-size:12px}#warp{top:66px}#warp button{font-size:13px;padding:5px 8px}#back{font-size:13px;padding:5px 8px}#card{bottom:84px}}
+  @media (max-width:560px){#env{left:8px;font-size:12px;max-width:calc(100vw - 80px)}#title .d{display:none}#online{top:104px;right:8px;font-size:12px}#help .d{display:none}#help .m{display:inline}#help{top:44px;font-size:12px}#warp{top:66px}#warp button{font-size:13px;padding:5px 8px}#back{font-size:13px;padding:5px 8px}#card{bottom:84px}}
   #back{position:fixed;top:12px;left:12px;color:#fff;text-decoration:none;font-size:15px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px}
 </style>
 </head>
@@ -44,7 +48,8 @@
 </div>
 <div id="card"><b></b><p></p></div>
 <div id="stick"><i></i></div>
-<div id="zoom"><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
+<div id="env"></div>
+<div id="zoom"><button id="mode" aria-label="시간·날씨 모드">🌙</button><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
 <div id="online"></div>
 <button id="touch" hidden>🙏 네포무크 상 만지기</button>
 <div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
@@ -79,10 +84,10 @@ const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 40
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.95));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
-scene.add(new THREE.HemisphereLight(0x8aa0ff, 0x2a2f55, .55));
+const hemi = new THREE.HemisphereLight(0x8aa0ff, 0x2a2f55, .55); scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xb8c8ff, .9);
 moon.position.set(-30, 50, 20);
 moon.castShadow = true;
@@ -99,6 +104,7 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
 }
 
 // ---------- 하늘: 별 + 눈 ----------
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, fog: false, transparent: true });
 {
   const g = new THREE.BufferGeometry(), p = [];
   for (let i = 0; i < 1500; i++) {
@@ -106,7 +112,7 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
     p.push(...v.normalize().multiplyScalar(300).toArray());
   }
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, fog: false })));
+  scene.add(new THREE.Points(g, starMat));
 }
 const snowGeo = new THREE.BufferGeometry(), SN = 2500, snowPos = new Float32Array(SN * 3);
 for (let i = 0; i < SN; i++) snowPos.set([(Math.random() - .5) * 120, Math.random() * 40, (Math.random() - .5) * 120], i * 3);
@@ -745,6 +751,82 @@ const FAMILY = [
   { name: '엄마', scale: .93, hair: 0x1c1919, hairLen: 'bob', bangs: 'full', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x3a3f4a, shoes: 0xe8e2d6, tote: true },
   { name: '아빠', scale: 1.02, hair: 0x1c1919, hairLen: 'short', bangs: 'side', top: 0x5e5f3c, coat: 'long', furHood: true, pants: 0x2e3138, shoes: 0x2a2a2a, backpack: true },
 ];
+
+// ---------- 시간·날씨: 🌙 겨울밤(항상 밤 + 눈) / 🕒 실제 시간(현지 시각 하늘 + 그 도시 실제 날씨) ----------
+const CITY = { dresden: { name: '드레스덴', lat: 51.05, lon: 13.74 }, prague: { name: '프라하', lat: 50.087, lon: 14.421 }, berlin: { name: '베를린', lat: 52.516, lon: 13.378 } };
+let MODE = (() => { try { return localStorage.getItem('tk-world-mode') || 'night'; } catch { return 'night'; } })();
+const W = {}; // 도시별 날씨 {t, kind}
+const WX = { clear: '맑음', cloudy: '흐림', fog: '안개', rain: '비', snow: '눈' };
+const wxKind = c => c >= 71 && c <= 77 || c === 85 || c === 86 ? 'snow' : (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 ? 'rain' : c === 45 || c === 48 ? 'fog' : c >= 2 ? 'cloudy' : 'clear';
+async function loadWeather() {
+  await Promise.all(Object.entries(CITY).map(async ([k, c]) => {
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code&timezone=Europe%2FBerlin`);
+      const j = await r.json(); W[k] = { t: Math.round(j.current.temperature_2m), kind: wxKind(j.current.weather_code) };
+    } catch { W[k] = null; }
+  }));
+  shown = undefined; // 카드 다시 쓰기
+}
+loadWeather(); setInterval(loadWeather, 15 * 60 * 1000);
+function sunElev(date, lat, lon) { // 태양 고도(도)
+  const rad = Math.PI / 180, d = (date - Date.UTC(2000, 0, 1, 12)) / 864e5;
+  const g = (357.529 + .98560028 * d) * rad, q = 280.459 + .98564736 * d, L = (q + 1.915 * Math.sin(g) + .02 * Math.sin(2 * g)) * rad, e = (23.439 - 3.6e-7 * d) * rad;
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const gmst = (18.697374558 + 24.06570982441908 * d) % 24, ha = (gmst * 15 + lon) * rad - ra;
+  return Math.asin(Math.sin(lat * rad) * Math.sin(dec) + Math.cos(lat * rad) * Math.cos(dec) * Math.cos(ha)) / rad;
+}
+function cityHere() { // 가장 가까운 도시
+  let best = 'prague', bd = 1e9; const p = player.position;
+  for (const k of Object.keys(CITY)) { const z = ZONES[k], dd = Math.hypot(p.x - z.pos.x, p.z - z.pos.z); if (dd < bd) { bd = dd; best = k; } }
+  return best;
+}
+const localTime = () => new Date().toLocaleTimeString('ko-KR', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' });
+function weatherLine() {
+  if (MODE !== 'real') return '';
+  const k = cityHere(), w = W[k];
+  return `🕒 지금 ${CITY[k].name} ${localTime()}` + (w ? ` · ${w.t}℃ ${WX[w.kind]}` : w === null ? ' · 날씨를 못 받았어요' : '');
+}
+const env = { fall: 1, day: 0 };
+const C_NIGHT = new THREE.Color(0x141c4a), C_DAY = new THREE.Color(0x9cc3ea), C_DUSK = new THREE.Color(0xe39a7a), C_GREY = new THREE.Color(0x8f97a8), C_FOGN = new THREE.Color(0x1a2456);
+const sky = new THREE.Color(), fogC = new THREE.Color();
+let envT = 0;
+function applyEnv(d) {
+  envT -= d; if (envT > 0) return; envT = .5; // 0.5초마다
+  let day = 0, dusk = 0, kind = 'snow';
+  if (MODE === 'real') {
+    const k = cityHere(), el = sunElev(Date.now(), CITY[k].lat, CITY[k].lon);
+    day = smooth(-6, 8, el); dusk = Math.max(0, 1 - Math.abs(el - 1) / 7);
+    kind = W[k]?.kind || 'clear';
+  }
+  const grey = kind === 'cloudy' || kind === 'rain' || kind === 'fog' || kind === 'snow' && MODE === 'real' ? .55 : 0;
+  sky.copy(C_NIGHT).lerp(C_DAY, day).lerp(C_DUSK, dusk * .6).lerp(C_GREY, grey * day);
+  scene.background.copy(sky); fogC.copy(C_FOGN).lerp(sky, Math.max(day, .2)); scene.fog.color.copy(fogC);
+  hemi.intensity = .55 + day * .9; hemi.color.set(day > .5 ? 0xdfe8ff : 0x8aa0ff); hemi.groundColor.set(day > .5 ? 0x8a8a9a : 0x2a2f55);
+  moon.intensity = .9 + day * 1.2 * (1 - grey * .6); moon.color.set(day > .3 ? (dusk > .4 ? 0xffc89a : 0xfff4e0) : 0xb8c8ff);
+  bloom.strength = .8 - day * .5; renderer.toneMappingExposure = 1 + day * .15;
+  starMat.opacity = Math.max(0, 1 - day * 1.4 - (grey ? .7 : 0));
+  // 눈 / 비 / 안개
+  snow.visible = kind === 'snow' || kind === 'rain';
+  if (kind === 'rain') { snow.material.color.set(0xa9c2ff); snow.material.size = .12; snow.material.opacity = .55; env.fall = 7; }
+  else { snow.material.color.set(0xffffff); snow.material.size = .22; snow.material.opacity = .9; env.fall = 1; }
+  env.fog = kind === 'fog' ? .35 : kind === 'cloudy' || kind === 'rain' ? .75 : 1; env.day = day;
+  document.getElementById('env').textContent = weatherLine();
+}
+const modeBtn = document.getElementById('mode');
+const paintMode = () => { modeBtn.textContent = MODE === 'real' ? '🕒' : '🌙'; modeBtn.title = MODE === 'real' ? '실제 시간·날씨 (누르면 겨울밤)' : '겨울밤 (누르면 실제 시간·날씨)'; envT = 0; shown = undefined; };
+modeBtn.onclick = () => { MODE = MODE === 'real' ? 'night' : 'real'; try { localStorage.setItem('tk-world-mode', MODE); } catch {} paintMode(); };
+// 앱에서 고른 날짜 일정에 나오는 도시: 광장 위 '📍 오늘 일정' + 순간이동 버튼 강조
+const TODAY = (new URLSearchParams(location.search).get('today') || '').split(',').filter(k => ZONES[k]);
+for (const k of TODAY) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(255,210,122,.92)'; x.beginPath(); x.roundRect(36, 14, 440, 100, 50); x.fill();
+  x.fillStyle = '#3a2a10'; x.font = '56px Jua, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('📍 오늘 일정', 256, 66);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  sp.scale.set(10, 2.5, 1); sp.position.copy(ZONES[k].pos).setY(groundAt(ZONES[k].pos.x, ZONES[k].pos.z) + 12); sp.userData.noCol = true; scene.add(sp);
+  tickers.push(() => { sp.position.y = groundAt(ZONES[k].pos.x, ZONES[k].pos.z) + 12 + Math.sin(performance.now() / 500) * .4; });
+  document.querySelector(`#warp [data-z="${k}"]`)?.classList.add('today');
+}
+
 // ---------- 캐릭터: 각자 자기 캐릭터를 조종하고, 같은 월드(room)에 들어온 가족이 보인다 ----------
 const WHO = { me: { i: 0, label: '나' }, mom: { i: 1, label: '엄마' }, dad: { i: 2, label: '아빠' } };
 const params = new URLSearchParams(location.search);
@@ -917,14 +999,15 @@ function frame() {
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
   camera.lookAt(tmp.copy(player.position).setY(player.position.y + 2.2));
-  scene.fog.near = 45 + dist; scene.fog.far = 150 + dist * 2.2;
+  scene.fog.near = (45 + dist) * (env.fog ?? 1) * .8 + 4; scene.fog.far = (150 + dist * 2.2) * (env.fog ?? 1);
   moon.position.copy(player.position).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(player.position);
   // 눈
   for (let i = 0; i < SN; i++) {
-    let y = snowPos[i * 3 + 1] - d * (1.5 + (i % 5) * .3); if (y < 0) y += 40;
+    let y = snowPos[i * 3 + 1] - d * (1.5 + (i % 5) * .3) * env.fall; if (y < 0) y += 40;
     snowPos[i * 3 + 1] = y; snowPos[i * 3] += Math.sin(t + i) * d * .3;
   }
-  snowGeo.attributes.position.needsUpdate = true; snow.position.set(player.position.x, 0, player.position.z);
+  snowGeo.attributes.position.needsUpdate = true; snow.position.set(player.position.x, player.position.y, player.position.z);
+  applyEnv(d);
   tickers.forEach(f => f(d));
   // 근처 도시 카드
   let near = null;
@@ -934,7 +1017,7 @@ function frame() {
   if (near !== shown) {
     shown = near; card.classList.toggle('on', !!near);
     const info = near === 'touched' ? { name: '✨ 소원 빌었어요!', text: '네포무크 상을 만졌어요. 언젠가 프라하에 꼭 다시 오게 된대요.' } : ZONES[near] || CARDS[near];
-    if (info) { cardB.textContent = info.name; cardP.textContent = info.text; }
+    if (info) { cardB.textContent = info.name; cardP.textContent = info.text; const w = weatherLine(); if (w) { const e = document.createElement('small'); e.className = 'wx'; e.textContent = w; cardP.append(document.createElement('br'), e); } }
   }
   // 네포무크 부조 가까이 가면 '만지기' 버튼
   const pq = window.__plaque, canTouch = me && pq && Math.hypot(player.position.x - pq.position.x, player.position.z - pq.position.z) < 2.8;
@@ -944,7 +1027,7 @@ function frame() {
   composer.render();
   requestAnimationFrame(frame);
 }
-rebuildCollision(); setTimeout(rebuildCollision, 1500);
+paintMode(); rebuildCollision(); setTimeout(rebuildCollision, 1500);
 frame();
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();

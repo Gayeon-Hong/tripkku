@@ -701,7 +701,7 @@ const CSS=`.jr-seg{display:flex;gap:6px}.jr-seg button{flex:1;min-height:40px;bo
 .trip-party-item.me img{box-shadow:0 0 0 2px #f6c945}
 #avatarDialog .modal-content{max-height:92dvh;overflow:auto}@media(max-width:480px){.av-top{grid-template-columns:110px minmax(0,1fr)}#avCanvas{width:110px;height:128px}}`;
 function el(tag,props={},kids=[]){const n=document.createElement(tag);for(const [k,v] of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of kids)n.append(c);return n;}
-let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261126_fam1'));
+let stage3d=null;const load3d=()=>stage3d||(stage3d=import('./journey3d.js?v=20261126_wx1'));
 const tripKind=()=>{const a=api(),doc=a.activeDoc?.()||{};return costumeKind(doc.meta?.countries?.[0]||a.getTrip?.()?.country_code||doc.meta?.countryCode);};
 
 /* ---------- 여행 계획 화면: 여행 소개 카드에 함께 가는 사람들의 캐릭터를 보여 준다 ---------- */
@@ -994,7 +994,11 @@ function mountAvatar(){
 function worldLink(){if(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss')return;const a=api(),t=a.getTrip?.(),doc=a.activeDoc?.()||{},me=a.getMyId?.();let b=document.getElementById('worldBtn');
  if(!b){const play=document.getElementById('journeyPlay');if(!play)return;b=el('a',{id:'worldBtn',class:'btn'},[document.createTextNode('❄️ 겨울 월드')]);play.after(b);}
  const fam=Object.values(doc.avatars||{}).some(v=>v?.family),ok=!!t&&(fam||!!(a.isAdmin?.()&&a.isOwner?.()));b.hidden=!ok;
- if(ok){const who=doc.avatars?.[me]?.family||'';b.href='../world/?room='+encodeURIComponent(t.id)+(who?'&who='+who:'');}}
+ if(ok){const who=doc.avatars?.[me]?.family||'',date=a.getActiveDate?.(),day=(doc.days||[]).find(d=>d.date===date);
+  // 고른 날짜 일정에 나오는 도시를 월드에 '오늘 일정'으로 표시
+  const txt=[day?.title,day?.city,...(a.activeDayEvents?.(day)||[]).map(e=>[e.title,e.place,e.city,e.note].filter(Boolean).join(' '))].filter(Boolean).join(' ');
+  const today=[['dresden',/드레스덴|dresden/i],['prague',/프라하|praha|prague/i],['berlin',/베를린|berlin/i]].filter(([,r])=>r.test(txt)).map(([k])=>k).join(',');
+  b.href='../world/?room='+encodeURIComponent(t.id)+(who?'&who='+who:'')+(today?'&today='+today:'');}}
 function init(){
  const play=document.getElementById('journeyPlay'),edit=document.getElementById('avatarEdit');if(!play||!edit)return;
  document.head.append(el('style',{text:CSS}));
