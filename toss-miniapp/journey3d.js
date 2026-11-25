@@ -101,7 +101,16 @@ export function buildAvatar(av,kind=''){
  // 키: 아이·아기는 몸을 작게, 머리는 상대적으로 크게
  const k=av.size==='baby'?.62:av.size==='kid'?.8:1,hk=av.size==='baby'?1.2:av.size==='kid'?1.08:1;head.scale.multiplyScalar(hk);root.scale.setScalar(k);
  root.userData={legs,arms,head,eyes,brows,mouthSmile,mouthOpen,mouthO,fork,camera,tag:(108+44*hk)*k+18+(C?.hat?16*k:0)};
+ if(FAMILY[av.family])familyBody(root,FAMILY[av.family],(108+44*hk)*k);
  return root;}
+// 관리자 가족 캐릭터(Meshy 3D). journey.js 가 관리자 본인 여행에서만 av.family 를 남긴다. 받기 전·실패하면 기본 캐릭터 그대로.
+const FAMILY={me:'./assets/models/family_me.glb',mom:'./assets/models/family_mom.glb',dad:'./assets/models/family_dad.glb'},familyReady=new Map();
+function familyBody(root,url,H){const put=parts=>{const box=new THREE.Group();
+  for(const p of parts){const m=new THREE.Mesh(p.geo,mat('#ffffff',p.map?{map:p.map}:{vertexColors:!!p.geo.attributes.color}));m.position.fromArray(p.t);m.scale.fromArray(p.s);m.castShadow=true;box.add(m);}
+  const b=new THREE.Box3().setFromObject(box),sc=H/((b.max.y-b.min.y)||1);box.scale.setScalar(sc);box.position.set(-(b.min.x+b.max.x)/2*sc,-b.min.y*sc,-(b.min.z+b.max.z)/2*sc);
+  for(const c of root.children)c.visible=false;root.add(box);};
+ const hit=familyReady.get(url);if(hit)return put(hit);
+ loadGlb(url).then(p=>{familyReady.set(url,p);put(p);}).catch(e=>console.warn('가족 3D 모델이 아직 없어 기본 캐릭터로 보여줘요',url,e));}
 
 /** state: {walking, act: ''|cheer|pose|wave|eat|relax|sleep, mood(표정, 없으면 행동에 맞춰 고름), t, seed} */
 export function poseAvatar(c,o){const u=c.userData,t=o.t||0,sd=o.seed||0,act=o.act||'',sw=o.walking?Math.sin(t*11+sd):0,sit=!!o.sit&&!o.walking;
@@ -792,11 +801,14 @@ function loadGlb(url){if(!modelCache.has(url))modelCache.set(url,(async()=>{
    stride=bv.extensions?.EXT_meshopt_compression?.byteStride||bv.byteStride||n*b,norm=!!a.normalized;
   if(stride===n*b)return new THREE.BufferAttribute(new T(u.buffer,u.byteOffset+(a.byteOffset||0),a.count*n),n,norm);
   return new THREE.InterleavedBufferAttribute(new THREE.InterleavedBuffer(new T(u.buffer,u.byteOffset,u.byteLength/b),stride/b),n,(a.byteOffset||0)/b,norm);};
- const NAME={POSITION:'position',NORMAL:'normal',COLOR_0:'color'};
+ const NAME={POSITION:'position',NORMAL:'normal',COLOR_0:'color',TEXCOORD_0:'uv'};
+ // 색 그림(baseColorTexture)이 파일 안에 들어 있으면 붙인다 — Meshy 캐릭터는 색이 그림으로 온다
+ const tex=pr=>{const ti=json.materials?.[pr.material]?.pbrMetallicRoughness?.baseColorTexture?.index,im=json.images?.[json.textures?.[ti]?.source];if(im?.bufferView==null)return null;
+  const t=new THREE.TextureLoader().load(URL.createObjectURL(new Blob([views[im.bufferView]],{type:im.mimeType||'image/png'})));t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;return t;};
  return json.scenes[json.scene||0].nodes.map(ni=>{const nd=json.nodes[ni],m=json.meshes[nd.mesh],pr=m.primitives[0],geo=new THREE.BufferGeometry();
   for(const [k,i] of Object.entries(pr.attributes))if(NAME[k])geo.setAttribute(NAME[k],attr(i));
   if(pr.indices!=null)geo.setIndex(attr(pr.indices));
-  return {name:nd.name||m.name,geo,t:nd.translation||[0,0,0],s:nd.scale||[1,1,1]};});})());
+  return {name:nd.name||m.name,geo,map:tex(pr),t:nd.translation||[0,0,0],s:nd.scale||[1,1,1]};});})());
  return modelCache.get(url);}
 function modelProp(key){const M=MODELS[key],g=new THREE.Group(),fb=M.fallback();g.add(fb);
  loadGlb(M.url).then(parts=>{const box=new THREE.Group();

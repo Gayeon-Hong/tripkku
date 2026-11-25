@@ -30,6 +30,7 @@ export const OPT={
  outfit:['#b9a4e6','#f6b6c8','#f4d58a','#8fd0b8','#8fb7ea','#f2a07a','#5f6f94','#ffffff'],
  acc:[['none','없음'],['glasses','안경'],['ribbon','리본'],['cap','모자']],
  costume:[['on','입기'],['off','안 입기']],
+ family:[['','없음'],['me','나'],['mom','엄마'],['dad','아빠']], // 관리자 본인 여행 전용 가족 3D 캐릭터
  gender:[['f','여'],['m','남']],
  costumeColor:['#e85a6e','#f2a03a','#f0c75e','#4fae7a','#3f8fd6','#6b5fd0','#c05aa8','#2f3a55']
 };
@@ -59,7 +60,7 @@ export function cleanAvatar(raw,id){const base=defaultAvatar(id);if(!raw||typeof
  const key=(list,v,d)=>list.some(x=>x[0]===v)?v:d,color=(list,v,d)=>list.includes(v)?v:d,num=(v,d)=>typeof v==='number'&&Number.isFinite(v)?clamp(v,-1,1):d;
  return {faceW:num(raw.faceW,base.faceW),faceH:num(raw.faceH,base.faceH),jaw:num(raw.jaw,base.jaw),skin:color(OPT.skin,raw.skin,base.skin),hair:key(OPT.hair,raw.hair,base.hair),bangs:key(OPT.bangs,raw.bangs,base.bangs),size:key(OPT.size,raw.size,'adult'),hairColor:color(OPT.hairColor,raw.hairColor,base.hairColor),
   eyes:key(OPT.eyes,raw.eyes,base.eyes),brows:key(OPT.brows,raw.brows,base.brows),outfit:color(OPT.outfit,raw.outfit,base.outfit),acc:key(OPT.acc,raw.acc,'none'),
-  costume:key(OPT.costume,raw.costume,'on'),gender:key(OPT.gender,raw.gender,base.gender),costumeColor:color(OPT.costumeColor,raw.costumeColor,base.costumeColor),role:String(raw.role||'').slice(0,8)};}
+  costume:key(OPT.costume,raw.costume,'on'),gender:key(OPT.gender,raw.gender,base.gender),costumeColor:color(OPT.costumeColor,raw.costumeColor,base.costumeColor),role:String(raw.role||'').slice(0,8),family:key(OPT.family,raw.family,'')};}
 const localKey=()=>LOCAL_KEY+':'+(api().getMyId?.()||'');
 function localAvatar(){try{return JSON.parse(localStorage.getItem(localKey())||'null');}catch{return null;}}
 // 같은 기기의 다른 계정 캐릭터가 자동 적용돼 내 캐릭터와 똑같이 저장된 경우는 저장 안 한 것으로 본다
@@ -968,7 +969,8 @@ function mountAvatar(){
   const face=el('div',{class:'av-group'},[el('span',{text:'얼굴형 (조금씩 조절)'}),...FACE.map(([k,label,lo,hi])=>{const input=el('input',{type:'range',min:'-1',max:'1',step:'0.1','aria-label':label+' ('+lo+' ~ '+hi+')'});input.value=String(s.av[k]);
    input.addEventListener('input',()=>{s.av[k]=Number(input.value);refresh();});return el('label',{class:'av-slider'},[el('span',{text:lo}),input,el('span',{text:hi})]);})]);
   const kind=tripKind(),note=el('p',{class:'tiny',text:!api().getTrip?.()?'여행지에 도착하면 그 나라 전통의상으로 갈아입어요. 여/남 형태와 색만 골라 두세요.':kind?'이 여행지에서는 '+COSTUME_NAME[kind]+'을(를) 입어요. 여/남 형태와 색만 고르면 됩니다.':'이 여행지는 아직 준비된 전통의상이 없어 평소 옷을 입어요. 다른 여행을 위해 미리 골라 둘 수 있어요.'});note.style.margin='0';
-  const byTab={face:[face,colored('skin'),keyed('눈','eyes'),keyed('눈썹','brows')],hair:[keyed('머리 모양','hair'),keyed('앞머리','bangs'),colored('hairColor')],outfit:[keyed('키','size'),colored('outfit'),keyed('소품','acc')],
+  const fam=api().isAdmin?.()&&api().isOwner?.()?[keyed('가족 3D 캐릭터 (관리자 여행 전용)','family')]:[];
+  const byTab={face:[face,colored('skin'),keyed('눈','eyes'),keyed('눈썹','brows')],hair:[keyed('머리 모양','hair'),keyed('앞머리','bangs'),colored('hairColor')],outfit:[...fam,keyed('키','size'),colored('outfit'),keyed('소품','acc')],
    costume:[keyed('여행지 전통의상','costume'),note,keyed('전통의상 형태','gender'),colored('costumeColor')],rel:[]};
   tabsEl.replaceChildren(...TABS.map(([k,l])=>{const b=el('button',{type:'button',role:'tab','aria-selected':String(s.tab===k),class:s.tab===k?'active':'',text:l});b.addEventListener('click',()=>{s.tab=k;paint();});return b;}));
   rel.hidden=s.tab!=='rel';parts.hidden=s.tab==='rel';parts.replaceChildren(...byTab[s.tab]);refresh();};
@@ -979,7 +981,7 @@ function mountAvatar(){
  dlg.querySelector('[data-av="random"]').addEventListener('click',()=>{const role=s.av.role;const keep={size:s.av.size,gender:s.av.gender,costume:s.av.costume};s.av=defaultAvatar(String(Math.random()));Object.assign(s.av,keep);s.av.brows=OPT.brows[Math.floor(Math.random()*4)][0];s.av.acc=OPT.acc[Math.floor(Math.random()*OPT.acc.length)][0];s.av.role=role;paint();});
  dlg.querySelector('[data-av="save"]').addEventListener('click',async()=>{const a=api(),me=a.getMyId?.();if(!me)return a.toast?.('로그인한 뒤에 저장할 수 있어요.');
   const target=s.target||me,mine=target===me;if(!mine&&!a.isAdmin?.())return a.toast?.('다른 사람의 캐릭터는 관리자만 바꿀 수 있어요.');
-  const av=cleanAvatar(s.av,target),g=s.group;if(mine){try{localStorage.setItem(localKey(),JSON.stringify(av));}catch{}document.dispatchEvent(new Event('tripkku-avatar-saved'));}
+  const av=cleanAvatar(s.av,target),g=s.group;if(!(a.isAdmin?.()&&a.isOwner?.()))av.family=cleanAvatar(a.activeDoc?.()?.avatars?.[target],target).family; // 관리자 본인 여행에서만 정할 수 있고, 다른 사람은 정해진 값을 그대로 둔다if(mine){try{localStorage.setItem(localKey(),JSON.stringify({...av,family:''}));}catch{}document.dispatchEvent(new Event('tripkku-avatar-saved'));}
   if(!a.getTrip?.()){a.toast?.('내 캐릭터를 저장했어요. 여행을 열면 자동으로 적용돼요.');return close();}
   try{await a.saveTrip(d=>{d.avatars??={};d.avatars[target]=av;d.meta??={};d.meta.groupType=g;},mine?'내 캐릭터를 저장했어요.':'캐릭터를 바꿨어요.');close();}catch(e){a.toast?.('캐릭터 저장 실패: '+e.message);}});
  const load=id=>{const a=api(),me=a.getMyId?.(),doc=a.activeDoc?.()||{};s.target=id&&(id===me||a.isAdmin?.())?id:me;

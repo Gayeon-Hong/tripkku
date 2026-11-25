@@ -191,3 +191,8 @@
 - 작업 방식 주의: 사용자는 요청 범위만 정확히 고치길 원함(예: "앞머리만" → 앞머리만). 결과가 맘에 안 들면 전체 롤백 말고 해당 부분만 되돌리기.
 - 깃 푸시(로컬 PC): GCM 에 깃허브 계정 2개(Gayeon-Hong, GayoenHong) → 저장소에 `credential.https://github.com.username=Gayeon-Hong` 설정함. 여러 세션이 동시에 올리니 `git pull --rebase` 후 push.
 - Meshy CLI 로그인은 PC 에서 기기 코드가 계속 만료돼 실패. 사용자가 폰 Meshy 앱(무료 70크레딧)에서 만들어 GLB/zip 으로 보내주는 방식이 현실적.
+
+### 2026-11-26 — 가족 3D 캐릭터 장치 (구현됨, 모델 파일 대기)
+- `next/journey.js`: 캐릭터 값에 `family: ''|'me'|'mom'|'dad'` 추가. 꾸미기 창 '옷' 탭에 '가족 3D 캐릭터' 칩 — **관리자이면서 이 여행 주인일 때만** 보임. 저장도 그때만 바뀌고, 기기(localStorage)에는 안 남겨 다른 여행으로 새지 않음.
+- `next/journey3d.js`: `FAMILY` 표 → `next/assets/models/family_me.glb / family_mom.glb / family_dad.glb`. `buildAvatar` 가 기본 캐릭터를 숨기고 모델을 캐릭터 키에 맞춰 세움. 파일이 없으면 기본 캐릭터 그대로. `loadGlb` 가 이제 색 그림(baseColorTexture, 파일 안에 든 것)도 붙임.
+- 모델 넣는 법: 노드 하나짜리로 정리(`gltf-transform flatten`→`join`), 그림 1024 webp, `meshopt` 압축. 정면이 +z. 받은 텍스처 모델로는 아직 확인 못 함(색 있는 정점 모델로만 확인).
