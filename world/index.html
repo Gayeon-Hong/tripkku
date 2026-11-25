@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>트립꾸 겨울 월드</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b1230;font-family:'Jua',system-ui,sans-serif;touch-action:none;user-select:none}
+  canvas{display:block}
+  #title{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:22px;text-shadow:0 2px 0 #24306b,0 0 12px #8fb4ff;white-space:nowrap;pointer-events:none}
+  #card{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;transition:.35s;background:rgba(255,255,255,.93);color:#2a2f55;border-radius:22px;padding:14px 18px;max-width:min(360px,calc(100vw - 32px));box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none}
+  #card.on{opacity:1;transform:translate(-50%,0)}
+  #card b{font-size:20px;display:block;margin-bottom:4px}
+  #card p{margin:0;font-size:15px;line-height:1.45;font-family:system-ui,sans-serif}
+  #help{position:fixed;top:48px;left:50%;transform:translateX(-50%);color:#cfe0ff;font-size:13px;opacity:.85;pointer-events:none;white-space:nowrap}
+  #stick{position:fixed;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none}
+  #stick i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.7)}
+  #warp{position:fixed;top:76px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+  #warp button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer}
+  #back{position:fixed;top:12px;left:12px;color:#fff;text-decoration:none;font-size:15px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px}
+</style>
+</head>
+<body>
+<a id="back" href="../index.html">← 트립꾸</a>
+<div id="title">❄️ 트립꾸 겨울 여행 월드</div>
+<div id="help">PC: WASD/방향키 · 드래그로 시점 &nbsp;|&nbsp; 폰: 왼쪽 손가락 이동 · 오른쪽 시점</div>
+<div id="warp">
+  <button data-z="dresden">🇩🇪 드레스덴</button>
+  <button data-z="prague">🇨🇿 프라하</button>
+  <button data-z="brussels">🇧🇪 브뤼셀</button>
+</div>
+<div id="card"><b></b><p></p></div>
+<div id="stick"><i></i></div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ---------- 기본 세팅 ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x141c4a);
+scene.fog = new THREE.Fog(0x1a2456, 45, 150);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 400);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.95));
+composer.addPass(new OutputPass());
+
+scene.add(new THREE.HemisphereLight(0x8aa0ff, 0x2a2f55, .55));
+const moon = new THREE.DirectionalLight(0xb8c8ff, .9);
+moon.position.set(-30, 50, 20);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048, 2048);
+Object.assign(moon.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 150 });
+scene.add(moon, moon.target);
+
+// ---------- 재질 헬퍼 ----------
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: .8, ...o });
+const glow = (c, k = 2.2) => new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: k });
+function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  m.castShadow = m.receiveShadow = true; if (parent) parent.add(m); return m;
+}
+
+// ---------- 하늘: 별 + 눈 ----------
+{
+  const g = new THREE.BufferGeometry(), p = [];
+  for (let i = 0; i < 1500; i++) {
+    const v = new THREE.Vector3().randomDirection(); v.y = Math.abs(v.y) + .05;
+    p.push(...v.normalize().multiplyScalar(300).toArray());
+  }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, fog: false })));
+}
+const snowGeo = new THREE.BufferGeometry(), SN = 2500, snowPos = new Float32Array(SN * 3);
+for (let i = 0; i < SN; i++) snowPos.set([(Math.random() - .5) * 120, Math.random() * 40, (Math.random() - .5) * 120], i * 3);
+snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+const snow = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: .22, transparent: true, opacity: .9 }));
+scene.add(snow);
+
+// ---------- 바닥 ----------
+const ground = mesh(new THREE.CircleGeometry(95, 64), M(0xaab6dc, { roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.castShadow = false;
+scene.add(ground);
+
+// ---------- 존 정의 (도시 3곳) ----------
+const ZONES = {
+  dresden: { ang: -Math.PI / 2, name: '🇩🇪 드레스덴 · 프라우엔 교회',
+    text: '전쟁 때 무너졌다가 2005년에 원래 돌로 다시 지은 성당이에요. 겨울엔 슈트리첼마르크트(1434년부터 열린 크리스마스 마켓)에서 슈톨렌 먹기!' },
+  prague: { ang: Math.PI / 6, name: '🇨🇿 프라하 · 틴 성당',
+    text: '구시가지 광장의 뾰족한 쌍둥이 첨탑. 바로 옆 천문시계가 정각마다 움직여요. 광장 크리스마스 마켓에서 뜨르들로 꼭!' },
+  brussels: { ang: Math.PI * 5 / 6, name: '🇧🇪 브뤼셀 · 아토미움 & 그랑플라스',
+    text: '1958년 만국박람회 때 만든 철 원자 모형 아토미움, 그리고 금빛 길드하우스가 둘러싼 그랑플라스. 와플이랑 감자튀김 필수!' },
+};
+const R = 42;
+for (const z of Object.values(ZONES)) z.pos = new THREE.Vector3(Math.cos(z.ang) * R, 0, Math.sin(z.ang) * R);
+
+const colliders = []; // {x,z,r}
+const addCol = (x, z, r) => colliders.push({ x, z, r });
+
+// 길 + 가로등
+for (const z of Object.values(ZONES)) {
+  const path = mesh(new THREE.PlaneGeometry(6, R - 8), M(0x8d97bd, { roughness: 1 }));
+  path.rotation.x = -Math.PI / 2; path.rotation.z = -z.ang - Math.PI / 2;
+  path.position.set(z.pos.x / 2, .02, z.pos.z / 2); path.castShadow = false; scene.add(path);
+  const plaza = mesh(new THREE.CircleGeometry(20, 48), M(0x9ba5c9, { roughness: 1 }));
+  plaza.rotation.x = -Math.PI / 2; plaza.position.set(z.pos.x, .03, z.pos.z); plaza.castShadow = false; scene.add(plaza);
+  for (let t = .25; t < .8; t += .18) for (const s of [-1, 1]) {
+    const px = z.pos.x * t + Math.cos(z.ang + Math.PI / 2) * 4.2 * s, pz = z.pos.z * t + Math.sin(z.ang + Math.PI / 2) * 4.2 * s;
+    lamp(px, pz);
+  }
+}
+function lamp(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  mesh(new THREE.CylinderGeometry(.08, .12, 3.4), M(0x2b2f45, { metalness: .6 }), 0, 1.7, 0, g);
+  mesh(new THREE.SphereGeometry(.32, 16, 12), glow(0xffd58a), 0, 3.5, 0, g);
+  addCol(x, z, .4);
+}
+
+// 꼬마전구 줄 (InstancedMesh 하나로)
+const bulbData = [];
+const bulbColors = [0xffd27a, 0xff7a9c, 0x8fe3ff, 0xa6ff9b];
+function lightString(a, b, sag = 1, n = 14) {
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, p = a.clone().lerp(b, t); p.y -= Math.sin(t * Math.PI) * sag;
+    bulbData.push({ p, c: bulbColors[i % 4] });
+  }
+}
+
+// ---------- 공통 소품 ----------
+function stall(x, z, rotY, roof = 0xb8323a) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  mesh(new THREE.BoxGeometry(3, 2.2, 2.2), M(0x8a5a3a), 0, 1.1, 0, g);
+  mesh(new THREE.BoxGeometry(2.6, 1, .1), glow(0xffb45c, .9), 0, 1.3, 1.12, g);
+  const r = mesh(new THREE.ConeGeometry(2.4, 1.3, 4), M(roof), 0, 2.85, 0, g); r.rotation.y = Math.PI / 4; r.scale.z = .8;
+  mesh(new THREE.BoxGeometry(3.3, .15, 2.5), M(0xffffff), 0, 2.25, 0, g); // 지붕 위 눈
+  const w = new THREE.Vector3(-1.5, 2.2, 1.15).applyMatrix4(g.matrixWorld.compose(g.position, g.quaternion, g.scale));
+  const e = new THREE.Vector3(1.5, 2.2, 1.15).applyMatrix4(g.matrixWorld);
+  lightString(w, e, .3, 8);
+  addCol(x, z, 2);
+}
+function xmasTree(x, z, s = 1) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+  mesh(new THREE.CylinderGeometry(.3, .4, 1.2), M(0x5a3a22), 0, .6, 0, g);
+  [[2.6, 2.2, 1.6], [2.1, 2, 3], [1.5, 1.8, 4.3]].forEach(([r, h, y]) => mesh(new THREE.ConeGeometry(r, h, 10), M(0x1f6b45), 0, y, 0, g));
+  const star = mesh(new THREE.OctahedronGeometry(.4), glow(0xffe066), 0, 5.4, 0, g);
+  for (let i = 0; i < 26; i++) {
+    const y = 1 + Math.random() * 3.8, r = (5.3 - y) * .5 + .05, a = Math.random() * 6.28;
+    bulbData.push({ p: new THREE.Vector3(x + Math.cos(a) * r * s, y * s, z + Math.sin(a) * r * s), c: bulbColors[i % 4] });
+  }
+  addCol(x, z, 2.4 * s);
+  return star;
+}
+
+// ---------- 드레스덴: 프라우엔 교회 ----------
+function frauenkirche() {
+  const g = new THREE.Group(), stone = M(0xdcc9a1), dark = M(0x8f8676);
+  mesh(new THREE.BoxGeometry(14, 9, 14), stone, 0, 4.5, 0, g);
+  for (const [x, z] of [[-6, -6], [6, -6], [-6, 6], [6, 6]]) {
+    mesh(new THREE.CylinderGeometry(1.4, 1.5, 13, 8), stone, x, 6.5, z, g);
+    mesh(new THREE.ConeGeometry(1.2, 2.6, 8), dark, x, 14.3, z, g);
+  }
+  for (let i = 0; i < 4; i++) { // 창문 (안쪽에서 불빛)
+    const w = mesh(new THREE.BoxGeometry(1.4, 3.6, .2), glow(0xffb45c, .9), 0, 5, 7.05, g);
+    w.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), i * Math.PI / 2); w.rotation.y = i * Math.PI / 2;
+  }
+  const prof = [[7.2, 0], [7.4, 1.2], [6.9, 3.6], [5.6, 6], [3.6, 7.9], [1.8, 8.9], [1.5, 9.1], [0, 9.1]].map(([r, y]) => new THREE.Vector2(r, y));
+  mesh(new THREE.LatheGeometry(prof, 40), stone, 0, 9, 0, g); // 종 모양 돔
+  mesh(new THREE.CylinderGeometry(1.4, 1.5, 3, 12), stone, 0, 19.5, 0, g);
+  mesh(new THREE.SphereGeometry(1.2, 16, 10, 0, 6.3, 0, 1.6), dark, 0, 21, 0, g);
+  mesh(new THREE.BoxGeometry(.18, 1.6, .18), glow(0xffd76a), 0, 23, 0, g);
+  mesh(new THREE.BoxGeometry(.9, .18, .18), glow(0xffd76a), 0, 23.2, 0, g);
+  return g;
+}
+
+// ---------- 프라하: 틴 성당 ----------
+function tyn() {
+  const g = new THREE.Group(), wall = M(0xb9a68a), roof = M(0x2e3340, { roughness: .6 }), gold = M(0xe0b84a, { metalness: .8, roughness: .3 });
+  mesh(new THREE.BoxGeometry(8, 12, 9), wall, 0, 6, 2, g);
+  const gable = mesh(new THREE.ConeGeometry(6, 5, 4), roof, 0, 14.5, 2, g); gable.rotation.y = Math.PI / 4; gable.scale.set(1, 1, 1.1);
+  for (const x of [-3.2, 3.2]) {
+    mesh(new THREE.BoxGeometry(3.2, 18, 3.2), wall, x, 9, -3, g);
+    mesh(new THREE.ConeGeometry(2.3, 9, 8), roof, x, 22.5, -3, g);
+    mesh(new THREE.SphereGeometry(.3, 12, 8), gold, x, 27.2, -3, g);
+    for (const [dx, dz] of [[-1.5, -1.5], [1.5, -1.5], [-1.5, 1.5], [1.5, 1.5]]) {
+      mesh(new THREE.ConeGeometry(.45, 3.2, 6), roof, x + dx, 19.6, -3 + dz, g);
+      mesh(new THREE.SphereGeometry(.15, 8, 6), gold, x + dx, 21.3, -3 + dz, g);
+    }
+  }
+  for (const x of [-2, 0, 2]) mesh(new THREE.BoxGeometry(1, 3.5, .2), glow(0xffb45c, .9), x, 7, 6.6, g);
+  // 천문시계 탑 (옆)
+  const t = new THREE.Group(); t.position.set(9, 0, 5); g.add(t);
+  mesh(new THREE.BoxGeometry(3.6, 15, 3.6), M(0xcab89a), 0, 7.5, 0, t);
+  mesh(new THREE.ConeGeometry(2.8, 3, 4), roof, 0, 16.5, 0, t).rotation.y = Math.PI / 4;
+  const face = mesh(new THREE.CircleGeometry(1.3, 32), glow(0x5aa0ff), 0, 8, 1.82, t);
+  mesh(new THREE.RingGeometry(1.3, 1.55, 32), gold, 0, 8, 1.83, t);
+  const hand = mesh(new THREE.BoxGeometry(.12, 1.1, .05), glow(0xffe08a), 0, 8, 1.86, t);
+  hand.geometry.translate(0, .45, 0); g.userData.tick = d => hand.rotation.z -= d * .5;
+  return g;
+}
+
+// ---------- 브뤼셀: 아토미움 + 길드하우스 ----------
+function brussels() {
+  const g = new THREE.Group(), steel = M(0xd8dde6, { metalness: .9, roughness: .22 });
+  const a = new THREE.Group(); a.position.y = 13; a.rotation.set(Math.atan(1 / Math.SQRT2), 0, Math.PI / 4); g.add(a);
+  const pts = [[0, 0, 0]];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) pts.push([x, y, z]);
+  const s = 5.2, V = pts.map(p => new THREE.Vector3(...p).multiplyScalar(s));
+  V.forEach((v, i) => { mesh(new THREE.SphereGeometry(1.5, 28, 20), steel, v.x, v.y, v.z, a);
+    if (i) for (let k = 0; k < 2; k++) mesh(new THREE.SphereGeometry(.18, 8, 6), glow(0xbfe4ff), v.x + (k ? .9 : -.9), v.y + 1.1, v.z, a); });
+  const tube = (p, q) => { const m = mesh(new THREE.CylinderGeometry(.42, .42, p.distanceTo(q), 12), steel, 0, 0, 0, a);
+    m.position.copy(p).lerp(q, .5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), q.clone().sub(p).normalize()); };
+  for (let i = 1; i < 9; i++) { tube(V[0], V[i]); for (let j = i + 1; j < 9; j++) if (V[i].distanceTo(V[j]) === 2 * s) tube(V[i], V[j]); }
+  // 다리 3개
+  for (let k = 0; k < 3; k++) { const ang = k * 2.094; mesh(new THREE.CylinderGeometry(.35, .5, 8), steel, Math.cos(ang) * 3, 4, Math.sin(ang) * 3, g).rotation.set(Math.sin(ang) * .35, 0, -Math.cos(ang) * .35); }
+  // 길드하우스 줄 (뒤쪽)
+  const cols = [0x6b4a3a, 0xa8743e, 0x56475c, 0x7a5638, 0x4f5f6a];
+  cols.forEach((c, i) => {
+    const h = 9 + (i % 2) * 2, x = -10 + i * 5, hz = -11;
+    mesh(new THREE.BoxGeometry(4.6, h, 4), M(c), x, h / 2, hz, g);
+    for (let st = 0; st < 3; st++) mesh(new THREE.BoxGeometry(3.6 - st * 1.1, 1, 4), M(c), x, h + .5 + st, hz, g);
+    mesh(new THREE.BoxGeometry(4.7, .25, 4.1), M(0xe8c35a, { metalness: .8, roughness: .3, emissive: 0x6a4a00 }), x, h - .3, hz, g);
+    for (const wy of [3, 6]) for (const wx of [-1.1, 1.1]) mesh(new THREE.BoxGeometry(.9, 1.4, .1), glow(0xffb45c, .9), x + wx, wy, hz + 2.03, g);
+  });
+  g.userData.tick = d => { a.rotation.y += d * .08; };
+  return g;
+}
+
+// ---------- 랜드마크 배치 (Meshy GLB 있으면 교체) ----------
+const builders = { dresden: frauenkirche, prague: tyn, brussels };
+const tickers = [];
+const loader = new GLTFLoader();
+for (const [key, z] of Object.entries(ZONES)) {
+  const g = builders[key](); scene.add(g);
+  // 랜드마크는 광장 안쪽(바깥 방향)에, 입구가 중앙을 보게
+  const out = z.pos.clone().normalize();
+  g.position.copy(z.pos).addScaledVector(out, 8);
+  g.lookAt(0, 0, 0);
+  if (g.userData.tick) tickers.push(g.userData.tick);
+  addCol(g.position.x, g.position.z, key === 'brussels' ? 6 : 9);
+  if (key === 'brussels') { // 길드하우스 충돌
+    const back = g.position.clone().addScaledVector(out, 11); addCol(back.x, back.z, 12);
+  }
+  // models/<도시>.glb 가 있으면 절차 모델 대신 사용 (Meshy에서 만든 것)
+  loader.load(`models/${key}.glb`, gl => {
+    const m = gl.scene, box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3());
+    m.scale.setScalar(22 / size.y);
+    const b2 = new THREE.Box3().setFromObject(m); m.position.y -= b2.min.y;
+    m.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    g.clear(); g.add(m); g.userData.tick && tickers.splice(tickers.indexOf(g.userData.tick), 1);
+  }, undefined, () => {});
+  // 크리스마스 마켓 노점 + 트리
+  const side = new THREE.Vector3(-out.z, 0, out.x);
+  for (const s of [-1, 1]) for (const f of [-6, 1]) {
+    const p = z.pos.clone().addScaledVector(side, 11 * s).addScaledVector(out, f);
+    stall(p.x, p.z, Math.atan2(-side.x * s, -side.z * s), [0xb8323a, 0x2f6d4f, 0x2c4f99][Object.keys(ZONES).indexOf(key)]);
+  }
+  const tp = z.pos.clone().addScaledVector(out, 5).addScaledVector(side, -6); tickers.push(((st) => d => st.rotation.y += d)(xmasTree(tp.x, tp.z, .9)));
+  // 광장 가로질러 전구줄
+  const l1 = z.pos.clone().addScaledVector(side, -11).addScaledVector(out, -2); l1.y = 4.5;
+  const l2 = z.pos.clone().addScaledVector(side, 11).addScaledVector(out, -2); l2.y = 4.5;
+  lightString(l1, l2, 1.2, 30);
+  const pl = new THREE.PointLight(0xffb86b, 14, 24); pl.position.copy(z.pos).setY(5); scene.add(pl);
+}
+
+// 중앙 허브: 큰 트리 + 이정표
+const hubStar = xmasTree(0, 0, 1.6); tickers.push(d => hubStar.rotation.y += d);
+{
+  const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(0, 6, 0); scene.add(pl);
+}
+// 숲 (가장자리 눈 덮인 나무)
+for (let i = 0; i < 90; i++) {
+  const a = Math.random() * 6.28, r = 68 + Math.random() * 22, x = Math.cos(a) * r, z = Math.sin(a) * r, s = .8 + Math.random() * 1.2;
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+  mesh(new THREE.ConeGeometry(2, 5, 8), M(0x1c4a3a), 0, 3, 0, g);
+  mesh(new THREE.ConeGeometry(1.2, 1.6, 8), M(0xf4f7ff), 0, 5, 0, g);
+}
+
+// 전구 InstancedMesh 생성
+{
+  const im = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), bulbData.length);
+  const mtx = new THREE.Matrix4(), col = new THREE.Color();
+  bulbData.forEach((b, i) => { im.setMatrixAt(i, mtx.makeTranslation(b.p.x, b.p.y, b.p.z)); im.setColorAt(i, col.set(b.c).multiplyScalar(2.5)); });
+  scene.add(im);
+}
+
+// ---------- 캐릭터 (눈사람 꾸꾸) ----------
+const player = new THREE.Group(); scene.add(player);
+const body = new THREE.Group(); player.add(body);
+{
+  const white = M(0xffffff, { roughness: .6 });
+  mesh(new THREE.SphereGeometry(.9, 24, 18), white, 0, .9, 0, body).scale.set(1, .9, 1);
+  mesh(new THREE.SphereGeometry(.7, 24, 18), white, 0, 2, 0, body);
+  mesh(new THREE.TorusGeometry(.55, .17, 10, 24), M(0xe0475f), 0, 1.55, 0, body).rotation.x = Math.PI / 2;
+  mesh(new THREE.BoxGeometry(.22, .5, .12), M(0xe0475f), .3, 1.3, .55, body);
+  for (const x of [-.24, .24]) mesh(new THREE.SphereGeometry(.08, 10, 8), M(0x222233), x, 2.1, .63, body);
+  for (const x of [-.4, .4]) mesh(new THREE.SphereGeometry(.12, 10, 8), M(0xffa6b8), x, 1.92, .55, body).scale.set(1, .6, .4);
+  mesh(new THREE.ConeGeometry(.09, .4, 8), M(0xff9a3c), 0, 1.98, .82, body).rotation.x = Math.PI / 2;
+  mesh(new THREE.SphereGeometry(.68, 20, 12, 0, 6.3, 0, 1.4), M(0x5a7bd8), 0, 2.15, 0, body); // 털모자
+  mesh(new THREE.SphereGeometry(.2, 12, 10), white, 0, 2.85, 0, body);
+}
+player.position.set(0, 0, 8);
+loader.load('models/character.glb', gl => {
+  const m = gl.scene, s = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
+  m.scale.setScalar(3 / s.y); m.traverse(o => o.isMesh && (o.castShadow = true));
+  body.clear(); body.add(m);
+}, undefined, () => {});
+
+// ---------- 입력 ----------
+const keys = {};
+addEventListener('keydown', e => keys[e.code] = true);
+addEventListener('keyup', e => keys[e.code] = false);
+let camYaw = 0, camPitch = .42, joy = null, look = null;
+const stick = document.getElementById('stick'), knob = stick.firstElementChild;
+const jv = new THREE.Vector2();
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' && e.clientX < innerWidth / 2 && !joy) {
+    joy = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    Object.assign(stick.style, { display: 'block', left: e.clientX - 55 + 'px', top: e.clientY - 55 + 'px' });
+  } else look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+});
+addEventListener('pointermove', e => {
+  if (joy && e.pointerId === joy.id) {
+    jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 45) jv.setLength(45);
+    knob.style.transform = `translate(${jv.x}px,${jv.y}px)`;
+  } else if (look && e.pointerId === look.id) {
+    camYaw -= (e.clientX - look.x) * .006; camPitch = THREE.MathUtils.clamp(camPitch + (e.clientY - look.y) * .004, .15, 1.1);
+    look.x = e.clientX; look.y = e.clientY;
+  }
+});
+const endPtr = e => {
+  if (joy && e.pointerId === joy.id) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
+  if (look && e.pointerId === look.id) look = null;
+};
+addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
+  const z = ZONES[b.dataset.z]; player.position.copy(z.pos).multiplyScalar(.6); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3;
+});
+
+// ---------- 루프 ----------
+const card = document.getElementById('card'), cardB = card.querySelector('b'), cardP = card.querySelector('p');
+let shown = null, walkT = 0;
+const clock = new THREE.Clock(), camPos = new THREE.Vector3(), tmp = new THREE.Vector3();
+function frame() {
+  const d = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  // 이동 입력 (카메라 기준)
+  let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jv.x / 45;
+  let iz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + jv.y / 45;
+  const mv = new THREE.Vector3(ix, 0, iz);
+  if (mv.lengthSq() > .01) {
+    mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
+    player.position.addScaledVector(mv, d * 9);
+    body.rotation.y = THREE.MathUtils.lerp(body.rotation.y, Math.atan2(mv.x, mv.z), .2);
+    walkT += d * 12;
+  }
+  body.position.y = Math.abs(Math.sin(walkT)) * .25; body.rotation.z = Math.sin(walkT) * .08;
+  // 충돌
+  for (const c of colliders) {
+    const dx = player.position.x - c.x, dz = player.position.z - c.z, dist = Math.hypot(dx, dz), min = c.r + .9;
+    if (dist < min && dist > 0) { player.position.x = c.x + dx / dist * min; player.position.z = c.z + dz / dist * min; }
+  }
+  if (player.position.length() > 64) player.position.setLength(64);
+  // 카메라
+  const dist = 13;
+  camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
+  camera.position.lerp(camPos, t < .5 ? 1 : .12);
+  camera.lookAt(tmp.copy(player.position).setY(2.2));
+  moon.position.copy(player.position).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(player.position);
+  // 눈
+  for (let i = 0; i < SN; i++) {
+    let y = snowPos[i * 3 + 1] - d * (1.5 + (i % 5) * .3); if (y < 0) y += 40;
+    snowPos[i * 3 + 1] = y; snowPos[i * 3] += Math.sin(t + i) * d * .3;
+  }
+  snowGeo.attributes.position.needsUpdate = true; snow.position.set(player.position.x, 0, player.position.z);
+  tickers.forEach(f => f(d));
+  // 근처 도시 카드
+  let near = null;
+  for (const [k, z] of Object.entries(ZONES)) if (player.position.distanceTo(z.pos) < 20) near = k;
+  if (near !== shown) {
+    shown = near; card.classList.toggle('on', !!near);
+    if (near) { cardB.textContent = ZONES[near].name; cardP.textContent = ZONES[near].text; }
+  }
+  composer.render();
+  requestAnimationFrame(frame);
+}
+frame();
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
