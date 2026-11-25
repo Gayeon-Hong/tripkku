@@ -267,6 +267,22 @@ function stall(x, z, rotY, roof = 0xb8323a) {
   const e = new THREE.Vector3(1.5, 2.2, 1.15).applyMatrix4(g.matrixWorld);
   lightString(w, e, .3, 8);
   addCol(x, z, 2);
+  stallModel(g);
+}
+// Meshy 글뤼바인 노점(models/stall.glb): 받으면 상자 노점 대신. 카운터가 광장(앞) 쪽.
+let stallSrc = null;
+function stallModel(g) {
+  (stallSrc ||= new Promise((ok, no) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('models/stall.glb', gl => {
+    // 밤에도 따뜻하게 보이게 자기 색으로 살짝 빛나게(조명을 더 켜지 않음)
+    gl.scene.traverse(o => { if (o.isMesh && o.material) { o.material.emissive = new THREE.Color(0xffb070); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .35; } });
+    ok(gl.scene);
+  }, undefined, no))).then(src => {
+    const m = src.clone(), b = new THREE.Box3().setFromObject(m), k = 4.2 / (b.max.x - b.min.x);
+    m.scale.setScalar(k); m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
+    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.glb = true; } });
+    for (const c of g.children) if (c.isMesh) c.visible = false; g.add(m);
+    if (typeof scheduleCollision === 'function') scheduleCollision();
+  }).catch(() => {});
 }
 function xmasTree(x, z, s = 1) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);

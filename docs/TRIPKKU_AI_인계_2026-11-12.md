@@ -220,3 +220,4 @@
 - **프라하 성**(Meshy, `world/models/prague-castle.glb`, 165MB → 1.6MB): 틴 성당 광장 왼쪽 뒤 언덕 너머(u=112, v=-34)에 26배 크기 배경으로. 걸어서는 못 감. 따뜻한 조명 3개로 밤에도 보이게.
 - **천문시계**(Meshy, `world/models/orloj.glb`, 85MB → 0.9MB): 코드로 만든 천문시계 탑을 숨기고 이 모델로(높이 23, 시계판이 광장 쪽). 파일이 없으면 코드 탑 그대로.
 - **트램**(Meshy, `world/models/tram.glb`, 84MB → 0.76MB, 돌바닥 받침 잘라냄): `tramModel(group, 길이)` 로 드레스덴 마켓 뒤 트램과 새 프라하 트램(언덕 위 광장 뒤 선로 u=95, v ±22 왕복)에 씀. 받기 전엔 코드로 만든 상자 트램.
+- **글뤼바인 노점**(Meshy, `world/models/stall.glb`, 46MB → 0.5MB, 받침 잘라냄): `stall()` 이 `stallModel(g)` 로 상자 노점 대신 씀(프라하·베를린 광장 각 4개, 폭 4.2, 카운터가 광장 쪽). 조명 대신 자기 색으로 살짝 빛나게(emissiveMap). 드레스덴은 마켓 모델 그대로.
