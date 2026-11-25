@@ -443,6 +443,19 @@ for (const [key, z] of Object.entries(ZONES)) {
     const b2 = new THREE.Box3().setFromObject(m); m.position.y -= b2.min.y;
     m.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     g.clear(); g.add(m); g.userData.tick && tickers.splice(tickers.indexOf(g.userData.tick), 1);
+    const tree = m.getObjectByName('tree');
+    if (tree) { // 프라하 모델 트리는 색만 있어서 전구 + 별을 감아줌
+      g.updateMatrixWorld(true);
+      const tb = new THREE.Box3().setFromObject(tree), lo = g.worldToLocal(tb.getCenter(new THREE.Vector3()));
+      const th = tb.max.y - tb.min.y, R = Math.max(tb.max.x - tb.min.x, tb.max.z - tb.min.z) / 2, cols = [0xffd84a, 0xff5a6e, 0x6fb8ff, 0xffffff, 0xffb347];
+      for (let i = 0; i < 46; i++) {
+        const h = (i + .5) / 46, a = i * 2.4, r = R * (1 - h) * .9 + .15;
+        mesh(new THREE.SphereGeometry(.16, 8, 6), glow(cols[i % 5], 2.4), lo.x + Math.sin(a) * r, tb.min.y + .3 + h * th * .9, lo.z + Math.cos(a) * r, g);
+      }
+      const star = mesh(new THREE.OctahedronGeometry(.6), glow(0xffd84a, 3), lo.x, tb.max.y + .4, lo.z, g);
+      tickers.push(d => star.rotation.y += d * 1.6);
+      const tl = new THREE.PointLight(0xffd08a, 8, 14); tl.position.set(lo.x, th * .6, lo.z + R); g.add(tl);
+    }
   }, undefined, () => {});
   // 크리스마스 마켓 노점 + 트리
   const side = new THREE.Vector3(-out.z, 0, out.x);
