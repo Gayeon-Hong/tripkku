@@ -654,6 +654,14 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   for (const sx of [-1, 1]) { mesh(new THREE.BoxGeometry(.5, .9, .3), M(0xd8c7a8), 1.7 * sx, 11.4, 2.2, ot); mesh(new THREE.SphereGeometry(.2, 8, 6), M(0xffffff), 1.7 * sx, 12.05, 2.2, ot); } // 시계 옆 인형
   tickers.push(d => { sunH.rotation.z -= d * .4; moonH.rotation.z -= d * .27; });
   const ol = new THREE.PointLight(0x8fb4ff, 6, 10); ol.position.set(0, 9, 4); ot.add(ol);
+  // Meshy 천문시계(구시청 탑)가 있으면 코드로 만든 탑 대신. 시계판이 광장(앞) 쪽을 본다.
+  loader.load('models/orloj.glb', gl => {
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.glb = true; } });
+    const box = new THREE.Box3().setFromObject(m), k = 23 / (box.max.y - box.min.y); m.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(m), cx = (b2.min.x + b2.max.x) / 2, cz = (b2.min.z + b2.max.z) / 2; m.position.set(-cx, -b2.min.y, -cz);
+    for (const c of [...ot.children]) if (!c.isLight) c.visible = false;
+    ot.add(m); ol.position.set(0, 7, 5); scheduleCollision();
+  }, undefined, () => {});
 }
 const CARDS = { charles: { name: '🇨🇿 까를교 · 블타바 강', text: '1357년에 짓기 시작한 돌다리. 양쪽 난간에 조각상 30개! 성 요한 네포무크 상 아래 청동 부조를 만지면 프라하에 다시 온대요.' } };
 
