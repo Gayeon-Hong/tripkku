@@ -262,3 +262,8 @@
 - Meshy 텍스처는 UV 조각 사이가 검은 빈칸이라, 멀어져 밉맵이 작아지면 검정이 조각 테두리로 번져 얼룩져 보임 → `/home/claude/glbwork/pad.mjs`: UV 삼각형을 그려 덮인 칸을 찾고, 바깥 빈칸을 가까운 조각 색으로 64겹까지 넓혀 채운 뒤 webp q88 로 다시 저장. 텍스처 있는 월드 모델 전부 + family_{me,mom,dad} 에 적용. 새 Meshy 모델도 넣을 때 pad.mjs 한 번 돌릴 것.
 - 로더 안전망에서 모든 텍스처 anisotropy = 최대(비스듬히·멀리 볼 때 덜 뭉개짐).
 - 먼 노점은 앞 항목의 *-lo.glb.
+
+### 2026-11-26 홈 인사말 뒤 ❄️ (겨울 월드 입장)
+- next/journey.js `homeWorld()`: 홈 인사말 h1(#homeGreeting, "○일 뒤 출발!") 바로 뒤에 배경 없는 ❄️ 링크(#homeWorld). 다가오는 여행이 있으면 항상 보임(가족·관리자 조건 없앰), 없으면 숨김, 토스판은 제거. 링크 = ../world/?room=<tripId>&who=<내 family>.
+- 여행 카드 안 '❄️ 겨울 월드' 버튼은 없앰(중복). 여행 화면 안 #worldBtn(worldLink)은 그대로.
+- journey.js?v=20261126_wx2

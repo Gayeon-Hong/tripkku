@@ -760,10 +760,16 @@ const todayStr=()=>{const n=new Date();return `${n.getFullYear()}-${String(n.get
 /* 홈: 다가오는(또는 진행 중인) 여행 카드 — 일행 전신 캐릭터 + 그 도시 대표 건물 */
 function nextTrip(){const shown=new Set([...document.querySelectorAll('#tripList .trip-card[data-trip-id]')].map(c=>c.dataset.tripId)),today=todayStr();
  const list=(api().getTrips?.()||[]).filter(t=>shown.has(t.id)&&t.start_date&&t.end_date&&t.end_date>=today).sort((a,b)=>a.start_date.localeCompare(b.start_date));return list[0]||null;}
+// 홈 인사말("○일 뒤 출발!") 바로 뒤 ❄️: 누르면 그 여행 방의 겨울 월드로. 배경 없는 눈꽃 하나. 토스판엔 월드가 없다
+function homeWorld(g,t,fw){if(!g)return;let a=document.getElementById('homeWorld');
+ if(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss'){a?.remove();return;}
+ if(!a){a=el('a',{id:'homeWorld','aria-label':'겨울 월드로 가기',title:'겨울 월드'},[document.createTextNode('❄️')]);
+  a.style.cssText='display:inline-block;margin-left:6px;font-size:26px;line-height:1;text-decoration:none;background:none;vertical-align:-2px;cursor:pointer';g.style.display='inline';g.after(a);}
+ a.hidden=!t;if(t)a.href='../world/?room='+encodeURIComponent(t.id)+(fw?'&who='+fw:'');}
 function renderNextTrip(){const box=document.getElementById('nextTrip'),me=api().getMyId?.();if(!box||!me)return;const t=nextTrip(),today=todayStr();
  const g=document.getElementById('homeGreeting'),name=(g?.textContent.match(/^(.+?)님,/)||[])[1];
  const mineAv=cleanAvatar(localAvatar()||(api().getTrips?.()||[]).map(x=>x.data?.avatars?.[me]).find(Boolean),me);
- if(!t){const sig='none'+JSON.stringify(mineAv);if(box.dataset.sig===sig)return;box.dataset.sig=sig;
+ if(!t){homeWorld(g,null);const sig='none'+JSON.stringify(mineAv);if(box.dataset.sig===sig)return;box.dataset.sig=sig;
   const img=el('img',{src:BLANK,alt:'',class:'nx-body'}),go=el('button',{type:'button',class:'nx-go',text:'새 여행 만들기'});go.addEventListener('click',()=>document.getElementById('openNewTrip')?.click());
   box.replaceChildren(el('div',{class:'nx-card nx-empty'},[el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:'처음이신가요?'}),el('strong',{class:'nx-title',text:'첫 여행을 만들어 볼까요?'}),el('span',{class:'nx-route',text:'여행지만 정하면 AI가 동선을 추천해 줘요'})]),el('div',{class:'nx-party'},[img]),go]));
   picOf('body',[mineAv,'','wave','happy']).then(u=>{img.src=u;}).catch(()=>{});return;}
@@ -774,13 +780,13 @@ function renderNextTrip(){const box=document.getElementById('nextTrip'),me=api()
  const where=[t.destination,t.title].join(' '),city=CITY_SIGHTS.find(c=>c[0].test(where)),cc=String(doc.meta?.countries?.[0]||t.country_code||'').toUpperCase(),propKey=city?city[1][0]:SIGHT_BY_COUNTRY[cc]?sightFor(cc,0):'plane';
  const sig=JSON.stringify([t.id,t.title,t.destination,d,people,kind,propKey]);
  if(g&&name)g.textContent=name+'님, '+(on?'여행 '+nth+'일 차예요!':d+'일 뒤 출발!');else if(g)g.textContent=on?'여행 '+nth+'일 차예요!':d+'일 뒤 출발!';
+ homeWorld(g,t,av0[me]?.family||'');
  if(box.dataset.sig===sig)return;box.dataset.sig=sig;
  const prop=el('img',{src:BLANK,alt:'',class:'nx-prop'}),acts=['wave','photo','cheer','wave'];
  const bodies=people.map((av,i)=>{const im=el('img',{src:BLANK,alt:'',class:'nx-body'+(av.size==='baby'?' baby':av.size==='kid'?' kid':'')});picOf('body',[av,av.costume==='on'?kind:'',acts[i%4],i%2?'wink':'happy']).then(u=>{im.src=u;}).catch(()=>{});return im;});
  const go=el('button',{type:'button',class:'nx-go','aria-label':t.title+' 일정 보기'},[document.createTextNode('일정 보기')]);go.addEventListener('click',()=>openTripById(t.id));
  // 겨울 월드 입장: 여행 안 worldLink와 같은 조건(가족 3D 캐릭터가 있거나 관리자 본인 여행). 토스판엔 월드가 없다
- const wok=!(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss')&&(Object.values(av0).some(v=>v?.family)||(!!api().isAdmin?.()&&t.owner_id===me)),fw=av0[me]?.family||'';
- const wb=wok?el('a',{class:'nx-go nx-world',href:'../world/?room='+encodeURIComponent(t.id)+(fw?'&who='+fw:'')},[document.createTextNode('❄️ 겨울 월드')]):null;
+ const wb=null; // 겨울 월드 입장은 인사말 뒤 ❄️ (homeWorld)
  const say=on?'오늘도 신나게!':d<=3?'짐 다 쌌어?':d<=14?'두근두근!':'얼른 가고 싶다!';
  box.replaceChildren(el('div',{class:'nx-card'},[prop,el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:on?'여행 중 · '+nth+'일 차':'D-'+d+' · 다가오는 여행'}),el('strong',{class:'nx-title',text:t.title}),el('span',{class:'nx-route',text:String(t.destination||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean).slice(0,5).join(' → ')})]),el('div',{class:'nx-party'},[...bodies,...(people.length<=2?[el('span',{class:'nx-say',text:say})]:[])]),...(wb?[wb]:[]),go]));
  picOf('prop',[propKey,360]).then(u=>{prop.src=u;}).catch(()=>prop.remove());}
