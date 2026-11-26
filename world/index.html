@@ -113,7 +113,8 @@ composer.addPass(new OutputPass());
         const n = g.attributes.normal, F = new Float32Array(n.count * 3); let bad = false;
         for (let i = 0; i < n.count; i++) { let x = n.getX(i), y = n.getY(i), z = n.getZ(i), l = Math.hypot(x, y, z);
           if (!(l > .1)) { x = 0; y = 1; z = 0; l = 1; bad = true; } F[i * 3] = x / l; F[i * 3 + 1] = y / l; F[i * 3 + 2] = z / l; }
-        if (bad) g.setAttribute('normal', new THREE.BufferAttribute(F, 3)); });
+        if (bad) g.setAttribute('normal', new THREE.BufferAttribute(F, 3));
+        const mt = o.material; if (mt?.map) { mt.map.anisotropy = renderer.capabilities.getMaxAnisotropy(); mt.map.needsUpdate = true; } }); // 비스듬히·멀리 볼 때 무늬가 뭉개지지 않게
       onLoad(gl);
     }, onError);
   }; }

@@ -257,3 +257,8 @@
 - 먼 노점(LOD 40+): 실행 중 꼭짓점 묶기(텍스처 좌표가 뭉개져 깨져 보임) 대신 `models/<kind>-lo.glb`(꼭짓점 색, 약 3천 면, 25KB). 만드는 법: gltf-transform dequantize→png → python 텍스처→꼭짓점 색 → `/home/claude/glbwork/lo.mjs 3000` → fixn.mjs.
 - 성 동쪽 계단 시작점 (u116,v40)→(u110,v30): |v|≥38 이면 프레임의 반지름 제한(lim 64)이 밀어내서 못 갔음. 반지름 제한까지 넣은 BFS 로 언덕(70,0)→계단→성문→안마당 도달 확인.
 - 위 메뉴 접기: 화면 위 150px 안에서 위로 쓸면 `body.fold`(제목·도움말·도시 버튼 숨김), 아래로 쓸거나 ⌄ 손잡이 톡이면 펼침. localStorage.worldFold 로 기억.
+
+### 2026-11-26 멀어지면 지저분해지는 것 정리
+- Meshy 텍스처는 UV 조각 사이가 검은 빈칸이라, 멀어져 밉맵이 작아지면 검정이 조각 테두리로 번져 얼룩져 보임 → `/home/claude/glbwork/pad.mjs`: UV 삼각형을 그려 덮인 칸을 찾고, 바깥 빈칸을 가까운 조각 색으로 64겹까지 넓혀 채운 뒤 webp q88 로 다시 저장. 텍스처 있는 월드 모델 전부 + family_{me,mom,dad} 에 적용. 새 Meshy 모델도 넣을 때 pad.mjs 한 번 돌릴 것.
+- 로더 안전망에서 모든 텍스처 anisotropy = 최대(비스듬히·멀리 볼 때 덜 뭉개짐).
+- 먼 노점은 앞 항목의 *-lo.glb.
