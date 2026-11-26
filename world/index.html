@@ -1607,7 +1607,7 @@ function frame() {
       const ox = P.x, oz = P.z;
       moveWithCollision(P, mv.x * d * WALK, mv.z * d * WALK);
       // 시점이 나를 따라 천천히 뒤로 돈다(손가락으로 돌리는 중엔 안 함). 옆으로 걸을수록 더 많이 따라옴
-      if (!look?.go && !pinch) { const want = Math.atan2(-mv.x, -mv.z); let da = want - camYaw; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.7) camYaw += da * Math.min(1, d * 1.1 * mv.length()); }
+      if (!tapTo && !look?.go && !pinch) { const want = Math.atan2(-mv.x, -mv.z); let da = want - camYaw; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.2) camYaw += da * Math.min(1, d * .6 * mv.length()); } // 스틱·키보드로 걸을 때만, 천천히(톡 이동 땐 안 돎 — 누를 때마다 뱅글 돌았다)
       // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
       if (!castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
