@@ -221,3 +221,4 @@
 - **천문시계**(Meshy, `world/models/orloj.glb`, 85MB → 0.9MB): 코드로 만든 천문시계 탑을 숨기고 이 모델로(높이 23, 시계판이 광장 쪽). 파일이 없으면 코드 탑 그대로.
 - **트램**(Meshy, `world/models/tram.glb`, 84MB → 0.76MB, 돌바닥 받침 잘라냄): `tramModel(group, 길이)` 로 드레스덴 마켓 뒤 트램과 새 프라하 트램(언덕 위 광장 뒤 선로 u=95, v ±22 왕복)에 씀. 받기 전엔 코드로 만든 상자 트램.
 - **글뤼바인 노점**(Meshy, `world/models/stall.glb`, 46MB → 0.5MB, 받침 잘라냄): `stall()` 이 `stallModel(g)` 로 상자 노점 대신 씀(프라하·베를린 광장 각 4개, 폭 4.2, 카운터가 광장 쪽). 조명 대신 자기 색으로 살짝 빛나게(emissiveMap). 드레스덴은 마켓 모델 그대로.
+- **커리부어스트 노점**(Meshy, `world/models/currywurst.glb`, 115MB → 1.1MB): `stall(..., kind)` / `stallModel(g, kind)` 로 모델 선택. 베를린 광장 앞줄(문 쪽 2개)은 커리부어스트, 뒷줄은 글뤼바인. 가족 3D 셋 다 Meshy 색 모델로(아빠 `Cozy Winter Smile`).
