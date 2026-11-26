@@ -21,7 +21,7 @@
   #stick{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 4px);width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.13);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none;opacity:.8}
   #stick i{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.62);box-shadow:0 2px 8px rgba(0,0,0,.25)}
   #stick b{position:absolute;color:rgba(255,255,255,.7);font-size:13px;font-weight:400}
-  @media (pointer:coarse){#stick{display:block}#zoom{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 140px)}}
+  @media (pointer:coarse){#stick{display:block}body #zoom{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 140px)!important}body #env{bottom:max(18px,env(safe-area-inset-bottom));max-width:calc(100vw - 170px)}}
   #warp{position:fixed;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:max-content;max-width:calc(100vw - 16px)}
   #warp button,#zoom button,#pick button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer;white-space:nowrap}
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
@@ -1577,6 +1577,7 @@ let cardReq = false, lastTap = null;
 renderer.domElement.addEventListener('dblclick', () => { cardReq = true; shown = undefined; });
 addEventListener('pointerup', e => { if (e.pointerType === 'mouse') return; const n = performance.now();
   if (lastTap && n - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) { cardReq = true; shown = undefined; lastTap = null; } else lastTap = { t: n, x: e.clientX, y: e.clientY }; });
+let stuckT = 0; // 밀어도 못 움직인 시간(갇힘 방지)
 let shown = null, walkT = 0, touchMsg = 0, reach = 0;
 const sparks = [], touchBtn = document.getElementById('touch');
 function sparkle(at) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.08), new THREE.MeshBasicMaterial({ color: [0xffe08a, 0xffffff, 0xffc35a][i % 3], transparent: true, toneMapped: false })); m.position.copy(at); scene.add(m); sparks.push({ m, life: 1.4, v: new THREE.Vector3((Math.random() - .5) * 2.4, 1 + Math.random() * 2, (Math.random() - .5) * 2.4) }); } }
@@ -1612,7 +1613,9 @@ function frame() {
       // 시점이 나를 따라 천천히 뒤로 돈다(손가락으로 돌리는 중엔 안 함). 옆으로 걸을수록 더 많이 따라옴
       if (!tapTo && !look?.go && !pinch) { const want = Math.atan2(-mv.x, -mv.z); let da = want - camYaw; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.2) camYaw += da * Math.min(1, d * .6 * mv.length()); } // 스틱·키보드로 걸을 때만, 천천히(톡 이동 땐 안 돎 — 누를 때마다 뱅글 돌았다)
       // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
-      if (!castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
+      // 갇힘 방지: 1초 넘게 밀어도 거의 못 움직이면(성 안 높은 턱·좁은 마당) 턱·벽을 넘어가게 둔다
+      if (stuckT < 1 && !castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
+      { const want = mv.length() * d * WALK, moved = Math.hypot(P.x - ox, P.z - oz); if (want > .005 && moved < want * .2) stuckT += d; else stuckT = Math.max(0, stuckT - d * .5); }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else { walkT = 0; skateV.set(0, 0, 0); }
