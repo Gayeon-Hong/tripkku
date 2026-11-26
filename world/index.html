@@ -1561,7 +1561,7 @@ function frame() {
   }
   // 카메라 (멀리 볼수록 위에서, 안개도 멀리)
   const dist = camDist;
-  if (jv.length() > 6 || tapTo || keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) camPan.multiplyScalar(Math.max(0, 1 - d * 3)); // 걸으면 화면이 다시 나를 따라옴
+  if (jv.length() > 20 || keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) camPan.multiplyScalar(Math.max(0, 1 - d * 3)); // 스틱·키보드로 걸을 때만 화면이 다시 나를 따라옴(톡 이동·한 번 터치로는 옮겨 둔 화면 유지, 🗺 로 되돌리기)
   camTarget.copy(player.position).add(camPan);
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(camTarget);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
