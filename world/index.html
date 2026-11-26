@@ -841,7 +841,7 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   const br = new THREE.Group(); br.userData.noLift = br.userData.noCol = true;
   br.position.copy(fromUV(KB.mid, 0, KB.w + .59 * KB.S)); br.rotation.y = Math.atan2(OUT.z, -OUT.x); br.scale.setScalar(KB.S); scene.add(br);
   loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true;
-    const mt = o.material; if (mt) { mt.metalness = 0; mt.roughness = .85; mt.emissive = new THREE.Color(0xffd6a0); mt.emissiveMap = mt.map; mt.emissiveIntensity = .55; mt.needsUpdate = true; } } }); // 밤에도 돌다리 색이 보이게 은은하게 빛남
+    const mt = o.material; if (mt) { mt.metalness = 0; mt.roughness = .85; mt.emissive = new THREE.Color(0xffd6a0); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.needsUpdate = true; } } }); // 밤에도 돌다리 색이 보이게 은은하게 빛남
     br.add(gl.scene); }, undefined, () => {});
   // 다리 위 조명: 난간 따라 따뜻한 빛 (강물 가까이 두면 물에 네모난 빛 덩어리가 비쳐서 위에만)
   for (const u of [16, 26, 36]) { const w = fromUV(u, 0, KB.deck + 4); const l = new THREE.PointLight(0xffc98a, 30, 22, 1.6); l.position.copy(w); scene.add(l); }
@@ -963,7 +963,7 @@ function snowman(scarf) {
   const bun = new THREE.Group(); bun.userData.noLift = bun.userData.noCol = true; bun.position.set(HUB.x + 6, 0, HUB.z + 6); scene.add(bun);
   const body = new THREE.Group(); bun.add(body);
   loader.load('models/bunny.glb', gl => {
-    const m = gl.scene; m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; const mt = o.material; if (mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.metalness = 0; } } });
     const b = new THREE.Box3().setFromObject(m), k = 1.7 / (b.max.y - b.min.y); m.scale.setScalar(k);
     const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2); body.add(m);
   }, undefined, () => {});
@@ -1035,7 +1035,7 @@ const snowFight = (() => {
     const body = new THREE.Group(); root.add(body);
     const m = src.clone(true);
     m.traverse(o => { if (o.isMesh) { o.castShadow = true; if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
-      const mt = o.material = o.material.clone(); mt.metalness = 0; mt.roughness = .8; mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; } });
+      const mt = o.material = o.material.clone(); mt.metalness = 0; mt.roughness = .8; mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .45; } });
     const bb = new THREE.Box3().setFromObject(m), k = 2 / (bb.max.y - bb.min.y);
     m.scale.setScalar(k); m.position.y = -bb.min.y * k; body.add(m); m.updateMatrixWorld(true);
     const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); if (o) pv.attach(o); return pv; };
@@ -1296,7 +1296,7 @@ function applyEnv(d) {
   scene.background.copy(sky); fogC.copy(C_FOGN).lerp(sky, Math.max(day, .2)); scene.fog.color.copy(fogC);
   hemi.intensity = .55 + day * .9; hemi.color.set(day > .5 ? 0xdfe8ff : 0x8aa0ff); hemi.groundColor.set(day > .5 ? 0x8a8a9a : 0x2a2f55);
   moon.intensity = .9 + day * 1.2 * (1 - grey * .6); moon.color.set(day > .3 ? (dusk > .4 ? 0xffc89a : 0xfff4e0) : 0xb8c8ff);
-  bloom.strength = .8 - day * .5; renderer.toneMappingExposure = 1 + day * .15;
+  bloom.strength = .5 - day * .3; // 예전 .8: 캡처하면 배경 불빛이 눈부셨다 renderer.toneMappingExposure = 1 + day * .15;
   starMat.opacity = Math.max(0, 1 - day * 1.4 - (grey ? .7 : 0));
   // 눈 / 비 / 안개
   snow.visible = kind === 'snow' || kind === 'rain';
@@ -1330,7 +1330,7 @@ function makeChar(who, label) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData.noCol = true; scene.add(root);
   chibi(FAMILY[WHO[who].i], body);
   const url = `../next/assets/models/family_${who}.glb`;
-  (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => ok(gl.scene), undefined, no))).then(src => {
+  (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => { gl.scene.traverse(o => { const mt = o.material; if (o.isMesh && mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.metalness = 0; } }); ok(gl.scene); }, undefined, no))).then(src => { // 밤에도 캐릭터 얼굴·옷이 환하게
     const m = src.clone(), sz = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
     m.scale.setScalar(3 / sz.y); const bb = new THREE.Box3().setFromObject(m); m.position.y -= bb.min.y;
     m.traverse(o => { if (o.isMesh) o.castShadow = true; });
