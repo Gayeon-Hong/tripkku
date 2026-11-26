@@ -205,18 +205,53 @@ function rebuildCollision() {
 let colTimer = 0; const scheduleCollision = () => { clearTimeout(colTimer); colTimer = setTimeout(rebuildCollision, 150); };
 // 프라하 성 언덕: 성 모델 표면 높이(바위·마당)를 밟는다. 성 밖이면 null
 const castleRay = new THREE.Raycaster(); castleRay.firstHitOnly = true; const DOWN = new THREE.Vector3(0, -1, 0), RAY0 = new THREE.Vector3();
-function castleGround(x, z) {
+function castleRayGround(x, z) {
   if (!castleObj?.children.length) return null;
-  const [u, v] = toUV(x, z); if (u < 97 || u > 180 || v < -95 || v > 27) return null;
-  castleRay.set(RAY0.set(x, 200, z), DOWN); const h = castleRay.intersectObject(castleObj, true)[0]; if (!h) return null;
+  const [u, v] = toUV(x, z), a = (u - CASTLE.u) / CASTLE.s, b = (v - CASTLE.v) / CASTLE.s; // 성 모델 기준 좌표(크기 1)
+  if (a < -.52 || a > 1.1 || b < -1.2 || b > 1.2) return null;
+  castleRay.set(RAY0.set(x, KB.top + CASTLE.s * 2, z), DOWN); const h = castleRay.intersectObject(castleObj, true)[0]; if (!h) return null;
   // 모델에서 막혀 있는 성문 통로: 건물을 뚫고 마당 높이로 지나간다
-  for (const [u0, u1, v0, v1] of CASTLE_GATES) if (u >= u0 && u <= u1 && v >= v0 && v <= v1) return Math.min(h.point.y, KB.top + 17);
+  for (const [a0, a1, b0, b1] of CASTLE_GATES) if (a >= a0 && a <= a1 && b >= b0 && b <= b1) return Math.min(h.point.y, KB.top + .327 * CASTLE.s);
   return h.point.y;
 }
+// 성 바닥 높이 지도: 1칸마다 한 번 재 두고 주변 5×5로 고르게 펴서, 울퉁불퉁한 Meshy 바위 턱을 계단 없이 걸어 오르게 한다
+let castleH = null;
+function buildCastleGrid() {
+  const st = 1, u0 = CASTLE.u - .52 * CASTLE.s, v0 = CASTLE.v - 1.2 * CASTLE.s, nu = Math.ceil(1.62 * CASTLE.s / st) + 1, nv = Math.ceil(2.4 * CASTLE.s / st) + 1;
+  const raw = new Float32Array(nu * nv), roof = KB.top + CASTLE_ROOF * CASTLE.s; let j = 0; castleH = null;
+  const rows = () => {
+    const t = performance.now();
+    for (; j < nv && performance.now() - t < 12; j++) for (let i = 0; i < nu; i++) { const w = fromUV(u0 + i * st, v0 + j * st); raw[j * nu + i] = castleRayGround(w.x, w.z) ?? NaN; }
+    if (j < nv) return setTimeout(rows, 0);
+    const sm = new Float32Array(nu * nv).fill(NaN), R = 2;
+    for (let b = 0; b < nv; b++) for (let a = 0; a < nu; a++) {
+      const h0 = raw[b * nu + a]; if (!(h0 < roof)) continue; let sum = 0, n = 0;
+      for (let y = Math.max(0, b - R); y <= Math.min(nv - 1, b + R); y++) for (let x = Math.max(0, a - R); x <= Math.min(nu - 1, a + R); x++) { const h = raw[y * nu + x]; if (h < roof) { sum += h; n++; } }
+      sm[b * nu + a] = sum / n;
+    }
+    castleH = { st, u0, v0, nu, nv, raw, sm, roof };
+  };
+  rows();
+}
+// 성 바닥 높이(고른 값). 지붕·건물 칸이면 그 높이 그대로, 성 밖이면 null
+function castleGround(x, z) {
+  if (!castleH) return castleRayGround(x, z);
+  const { st, u0, v0, nu, nv, raw, sm } = castleH, [u, v] = toUV(x, z), fi = (u - u0) / st, fj = (v - v0) / st, i = Math.floor(fi), j = Math.floor(fj);
+  if (i < 0 || j < 0 || i >= nu - 1 || j >= nv - 1) return null;
+  const k = j * nu + i, c = [sm[k], sm[k + 1], sm[k + nu], sm[k + nu + 1]], near = raw[Math.round(fj) * nu + Math.round(fi)];
+  if (Number.isNaN(near)) return null; if (c.some(Number.isNaN)) return near;
+  const di = fi - i, dj = fj - j; return (c[0] * (1 - di) + c[1] * di) * (1 - dj) + (c[2] * (1 - di) + c[3] * di) * dj;
+}
+const castleRoofAt = (x, z) => { if (!castleH) return false; const { st, u0, v0, nu, raw, roof } = castleH, [u, v] = toUV(x, z); return !(raw[Math.round((v - v0) / st) * nu + Math.round((u - u0) / st)] < roof); };
 const surfaceAt = (x, z) => { const c = castleGround(x, z), g = groundAt(x, z); return c == null ? g : Math.max(c, g); };
-// 성 안은 바위·마당·성벽 사이 길(언덕 위 20 미만)로만 걷는다. 그보다 높은 건 건물·성벽·지붕이라 막힌다
-const CASTLE_ROOF = 20, CASTLE_GATES = [[141, 146, -12, -1], [122, 131, -82, -73]]; // 북쪽 마당→대성당 둘레, 남쪽 바깥→대성당 둘레 (u0,u1,v0,v1; CS=52 기준)
-const castleStepOk = (x, z) => { if (toUV(x, z)[0] <= 102) return true; const g = castleGround(x, z); return g != null && g - KB.top < CASTLE_ROOF; };
+// 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 u≈100에 맞춘다
+const CASTLE = { s: 104 }; CASTLE.u = 100 + .46 * CASTLE.s; CASTLE.v = -34;
+// 성 안은 바위·마당·성벽 사이 길로만 걷는다: 마당보다 높은 건 건물·성벽·지붕이라 막히고, 한 걸음에 턱을 뛰어오르지도 못한다
+const CASTLE_ROOF = .385, CASTLE_STEP = .15, CASTLE_SLOPE = 1.1, CASTLE_GATES = [[.327, .423, .423, .635], [-.038, .135, -.923, -.75]]; // 북쪽 마당→대성당 둘레, 남쪽 바깥→대성당 둘레 (모델 기준 a0,a1,b0,b1)
+const castleStepOk = (x0, z0, x, z) => {
+  if (toUV(x, z)[0] <= 102) return true; const g = castleGround(x, z);
+  return g != null && !castleRoofAt(x, z) && g - KB.top < CASTLE_ROOF * CASTLE.s && g - surfaceAt(x0, z0) < CASTLE_STEP + CASTLE_SLOPE * Math.hypot(x - x0, z - z0);
+};
 const PR = .45; // 캐릭터 반지름
 function isBlocked(x, z) {
   const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
@@ -660,9 +695,8 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
   // 프라하 성(Meshy): 언덕 너머. 받침대는 잘라냈고 바위 언덕째 놓는다. 바위·마당을 밟고 걸어 올라갈 수 있다(castleGround).
   const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
-  const CS = 52; // 두 배로 키워 건물 사이 길로 걸어 다닐 수 있게. 앞쪽 끝(u≈100)은 그대로
-  castle.position.copy(fromUV(124, -34, KB.top - .6 + .5 * CS)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(CS); scene.add(castle); castleObj = castle;
-  loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.geometry.computeBoundsTree = computeBoundsTree; o.geometry.computeBoundsTree(); o.raycast = acceleratedRaycast; } }); castle.add(gl.scene); }, undefined, () => {});
+  castle.position.copy(fromUV(CASTLE.u, CASTLE.v, KB.top - .6 + .5 * CASTLE.s)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(CASTLE.s); scene.add(castle); castleObj = castle;
+  loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.geometry.computeBoundsTree = computeBoundsTree; o.geometry.computeBoundsTree(); o.raycast = acceleratedRaycast; } }); castle.add(gl.scene); castle.updateMatrixWorld(true); buildCastleGrid(); }, undefined, () => {});
   for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
   { const rails = new THREE.Group(); rails.userData.noLift = rails.userData.noCol = true; scene.add(rails);
@@ -1047,11 +1081,11 @@ function frame() {
       const ox = P.x, oz = P.z;
       moveWithCollision(P, mv.x * d * 9, mv.z * d * 9);
       // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
-      if (!castleStepOk(P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(nx, oz)) P.z = oz; else if (castleStepOk(ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
+      if (!castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else walkT = 0;
-    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 230 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 400 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
     { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
     me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
     player.position.copy(P); net.send(false);
