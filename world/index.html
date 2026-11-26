@@ -598,6 +598,29 @@ function striezelmarkt(c, out, side) {
   addCol(fw.position.x, fw.position.z, 3);
   // 글뤼바인 노점: 관람차 반대편, 마켓 쪽을 보게
   for (const f of [-11, -3]) { const p = at(18, f); stall(p.x, p.z, Math.atan2(-side.x, -side.z), 0x8a2a2a); }
+  // 줄 타고 마켓 위를 오가는 산타 썰매 + 루돌프 2마리
+  { const A = at(-10, -24, 17), B = at(12, 9, 17), pole = M(0x3a2a20), red = M(0xc8252f, { roughness: .5 }), goldM = M(0xe0b84a, { metalness: .7, roughness: .3 }), white = M(0xffffff, { roughness: .9 }), deer = M(0x8a5a35);
+    for (const P of [A, B]) { const p = mesh(new THREE.CylinderGeometry(.18, .25, 18.5, 8), pole, P.x, 9.25, P.z); p.userData.noLift = true; mesh(new THREE.SphereGeometry(.3, 10, 8), glow(0xffd84a, 2.5), P.x, 18.6, P.z).userData.noLift = true; }
+    const cable = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, A.distanceTo(B), 6), M(0x22222a)); cable.position.copy(A).lerp(B, .5); cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); cable.userData.noLift = true; scene.add(cable);
+    const sl = new THREE.Group(); sl.userData.noLift = sl.userData.noCol = true; scene.add(sl);
+    const body = new THREE.Group(); body.position.y = -3.2; sl.add(body); // 도르래에 매달린 썰매(앞 = +z)
+    mesh(new THREE.CylinderGeometry(.03, .03, 3.2, 6), M(0x22222a), 0, -1.6, 0, sl); mesh(new THREE.TorusGeometry(.25, .07, 8, 16), goldM, 0, 0, 0, sl).rotation.y = Math.PI / 2;
+    mesh(new THREE.BoxGeometry(1.4, .7, 2), red, 0, .55, 0, body); mesh(new THREE.BoxGeometry(1.4, .9, .3), red, 0, .9, -.9, body); // 썰매 몸통 + 등받이
+    for (const x of [-.65, .65]) { mesh(new THREE.BoxGeometry(.08, .08, 2.6), goldM, x, .05, .1, body); mesh(new THREE.TorusGeometry(.3, .05, 6, 12, Math.PI), goldM, x, .35, 1.4, body).rotation.y = Math.PI / 2; } // 금 썰매날
+    mesh(new THREE.SphereGeometry(.55, 12, 10), M(0x7a4a26), -.2, 1.3, -.55, body); // 선물 자루
+    mesh(new THREE.SphereGeometry(.45, 12, 10), red, .15, 1.25, .2, body); mesh(new THREE.SphereGeometry(.3, 12, 10), M(0xf3cdb0), .15, 1.85, .25, body); // 산타
+    mesh(new THREE.SphereGeometry(.24, 10, 8), white, .15, 1.72, .42, body); mesh(new THREE.ConeGeometry(.28, .55, 12), red, .15, 2.25, .2, body).rotation.x = -.4; mesh(new THREE.SphereGeometry(.09, 8, 6), white, .15, 2.48, .05, body);
+    for (const [k, z] of [[0, 2.4], [1, 3.9]]) { const r = new THREE.Group(); r.position.set(0, .2, z); body.add(r); // 루돌프
+      mesh(new THREE.BoxGeometry(.5, .5, 1.1), deer, 0, .9, 0, r); mesh(new THREE.BoxGeometry(.3, .45, .4), deer, 0, 1.4, .6, r);
+      for (const [lx, lz] of [[-.18, -.4], [.18, -.4], [-.18, .4], [.18, .4]]) mesh(new THREE.BoxGeometry(.1, .7, .1), deer, lx, .35, lz, r);
+      for (const x of [-.15, .15]) mesh(new THREE.ConeGeometry(.05, .45, 5), M(0xd9c39a), x, 1.85, .55, r).rotation.z = x * 2;
+      if (k) mesh(new THREE.SphereGeometry(.09, 8, 6), glow(0xff2a2a, 3), 0, 1.45, .82, r); // 빨간 코
+      mesh(new THREE.BoxGeometry(.04, .04, 1.4), goldM, 0, .9, -.9, r); }
+    for (let i = 0; i < 8; i++) mesh(new THREE.SphereGeometry(.07, 6, 4), glow([0xffd84a, 0xff5a6e, 0x6fb8ff][i % 3], 2.5), (i % 2 ? .7 : -.7), .95, -.8 + i * .22, body); // 썰매 전구
+    const dir = B.clone().sub(A), yaw = Math.atan2(dir.x, dir.z);
+    tickers.push(() => { const t = performance.now() / 9000, ph = t % 1, f = .5 - .5 * Math.cos(ph * 2 * Math.PI), back = ph > .5;
+      sl.position.copy(A).lerp(B, f); sl.rotation.y = yaw + (back ? Math.PI : 0);
+      body.rotation.x = Math.sin(ph * 4 * Math.PI) * .12; body.rotation.z = Math.sin(performance.now() / 400) * .05; }); } // 끝에서 멈칫 돌아서 흔들흔들
   // 노란 트램 (광장 뒤를 왔다갔다)
   const tram = new THREE.Group(); tram.userData.noCol = true; scene.add(tram);
   mesh(new THREE.BoxGeometry(12, 2.6, 2.4), M(0xf2c230, { roughness: .5 }), 0, 1.6, 0, tram);
