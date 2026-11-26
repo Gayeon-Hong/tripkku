@@ -811,6 +811,47 @@ function snowman(scarf) {
     g.rotation.z = Math.sin(t * 7 + w.ph) * .12; // 뒤뚱
   } });
 }
+// 회전목마(Meshy, models/carousel.glb): 드레스덴·베를린 사이 빈터에서 통째로 천천히 돈다
+{
+  const a = Math.PI * 7 / 6, car = new THREE.Group(); car.position.set(HUB.x + Math.cos(a) * 24, 0, HUB.z + Math.sin(a) * 24); scene.add(car);
+  loader.load('models/carousel.glb', gl => {
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.glb = true; if (o.material) { o.material.emissive = new THREE.Color(0xffc080); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .35; } } });
+    const b = new THREE.Box3().setFromObject(m), k = 9 / (b.max.y - b.min.y); m.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2);
+    const spin = new THREE.Group(); spin.add(m); car.add(spin); scheduleCollision();
+    tickers.push(d => { spin.rotation.y += d * .35; });
+  }, undefined, () => {});
+  const cl = new THREE.PointLight(0xffd59a, 10, 16); cl.position.set(car.position.x, 7, car.position.z); scene.add(cl);
+}
+// 토끼(Meshy, models/bunny.glb): 가운데 광장 근처를 깡충깡충 돌아다니고, 사람이 오면 쳐다보며 폴짝폴짝 반긴다
+{
+  const bun = new THREE.Group(); bun.userData.noLift = bun.userData.noCol = true; bun.position.set(HUB.x + 6, 0, HUB.z + 6); scene.add(bun);
+  const body = new THREE.Group(); bun.add(body);
+  loader.load('models/bunny.glb', gl => {
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    const b = new THREE.Box3().setFromObject(m), k = 1.7 / (b.max.y - b.min.y); m.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2); body.add(m);
+  }, undefined, () => {});
+  let target = bun.position.clone(), rest = 0, hop = 0;
+  const pick = () => { for (let i = 0; i < 20; i++) { const a = Math.random() * 6.283, r = 4 + Math.random() * 28, x = HUB.x + Math.cos(a) * r, z = HUB.z + Math.sin(a) * r; if (!isBlocked(x, z)) { target.set(x, 0, z); return; } } };
+  pick();
+  tickers.push(d => {
+    const P = bun.position, near = me && Math.hypot(me.root.position.x - P.x, me.root.position.z - P.z) < 5 ? me.root.position : null;
+    let moving = false;
+    if (near) { bun.rotation.y = Math.atan2(near.x - P.x, near.z - P.z); hop += d * 9; } // 반가워서 제자리 폴짝
+    else if (rest > 0) { rest -= d; hop = 0; }
+    else {
+      const dx = target.x - P.x, dz = target.z - P.z, dl = Math.hypot(dx, dz);
+      if (dl < .5) { rest = 1 + Math.random() * 3; pick(); }
+      else { const st = Math.min(dl, d * 3.2), nx = P.x + dx / dl * st, nz = P.z + dz / dl * st;
+        if (isBlocked(nx, nz)) pick(); else { P.x = nx; P.z = nz; moving = true; }
+        bun.rotation.y = THREE.MathUtils.lerp(bun.rotation.y, Math.atan2(dx, dz), .15); hop += d * 10; }
+    }
+    P.y = groundAt(P.x, P.z);
+    body.position.y = (moving || near) ? Math.abs(Math.sin(hop)) * .45 : 0;
+    body.scale.set(1, 1 - (moving ? Math.max(0, -Math.cos(hop * 2)) * .08 : 0), 1); // 착지할 때 살짝 찌그러짐
+  });
+}
 // 숲 (가장자리 눈 덮인 나무). Meshy 트리를 받으면 위 광장 트리 로더가 이 원뿔들을 같은 트리로 바꾼다
 const forest = [];
 for (let i = 0; i < 90; i++) {
