@@ -246,3 +246,8 @@
 - 원인: 길이 0 인 법선(ferris-parts 3개)·법선 없는 모델(reindeer) → 셰이더 NaN → UnrealBloom 이 화면 전체를 검게. 해당 모델이 시야에 들어올 때마다 깜빡임.
 - 모델 파일 수정: `/home/claude/glbwork/fixn.mjs` (없는 법선 생성, 0/NaN 법선을 이웃 면 법선으로).
 - 런타임 안전망: `GLTFLoader.prototype.parse` 를 감싸서 모든 GLB 의 법선을 검사, 0/NaN 이면 (0,1,0). 앞으로 새 모델이 와도 같은 문제 안 생김.
+
+### 2026-11-26 프라하 성 동쪽 성문 + 더 멀리 축소
+- buildCastleStair 끝에 stair 2갈래 추가: ① 언덕 (u116,v40) → 성문 앞 돌다리 (u152,v52.5) 돌 계단(보임) ② 성문 건물 밑 (u154,v47)→안마당 (u172,v45) 보이지 않는 경사로(`hide:true`, 그리기 건너뜀). 높이는 castleGround 로 런타임에 잼.
+- 확인: 언덕(110,30)에서 0.5 간격 BFS(castleStepOk+isBlocked)로 계단·돌다리·성문·안마당 모두 도달.
+- 줌 최대 160 → 280, 카메라 far 700 → 1000.

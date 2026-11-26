@@ -92,7 +92,7 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x141c4a);
 scene.fog = new THREE.Fog(0x1a2456, 45, 150);
-const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 700);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 1000);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -267,9 +267,15 @@ function buildCastleStair() {
   const uJ = u0 + (u1 - u0) * .45, yJ = y0 + (y1 - y0) * .45, sv = -3.5, sy = gAt(KB.plat + 6, sv), L = Math.max(Math.abs(v + w - sv) + 1, (yJ - sy) / .45);
   const su = uJ - Math.sqrt(Math.max(0, L * L - (v + w - sv) ** 2));
   stair = [{ a: [u0, v], b: [u1, v], y0, y1, w }, { a: [su, sv], b: [uJ, v + w * .5], y0: sy, y1: yJ, w: 2.2 }];
+  // 동쪽 성문: 언덕 오른쪽 끝에서 돌 둑길로 성문 앞 돌다리 시작(u≈152, v≈52)까지 올라가고, 성문 건물 밑을 지나 안마당(u≈171)으로 들어간다.
+  // 성문 통로는 모델에서 건물로 막혀 있어서 보이지 않는 경사로로 지나가게 한다(hide).
+  const cg = (u, vv) => { const p = fromUV(u, vv); return castleGround(p.x, p.z); }, lane = cg(153, 52), yard = cg(171, 45), gateIn = cg(155, 47);
+  if (lane != null && yard != null && gateIn != null) stair.push(
+    { a: [116, 40], b: [152, 52.5], y0: gAt(116, 40), y1: lane, w: 2.4 },
+    { a: [154, 47], b: [172, 45], y0: gateIn, y1: yard, w: 2.4, hide: true });
   const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; KBG.add(g);
   const stone = M(0x9a9184, { roughness: .95 }), edge = M(0xe9eef8, { roughness: 1 });
-  for (const sg of stair) { // 계단 한 칸: 땅에서 디딤판까지 꽉 찬 돌 + 디딤판 끝 눈
+  for (const sg of stair) { if (sg.hide) continue; // 계단 한 칸: 땅에서 디딤판까지 꽉 찬 돌 + 디딤판 끝 눈
     const du = sg.b[0] - sg.a[0], dv = sg.b[1] - sg.a[1], len = Math.hypot(du, dv), n = Math.ceil(len / 1.1), rot = Math.atan2(-dv, du);
     for (let i = 0; i < n; i++) {
       const top = sg.y0 + (sg.y1 - sg.y0) * (i + 1) / n, f = (i + .5) / n, fe = (i + .85) / n;
@@ -1405,7 +1411,7 @@ addEventListener('keyup', e => keys[e.code] = false);
 const skateV = new THREE.Vector3(); // 얼음 위 미끄러지는 속도
 let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 5.5 : 14, pinch = null;
 const touches = new Map();
-const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 160); // 멀리: 프라하 성 전체가 폰에서도 보이게
+const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 280); // 멀리: 프라하 성 전체가 폰에서도 보이게
 const stick = document.getElementById('stick'), knob = stick.firstElementChild;
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
