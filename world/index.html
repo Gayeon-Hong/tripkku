@@ -98,6 +98,19 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.95); composer.addPass(bloom);
 composer.addPass(new OutputPass());
+// 안전망: 불러온 모델의 법선이 길이 0·NaN 이면 빛 번짐(bloom)이 NaN 을 퍼뜨려 화면이 통째로 검게 깜빡인다 → 위쪽 법선으로 바꿔 둔다
+{ const parse = GLTFLoader.prototype.parse;
+  GLTFLoader.prototype.parse = function (data, path, onLoad, onError) {
+    return parse.call(this, data, path, gl => {
+      gl.scene.traverse(o => { if (!o.isMesh) return; const g = o.geometry;
+        if (!g.attributes.normal) g.computeVertexNormals();
+        const n = g.attributes.normal, F = new Float32Array(n.count * 3); let bad = false;
+        for (let i = 0; i < n.count; i++) { let x = n.getX(i), y = n.getY(i), z = n.getZ(i), l = Math.hypot(x, y, z);
+          if (!(l > .1)) { x = 0; y = 1; z = 0; l = 1; bad = true; } F[i * 3] = x / l; F[i * 3 + 1] = y / l; F[i * 3 + 2] = z / l; }
+        if (bad) g.setAttribute('normal', new THREE.BufferAttribute(F, 3)); });
+      onLoad(gl);
+    }, onError);
+  }; }
 
 const hemi = new THREE.HemisphereLight(0x8aa0ff, 0x2a2f55, .55); scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xb8c8ff, .9);
