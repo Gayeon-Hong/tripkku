@@ -41,18 +41,24 @@
   #pick button{font-size:18px;padding:12px 18px}
   #pick p{margin:0;font-size:13px;opacity:.8;font-family:system-ui,sans-serif}
   @media (max-width:560px){#env{left:8px;font-size:12px;max-width:calc(100vw - 80px)}#title .d{display:none}#online{top:104px;right:8px;font-size:12px}#help .d{display:none}#help .m{display:inline}#help{top:44px;font-size:12px}#warp{top:66px}#warp button{font-size:13px;padding:5px 8px}#back{font-size:13px;padding:5px 8px}#card{bottom:84px}}
+  /* 위쪽 제목·도시 버튼 접기: 위로 밀면 접히고 아래로 밀면(또는 손잡이 톡) 다시 나온다 */
+  #title,#help,#warp{transition:opacity .3s,translate .3s}
+  body.fold #title,body.fold #help,body.fold #warp{opacity:0;translate:0 -90px;pointer-events:none}
+  #grip{position:fixed;top:6px;left:50%;transform:translateX(-50%);width:54px;height:22px;border:0;border-radius:11px;background:rgba(255,255,255,.22);color:#fff;font-size:13px;line-height:22px;padding:0;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s}
+  body.fold #grip{opacity:1;pointer-events:auto}
   #back{position:fixed;top:12px;left:12px;color:#fff;text-decoration:none;font-size:15px;background:rgba(255,255,255,.15);padding:6px 10px;border-radius:12px}
 </style>
 </head>
 <body>
 <a id="back" href="../index.html">← 트립꾸</a>
 <div id="title">❄️ <span class="d">트립꾸 겨울 여행 </span>월드</div>
-<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 톡 누르면 걸어감 · 왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대·돌리기</span><span class="m">톡 = 걸어가기 · 두 손가락 확대·돌리기</span></div>
+<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 톡 누르면 걸어감 · 왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대·돌리기·끌어서 지도 옮기기 · 위쪽을 위로 밀면 메뉴 접기</span><span class="m">톡 = 걸어가기 · 두 손가락 확대·돌리기·끌기 · 위로 밀면 메뉴 접기</span></div>
 <div id="warp">
   <button data-z="dresden">🇩🇪 드레스덴</button>
   <button data-z="prague">🇨🇿 프라하</button>
   <button data-z="berlin">🇩🇪 베를린</button>
 </div>
+<button id="grip" aria-label="위쪽 메뉴 펼치기">⌄</button>
 <div id="card"><b></b><p></p></div>
 <div id="stick"><i></i></div>
 <div id="env"></div>
@@ -267,11 +273,11 @@ function buildCastleStair() {
   const uJ = u0 + (u1 - u0) * .45, yJ = y0 + (y1 - y0) * .45, sv = -3.5, sy = gAt(KB.plat + 6, sv), L = Math.max(Math.abs(v + w - sv) + 1, (yJ - sy) / .45);
   const su = uJ - Math.sqrt(Math.max(0, L * L - (v + w - sv) ** 2));
   stair = [{ a: [u0, v], b: [u1, v], y0, y1, w }, { a: [su, sv], b: [uJ, v + w * .5], y0: sy, y1: yJ, w: 2.2 }];
-  // 동쪽 성문: 언덕 오른쪽 끝에서 돌 둑길로 성문 앞 돌다리 시작(u≈152, v≈52)까지 올라가고, 성문 건물 밑을 지나 안마당(u≈171)으로 들어간다.
+  // 동쪽 성문: 언덕 오른쪽(u110, v30 — 언덕 걷는 범위 |v|<38 안)에서 돌 계단으로 성문 앞 돌다리 시작(u≈152, v≈52)까지 올라가고, 성문 건물 밑을 지나 안마당(u≈171)으로 들어간다.
   // 성문 통로는 모델에서 건물로 막혀 있어서 보이지 않는 경사로로 지나가게 한다(hide).
   const cg = (u, vv) => { const p = fromUV(u, vv); return castleGround(p.x, p.z); }, lane = cg(153, 52), yard = cg(171, 45), gateIn = cg(155, 47);
   if (lane != null && yard != null && gateIn != null) stair.push(
-    { a: [116, 40], b: [152, 52.5], y0: gAt(116, 40), y1: lane, w: 2.4 },
+    { a: [110, 30], b: [152, 52.5], y0: gAt(110, 30), y1: lane, w: 2.4 },
     { a: [154, 47], b: [172, 45], y0: gateIn, y1: yard, w: 2.4, hide: true });
   const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; KBG.add(g);
   const stone = M(0x9a9184, { roughness: .95 }), edge = M(0xe9eef8, { roughness: 1 });
@@ -382,17 +388,12 @@ function stallModel(g, kind = 'stall') { // kind: stall(글뤼바인) | currywur
   (stallSrc[kind] ||= new Promise((ok, no) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`models/${kind}.glb`, gl => {
     // 밤에도 따뜻하게 보이게 자기 색으로 살짝 빛나게(조명을 더 켜지 않음)
     gl.scene.traverse(o => { if (o.isMesh && o.material) { o.material.emissive = new THREE.Color(0xffb070); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .35; } });
-    // 멀리서 쓸 가벼운 판(같은 텍스처, 꼭짓점을 약 10cm 칸으로 묶어 면 수 1/5) — 예전엔 멀면 상자 노점이 나와서 겹쳐 보였다
-    // Meshy 메쉬는 구멍·겹면이 많아 일반 간소화가 안 먹어서 칸 묶기(vertex clustering)로
-    const lo = gl.scene.clone();
-    lo.traverse(o => { if (!o.isMesh || !o.geometry.index) return;
-      const g0 = o.geometry, P = g0.attributes.position, seen = new Map(), rep = new Uint32Array(P.count), I = g0.index.array, out = [], tri = new Set();
-      for (let i = 0; i < P.count; i++) { const k = Math.round(P.getX(i) * 20) + ',' + Math.round(P.getY(i) * 20) + ',' + Math.round(P.getZ(i) * 20); let r = seen.get(k); if (r === undefined) seen.set(k, r = i); rep[i] = r; }
-      for (let t = 0; t < I.length; t += 3) { const a = rep[I[t]], b = rep[I[t + 1]], c = rep[I[t + 2]]; if (a === b || b === c || a === c) continue;
-        const k = a < b ? (b < c ? a + ',' + b + ',' + c : a < c ? a + ',' + c + ',' + b : c + ',' + a + ',' + b) : (a < c ? b + ',' + a + ',' + c : b < c ? b + ',' + c + ',' + a : c + ',' + b + ',' + a);
-        if (!tri.has(k)) { tri.add(k); out.push(a, b, c); } }
-      o.geometry = g0.clone(); o.geometry.setIndex(out); });
-    ok([gl.scene, lo]);
+    // 멀리서 쓸 가벼운 판(models/<kind>-lo.glb): 텍스처를 꼭짓점 색으로 바꿔 3천 면으로 줄인 것. 같은 좌표계라 같은 fit 으로 맞는다.
+    // (예전엔 실행 중에 꼭짓점을 칸으로 묶었는데 텍스처 좌표까지 뭉개져서 축소하면 노점 무늬가 깨져 보였다)
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`models/${kind}-lo.glb`, lg => {
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0, roughness: .85, emissive: 0x6a4228, emissiveIntensity: .5 });
+      lg.scene.traverse(o => { if (o.isMesh) o.material = mat; }); ok([gl.scene, lg.scene]);
+    }, undefined, () => ok([gl.scene, null]));
   }, undefined, no))).then(([src, srcLo]) => {
     const fit = s => { const m = s.clone(), b = new THREE.Box3().setFromObject(src), k = 4.2 / (b.max.x - b.min.x);
       m.scale.setScalar(k); m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k); return m; };
@@ -1410,20 +1411,21 @@ addEventListener('keydown', e => keys[e.code] = true);
 addEventListener('keyup', e => keys[e.code] = false);
 const skateV = new THREE.Vector3(); // 얼음 위 미끄러지는 속도
 let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 5.5 : 14, pinch = null;
+const camPan = new THREE.Vector3(), camTarget = new THREE.Vector3(); // 두 손가락으로 끌어서 옮긴 만큼 화면 중심이 내 캐릭터에서 벗어남(걸으면 다시 돌아옴)
 const touches = new Map();
 const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 280); // 멀리: 프라하 성 전체가 폰에서도 보이게
 const stick = document.getElementById('stick'), knob = stick.firstElementChild;
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
   tapStart = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
-  // 두 손가락 = 벌리면 확대/축소, 비틀면 화면 돌리기, 같이 위아래로 밀면 기울이기.
+  // 두 손가락 = 벌리면 확대/축소, 비틀면 화면 돌리기, 같이 끌면 지도 전체를 위아래·양옆으로 옮겨 보기.
   // 왼쪽(이동 스틱)에 먼저 닿았어도 곧바로(0.4초 안, 거의 안 움직였을 때) 두 번째 손가락이 오면 두 손가락 조작으로 본다
   const quickJoy = joy && touches.has(joy.id) && performance.now() - joy.t < 400 && jv.length() < 12;
   if (e.pointerType !== 'mouse' && (joy == null || quickJoy)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (e.pointerType !== 'mouse' && touches.size >= 2 && (!joy || quickJoy)) {
     if (joy) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
     const [p, q] = [...touches.values()]; tapTo = null; tapStart = null; // 두 손가락 뗄 때 톡 이동으로 안 잡히게
-    pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist, a: Math.atan2(q.y - p.y, q.x - p.x), py: p.y, qy: q.y, yaw: camYaw, pitch: camPitch }; look = null; return;
+    pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist, a: Math.atan2(q.y - p.y, q.x - p.x), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2, yaw: camYaw }; look = null; return;
   }
   if (e.pointerType !== 'mouse' && e.clientX < innerWidth / 2 && !joy) {
     joy = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
@@ -1435,8 +1437,11 @@ addEventListener('pointermove', e => {
   if (pinch && touches.size >= 2) { const [p, q] = [...touches.values()];
     setDist(pinch.dist * pinch.d / Math.max(20, Math.hypot(p.x - q.x, p.y - q.y)));
     let da = Math.atan2(q.y - p.y, q.x - p.x) - pinch.a; da = Math.atan2(Math.sin(da), Math.cos(da)); camYaw = pinch.yaw + da; // 손가락 돌린 만큼 화면도
-    const dp = p.y - pinch.py, dq = q.y - pinch.qy, dy = Math.sign(dp) === Math.sign(dq) ? Math.sign(dp) * Math.min(Math.abs(dp), Math.abs(dq)) : 0; // 두 손가락이 같이 움직인 만큼만 기울임
-    camPitch = THREE.MathUtils.clamp(pinch.pitch + dy * .005, .06, 1.5); return; }
+    // 두 손가락 가운데가 움직인 만큼 지도를 끌어 옮김(손가락 밑 땅이 손가락을 따라오게)
+    const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, dx = mx - pinch.mx, dy = my - pinch.my; pinch.mx = mx; pinch.my = my;
+    const k = 1.04 * camDist / innerHeight, sy = Math.sin(camYaw), cy = Math.cos(camYaw), kf = k / Math.max(.35, Math.sin(camPitch));
+    camPan.x += -cy * dx * k - sy * dy * kf; camPan.z += sy * dx * k - cy * dy * kf;
+    if (camPan.length() > 400) camPan.setLength(400); return; }
   if (joy && e.pointerId === joy.id) {
     jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 45) jv.setLength(45);
     knob.style.transform = `translate(${jv.x}px,${jv.y}px)`;
@@ -1451,6 +1456,14 @@ const endPtr = e => {
   if (look && e.pointerId === look.id) look = null;
 };
 addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+// 위쪽 메뉴 접기: 화면 위쪽(150px 안)에서 위로 쓸면 접고, 아래로 쓸면 펼친다. 접혀 있을 땐 ⌄ 손잡이를 톡 해도 펼침
+{ let sw = null; const setFold = f => { document.body.classList.toggle('fold', f); try { localStorage.worldFold = f ? '1' : ''; } catch (e) {} };
+  try { if (localStorage.worldFold) setFold(true); } catch (e) {}
+  document.getElementById('grip').onclick = () => setFold(false);
+  addEventListener('pointerdown', e => { sw = e.clientY < 150 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() } : null; }, true);
+  addEventListener('pointerup', e => { if (!sw || sw.id !== e.pointerId) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+    if (touches.size > 1 || Math.abs(dy) < 40 || Math.abs(dy) < Math.abs(dx) * 1.5) return;
+    setFold(dy < 0); }, true); }
 // 화면을 톡 누르면(끌지 않고) 그 자리로 걸어간다
 let tapStart = null, tapTo = null; const tapRay = new THREE.Raycaster(), tapPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tapHit = new THREE.Vector3();
 addEventListener('pointerup', e => {
@@ -1471,9 +1484,9 @@ const VIEWS = [[.42, 14], [.08, 6], [1.45, 45]]; let viewI = 0;
 document.getElementById('view').onclick = () => { viewI = (viewI + 1) % VIEWS.length; [camPitch] = VIEWS[viewI]; setDist(VIEWS[viewI][1]); };
 document.getElementById('zin').onclick = () => setDist(camDist / 1.4);
 document.getElementById('zout').onclick = () => setDist(camDist * 1.4);
-document.getElementById('zall').onclick = () => { if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
+document.getElementById('zall').onclick = () => { camPan.set(0, 0, 0); if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
 function goZone(k) {
-  const z = ZONES[k]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); tapTo = null; net.send(true);
+  const z = ZONES[k]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); tapTo = null; camPan.set(0, 0, 0); net.send(true);
 }
 document.querySelectorAll('#warp button').forEach(b => b.onclick = () => goZone(b.dataset.z));
 // 🚋 트램: 탈지 물어보고, 고른 도시로 데려다준다(화면이 어두워졌다 밝아지는 사이 이동)
@@ -1544,17 +1557,19 @@ function frame() {
   }
   // 카메라 (멀리 볼수록 위에서, 안개도 멀리)
   const dist = camDist;
-  camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(player.position);
+  if (jv.length() > 6 || tapTo || keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) camPan.multiplyScalar(Math.max(0, 1 - d * 3)); // 걸으면 화면이 다시 나를 따라옴
+  camTarget.copy(player.position).add(camPan);
+  camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(camTarget);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
-  camera.lookAt(tmp.copy(player.position).setY(player.position.y + 2.2));
+  camera.lookAt(tmp.copy(camTarget).setY(camTarget.y + 2.2));
   scene.fog.near = (45 + dist) * (env.fog ?? 1) * .8 + 4; scene.fog.far = (150 + dist * 2.2) * (env.fog ?? 1);
-  moon.position.copy(player.position).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(player.position);
+  moon.position.copy(camTarget).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(camTarget);
   // 눈
   for (let i = 0; i < SN; i++) {
     let y = snowPos[i * 3 + 1] - d * (1.5 + (i % 5) * .3) * env.fall; if (y < 0) y += 40;
     snowPos[i * 3 + 1] = y; snowPos[i * 3] += Math.sin(t + i) * d * .3;
   }
-  snowGeo.attributes.position.needsUpdate = true; snow.position.set(player.position.x, player.position.y, player.position.z);
+  snowGeo.attributes.position.needsUpdate = true; snow.position.set(camTarget.x, player.position.y, camTarget.z);
   applyEnv(d);
   tickers.forEach(f => f(d));
   // 근처 도시 카드
