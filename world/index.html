@@ -24,6 +24,11 @@
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
   #zoom button{width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
   #snowbtn{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#e8f2ff;color:#1d2a5a;box-shadow:0 4px 18px rgba(160,200,255,.6);cursor:pointer}
+  #tramBtn{position:fixed;left:50%;bottom:205px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#f2c230;color:#3a2a10;box-shadow:0 4px 18px rgba(242,194,48,.6);cursor:pointer}
+  #ride{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,14,40,.45);z-index:20}#ride[hidden]{display:none}
+  #ride>div{background:#fff;color:#2a2f55;border-radius:22px;padding:18px 20px;text-align:center;max-width:calc(100vw - 40px)}#ride b{font-size:19px;display:block;margin-bottom:12px}
+  #ride button{font-family:inherit;font-size:16px;border:0;border-radius:14px;padding:9px 14px;margin:4px;background:#f2c230;color:#3a2a10;cursor:pointer}#ride button.no{background:#e4e7f2;color:#2a2f55}
+  #fade{position:fixed;inset:0;background:#0b1030;opacity:0;pointer-events:none;transition:opacity .6s;z-index:19;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}#fade.on{opacity:1}
   #touch{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#ffd27a;color:#3a2a10;box-shadow:0 4px 18px rgba(255,200,90,.6);cursor:pointer}
   #env{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:5px 9px;border-radius:12px;pointer-events:none;max-width:44vw}
   #env:empty{display:none}
@@ -53,6 +58,9 @@
 <div id="env"></div>
 <div id="zoom"><button id="mode" aria-label="시간·날씨 모드">🌙</button><button id="view" aria-label="시점 바꾸기">🎥</button><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
 <div id="online"></div>
+<button id="tramBtn" hidden>🚋 트램 타기</button>
+<div id="ride" hidden><div><b>🚋 트램 타고 갈까요?</b><span></span><br><button class="no">안 탈래요</button></div></div>
+<div id="fade"></div>
 <button id="touch" hidden>🙏 네포무크 상 만지기</button>
 <button id="snowbtn" hidden>❄️ 눈 던지기</button>
 <div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
@@ -354,14 +362,25 @@ function stallModel(g, kind = 'stall') { // kind: stall(글뤼바인) | currywur
   (stallSrc[kind] ||= new Promise((ok, no) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`models/${kind}.glb`, gl => {
     // 밤에도 따뜻하게 보이게 자기 색으로 살짝 빛나게(조명을 더 켜지 않음)
     gl.scene.traverse(o => { if (o.isMesh && o.material) { o.material.emissive = new THREE.Color(0xffb070); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .35; } });
-    ok(gl.scene);
-  }, undefined, no))).then(src => {
-    const m = src.clone(), b = new THREE.Box3().setFromObject(m), k = 4.2 / (b.max.x - b.min.x);
-    m.scale.setScalar(k); m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k);
+    // 멀리서 쓸 가벼운 판(같은 텍스처, 꼭짓점을 약 10cm 칸으로 묶어 면 수 1/5) — 예전엔 멀면 상자 노점이 나와서 겹쳐 보였다
+    // Meshy 메쉬는 구멍·겹면이 많아 일반 간소화가 안 먹어서 칸 묶기(vertex clustering)로
+    const lo = gl.scene.clone();
+    lo.traverse(o => { if (!o.isMesh || !o.geometry.index) return;
+      const g0 = o.geometry, P = g0.attributes.position, seen = new Map(), rep = new Uint32Array(P.count), I = g0.index.array, out = [], tri = new Set();
+      for (let i = 0; i < P.count; i++) { const k = Math.round(P.getX(i) * 20) + ',' + Math.round(P.getY(i) * 20) + ',' + Math.round(P.getZ(i) * 20); let r = seen.get(k); if (r === undefined) seen.set(k, r = i); rep[i] = r; }
+      for (let t = 0; t < I.length; t += 3) { const a = rep[I[t]], b = rep[I[t + 1]], c = rep[I[t + 2]]; if (a === b || b === c || a === c) continue;
+        const k = a < b ? (b < c ? a + ',' + b + ',' + c : a < c ? a + ',' + c + ',' + b : c + ',' + a + ',' + b) : (a < c ? b + ',' + a + ',' + c : b < c ? b + ',' + c + ',' + a : c + ',' + b + ',' + a);
+        if (!tri.has(k)) { tri.add(k); out.push(a, b, c); } }
+      o.geometry = g0.clone(); o.geometry.setIndex(out); });
+    ok([gl.scene, lo]);
+  }, undefined, no))).then(([src, srcLo]) => {
+    const fit = s => { const m = s.clone(), b = new THREE.Box3().setFromObject(src), k = 4.2 / (b.max.x - b.min.x);
+      m.scale.setScalar(k); m.position.set(-(b.min.x + b.max.x) / 2 * k, -b.min.y * k, -(b.min.z + b.max.z) / 2 * k); return m; };
+    const m = fit(src);
     m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.userData.glb = true; } });
-    // 가까울 때만 Meshy 모델, 멀면(40 넘게) 원래 상자 노점 — 노점이 많아도 폰이 버티게
-    const proc = new THREE.Group(); for (const c of [...g.children]) if (c.isMesh) proc.add(c);
-    const lod = new THREE.LOD(); lod.addLevel(m, 0); lod.addLevel(proc, 40); g.add(lod);
+    // 상자 노점은 Meshy가 오면 지운다(전구줄은 그대로). 가까우면 Meshy 원본, 멀면(40 넘게) 가벼운 판
+    for (const c of [...g.children]) if (c.isMesh) g.remove(c);
+    const lod = new THREE.LOD(); lod.addLevel(m, 0); if (srcLo) lod.addLevel(fit(srcLo), 40); g.add(lod);
     if (typeof scheduleCollision === 'function') scheduleCollision();
   }).catch(() => {});
 }
@@ -654,7 +673,7 @@ function striezelmarkt(c, out, side) {
   mesh(new THREE.BoxGeometry(12, .3, 2.4), M(0x333344), 0, .3, 0, tram);
   tram.rotation.y = Math.atan2(side.x, side.z) - Math.PI / 2;
   tickers.push(d => { tram.position.copy(at(Math.sin(performance.now() / 6000) * 30, 24)); });
-  tramModel(tram, 12);
+  tramModel(tram, 12); tramStops.push({ key: 'dresden', g: tram });
 }
 
 // ---------- Meshy 트램(models/tram.glb): 받으면 코드로 만든 노란 트램 대신. 길이 len 에 맞춤 ----------
@@ -672,6 +691,7 @@ const builders = { dresden: frauenkirche, prague: tyn, berlin };
 const tickers = [];
 // 아이스링크 자리(iceRink가 채움). 이 안에서는 미끄러지듯 스케이트
 let rink = null;
+const tramStops = []; // { key: 도시, g: 트램 } — 가까이 가거나 톡 누르면 다른 도시로 태워 준다
 const onIce = (x, z) => { if (!rink) return false; const dx = x - rink.c.x, dz = z - rink.c.z, lx = dx * rink.cos - dz * rink.sin, lz = dx * rink.sin + dz * rink.cos; return (lx / rink.RX) ** 2 + (lz / rink.RZ) ** 2 < 1; };
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 for (const [key, z] of Object.entries(ZONES)) {
@@ -718,6 +738,14 @@ for (const [key, z] of Object.entries(ZONES)) {
   const l2 = z.pos.clone().addScaledVector(side, 11).addScaledVector(out, -2); l2.y = 4.5;
   lightString(l1, l2, 1.2, 30);
   const pl = new THREE.PointLight(0xffb86b, 14, 24); pl.position.copy(z.pos).setY(5); scene.add(pl);
+  if (key === 'berlin') { // 베를린 트램: 광장 옆 선로를 오간다
+    const base = z.pos.clone().addScaledVector(side, 21).addScaledVector(out, -2), rails = new THREE.Group(); rails.userData.noCol = true; scene.add(rails);
+    for (const d of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 40), M(0x4a4d55, { metalness: .6 }), 0, .04, 0, rails); r.position.copy(base).addScaledVector(side, d).setY(.04); r.rotation.y = Math.atan2(out.x, out.z); }
+    const bt = new THREE.Group(); bt.userData.noCol = true; scene.add(bt);
+    mesh(new THREE.BoxGeometry(12, 2.6, 2.4), M(0xf2c230, { roughness: .5 }), 0, 1.6, 0, bt); // 받기 전 임시 모양
+    bt.rotation.y = Math.atan2(out.x, out.z) - Math.PI / 2; tramModel(bt, 12); tramStops.push({ key: 'berlin', g: bt });
+    tickers.push(() => { bt.position.copy(base).addScaledVector(out, Math.sin(performance.now() / 6500) * 12); });
+  }
   if (key === 'berlin') iceRink(z.pos.clone().addScaledVector(side, -25).addScaledVector(out, -3), out, side);
 }
 
@@ -776,7 +804,7 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
     for (const dv of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 58), M(0x4a4d55, { metalness: .6 }), 0, 0, 0, rails); r.position.copy(fromUV(95 + dv, 0, KB.top + .04)); r.rotation.y = Math.atan2(SIDE.x, SIDE.z); r.castShadow = false; }
     const tr = new THREE.Group(); tr.userData.noLift = tr.userData.noCol = true; scene.add(tr);
     mesh(new THREE.BoxGeometry(12, 3, 2.6), M(0xd8323a, { roughness: .5 }), 0, 1.8, 0, tr); mesh(new THREE.BoxGeometry(11.4, .9, 2.65), glow(0xfff0c8, 1.1), 0, 2.3, 0, tr); // 받기 전 임시 모양
-    tr.rotation.y = Math.atan2(-SIDE.z, SIDE.x); tramModel(tr, 12);
+    tr.rotation.y = Math.atan2(-SIDE.z, SIDE.x); tramModel(tr, 12); tramStops.push({ key: 'prague', g: tr });
     tickers.push(() => { const v = Math.sin(performance.now() / 7000) * 22; tr.position.copy(fromUV(95, v)); tr.position.y = groundAt(tr.position.x, tr.position.z); }); }
   // 카누: 강을 따라 천천히 오간다(다리 밑으로도)
   const canoe = (u, speed, hue) => {
@@ -1331,6 +1359,8 @@ addEventListener('pointerup', e => {
   if (!me || !s || s.id !== e.pointerId || touches.size > 1 || performance.now() - s.t > 350 || Math.hypot(e.clientX - s.x, e.clientY - s.y) > 12) return;
   tapRay.setFromCamera({ x: e.clientX / innerWidth * 2 - 1, y: -(e.clientY / innerHeight) * 2 + 1 }, camera);
   tapPlane.constant = -me.root.position.y;
+  const th = tapRay.intersectObjects(tramStops.map(s => s.g), true)[0]; // 트램을 톡 → 탈지 물어봄
+  if (th && th.distance < 60) { const st = tramStops.find(s => { for (let o = th.object; o; o = o.parent) if (o === s.g) return true; }); if (st) { askRide(st.key); return; } }
   if (tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); tapTo = { x: tapHit.x, z: tapHit.z, until: performance.now() + (dl / 9 * 1.6 + 1) * 1000 }; }
 });
 renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); setDist(camDist * Math.exp(e.deltaY * .0012)); }, { passive: false });
@@ -1340,9 +1370,25 @@ document.getElementById('view').onclick = () => { viewI = (viewI + 1) % VIEWS.le
 document.getElementById('zin').onclick = () => setDist(camDist / 1.4);
 document.getElementById('zout').onclick = () => setDist(camDist * 1.4);
 document.getElementById('zall').onclick = () => { if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
-document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
-  const z = ZONES[b.dataset.z]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); net.send(true);
-});
+function goZone(k) {
+  const z = ZONES[k]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); tapTo = null; net.send(true);
+}
+document.querySelectorAll('#warp button').forEach(b => b.onclick = () => goZone(b.dataset.z));
+// 🚋 트램: 탈지 물어보고, 고른 도시로 데려다준다(화면이 어두워졌다 밝아지는 사이 이동)
+const toCity = k => { const n = ZONES[k].name.split(' · ')[0], c = n.charCodeAt(n.length - 1) - 0xAC00; return n + (c >= 0 && c % 28 && c % 28 !== 8 ? '으로' : '로'); }; // 베를린으로 / 프라하로
+const rideBox = document.getElementById('ride'), fadeEl = document.getElementById('fade'), tramBtn = document.getElementById('tramBtn');
+let tramNear = null;
+function askRide(from) {
+  const span = rideBox.querySelector('span'); span.textContent = '';
+  for (const k of Object.keys(ZONES)) if (k !== from) { const b = document.createElement('button'); b.textContent = toCity(k); b.onclick = () => ride(k); span.append(b); }
+  rideBox.hidden = false;
+}
+rideBox.querySelector('.no').onclick = () => rideBox.hidden = true;
+function ride(k) {
+  rideBox.hidden = true; fadeEl.textContent = '🚋 ' + toCity(k) + ' 가는 중…'; fadeEl.classList.add('on');
+  setTimeout(() => { goZone(k); setTimeout(() => fadeEl.classList.remove('on'), 500); }, 1300);
+}
+tramBtn.onclick = () => tramNear && askRide(tramNear.key);
 
 // ---------- 루프 ----------
 const card = document.getElementById('card'), cardB = card.querySelector('b'), cardP = card.querySelector('p');
@@ -1422,6 +1468,8 @@ function frame() {
   // 네포무크 부조 가까이 가면 '만지기' 버튼
   const pq = window.__plaque, canTouch = me && pq && Math.hypot(player.position.x - pq.position.x, player.position.z - pq.position.z) < 2.8;
   touchBtn.hidden = !canTouch;
+  tramNear = me ? tramStops.find(s => Math.hypot(player.position.x - s.g.position.x, player.position.z - s.g.position.z) < 9) : null;
+  tramBtn.hidden = !tramNear || !rideBox.hidden;
   for (let i = sparks.length - 1; i >= 0; i--) { const sp = sparks[i]; sp.life -= d; sp.m.position.addScaledVector(sp.v, d); sp.v.y -= d * 1.5; sp.m.material.opacity = Math.max(0, sp.life); if (sp.life <= 0) { scene.remove(sp.m); sparks.splice(i, 1); } }
   if (reach > 0 && me) { reach -= d; me.body.rotation.x = Math.sin(Math.min(1, (1.2 - reach) / 1.2) * Math.PI) * .35; } else if (me) me.body.rotation.x = 0;
   composer.render();
