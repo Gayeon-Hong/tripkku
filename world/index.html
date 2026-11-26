@@ -561,6 +561,15 @@ function striezelmarkt(c, out, side) {
   tickers.push(d => { tiers.forEach((t, i) => t.rotation.y += d * (i % 2 ? -.35 : .35)); prop.rotation.y += d * .7; });
   addCol(py.position.x, py.position.z, 4.5);
   const pl = new THREE.PointLight(0xffb05a, 10, 18); pl.position.copy(py.position).setY(6); scene.add(pl);
+  // Meshy 크리스마스 피라미드(models/pyramid.glb): 받으면 코드 피라미드 대신. 진짜 피라미드처럼 가운데 축으로 통째로 천천히 돈다.
+  loader.load('models/pyramid.glb', gl => {
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.glb = true; if (o.material) { o.material.emissive = new THREE.Color(0xffc080); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .3; } } });
+    const b = new THREE.Box3().setFromObject(m), k = 14 / (b.max.y - b.min.y); m.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2);
+    const spin = new THREE.Group(); spin.add(m);
+    for (const c of py.children) c.visible = false; py.add(spin); scheduleCollision();
+    tickers.push(d => { spin.rotation.y += d * .3; });
+  }, undefined, () => {});
   // 관람차
   const fw = new THREE.Group(); fw.position.copy(at(-21, -6)); fw.rotation.y = Math.atan2(out.x, out.z) + Math.PI / 2; scene.add(fw);
   const steel = M(0xe6e9f2, { metalness: .7, roughness: .3 });
