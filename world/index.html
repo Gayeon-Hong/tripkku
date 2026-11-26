@@ -287,14 +287,15 @@ const stairH = (x, z) => { // 계단 갈래들 중 이 점이 올라선 곳의 �
   return h;
 };
 const surfaceAt = (x, z) => { const c = castleGround(x, z), s = stairH(x, z); let g = groundAt(x, z); if (c != null) g = Math.max(g, c); if (s != null) g = Math.max(g, s); return g; };
-// 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 트램 선로(u 95) 뒤 u≈108
-const CASTLE = { s: 104 }; CASTLE.u = 108 + .46 * CASTLE.s; CASTLE.v = -34;
+// 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 트램 선로(u 95) 뒤 u≈108+back
+// back: 틴 성당 첨탑과 너무 붙어 보여서 성을 뒤로 민 거리
+const CASTLE = { s: 104, back: 18 }; CASTLE.u = 108 + CASTLE.back + .46 * CASTLE.s; CASTLE.v = -34;
 // 성 안은 바위·마당·성벽 사이 길로만 걷는다: 마당보다 높은 건 건물·성벽·지붕이라 막히고, 한 걸음에 턱을 뛰어오르지도 못한다
 const CASTLE_ROOF = .385, CASTLE_STEP = .15, CASTLE_SLOPE = 1.1, CASTLE_GATES = [[.327, .423, .423, .635], [-.038, .135, -.923, -.75]]; // 북쪽 마당→대성당 둘레, 남쪽 바깥→대성당 둘레 (모델 기준 a0,a1,b0,b1)
 const castleStepOk = (x0, z0, x, z) => {
   const rise = h => h - surfaceAt(x0, z0) < CASTLE_STEP + CASTLE_SLOPE * Math.hypot(x - x0, z - z0), sh = stairH(x, z);
   if (sh != null) return rise(sh);
-  const g = castleGround(x, z); if (g == null) return toUV(x, z)[0] <= 102; // 성 밖 언덕은 그냥 걷고, 언덕 끝 너머 허공은 막힘
+  const g = castleGround(x, z); if (g == null) return toUV(x, z)[0] <= 102 + CASTLE.back; // 성 밖 언덕은 그냥 걷고, 언덕 끝 너머 허공은 막힘
   return !castleRoofAt(x, z) && g - KB.top < CASTLE_ROOF * CASTLE.s && rise(g);
 };
 const PR = .45; // 캐릭터 반지름
@@ -784,7 +785,7 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   for (let i = 0; i < n; i++) { const h = KB.deck * (i + 1) / n; mesh(new THREE.BoxGeometry(len / n + .02, h, wv), stone, KB.ramp0 + len / n * (i + .5), h / 2, vc, KBG); }
   for (const v of [KB.vmin - .3, KB.vmax + .3]) { const wall = mesh(new THREE.BoxGeometry(len, 1, .6), stone, KB.ramp0 + len / 2, KB.deck / 2 + .6, v, KBG); wall.rotation.z = Math.atan2(KB.deck, len); wall.scale.x = Math.hypot(len, KB.deck) / len; }
   // 언덕: 다리 끝(탑 문)에서 틴 성당 광장까지 오르막. 가운데는 돌길.
-  const U0 = KB.hill0 - .1, UL = 58, VL = 90, geo = new THREE.PlaneGeometry(UL, VL, 70, 60); geo.rotateX(-Math.PI / 2);
+  const U0 = KB.hill0 - .1, UL = 58 + CASTLE.back, VL = 90, geo = new THREE.PlaneGeometry(UL, VL, 70, 60); geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position, col = [], cc = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const u = pos.getX(i) + U0 + UL / 2, v = pos.getZ(i), w = fromUV(u, v);
@@ -803,7 +804,7 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
   castle.position.copy(fromUV(CASTLE.u, CASTLE.v, KB.top - .6 + .5 * CASTLE.s)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(CASTLE.s); scene.add(castle); castleObj = castle;
   loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.geometry.computeBoundsTree = computeBoundsTree; o.geometry.computeBoundsTree(); o.raycast = acceleratedRaycast; } }); castle.add(gl.scene); castle.updateMatrixWorld(true); buildCastleGrid(); }, undefined, () => {});
-  for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
+  for (let [u, v] of [[94, -34], [100, -18], [100, -50]]) { u += CASTLE.back; const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
   { const rails = new THREE.Group(); rails.userData.noLift = rails.userData.noCol = true; scene.add(rails);
     for (const dv of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 58), M(0x4a4d55, { metalness: .6 }), 0, 0, 0, rails); r.position.copy(fromUV(95 + dv, 0, KB.top + .04)); r.rotation.y = Math.atan2(SIDE.x, SIDE.z); r.castShadow = false; }
