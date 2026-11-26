@@ -55,12 +55,13 @@
 <div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
 
 <script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js"}}
 </script>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'; // 성 바닥 레이캐스트를 빠르게
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -203,13 +204,19 @@ function rebuildCollision() {
 }
 let colTimer = 0; const scheduleCollision = () => { clearTimeout(colTimer); colTimer = setTimeout(rebuildCollision, 150); };
 // 프라하 성 언덕: 성 모델 표면 높이(바위·마당)를 밟는다. 성 밖이면 null
-const castleRay = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0), RAY0 = new THREE.Vector3();
+const castleRay = new THREE.Raycaster(); castleRay.firstHitOnly = true; const DOWN = new THREE.Vector3(0, -1, 0), RAY0 = new THREE.Vector3();
 function castleGround(x, z) {
   if (!castleObj?.children.length) return null;
-  const [u, v] = toUV(x, z); if (u < 97 || u > 131 || v < -60 || v > -8) return null;
-  castleRay.set(RAY0.set(x, 80, z), DOWN); const h = castleRay.intersectObject(castleObj, true)[0]; return h ? h.point.y : null;
+  const [u, v] = toUV(x, z); if (u < 97 || u > 180 || v < -95 || v > 27) return null;
+  castleRay.set(RAY0.set(x, 200, z), DOWN); const h = castleRay.intersectObject(castleObj, true)[0]; if (!h) return null;
+  // 모델에서 막혀 있는 성문 통로: 건물을 뚫고 마당 높이로 지나간다
+  for (const [u0, u1, v0, v1] of CASTLE_GATES) if (u >= u0 && u <= u1 && v >= v0 && v <= v1) return Math.min(h.point.y, KB.top + 17);
+  return h.point.y;
 }
 const surfaceAt = (x, z) => { const c = castleGround(x, z), g = groundAt(x, z); return c == null ? g : Math.max(c, g); };
+// 성 안은 바위·마당·성벽 사이 길(언덕 위 20 미만)로만 걷는다. 그보다 높은 건 건물·성벽·지붕이라 막힌다
+const CASTLE_ROOF = 20, CASTLE_GATES = [[141, 146, -12, -1], [122, 131, -82, -73]]; // 북쪽 마당→대성당 둘레, 남쪽 바깥→대성당 둘레 (u0,u1,v0,v1; CS=52 기준)
+const castleStepOk = (x, z) => { if (toUV(x, z)[0] <= 102) return true; const g = castleGround(x, z); return g != null && g - KB.top < CASTLE_ROOF; };
 const PR = .45; // 캐릭터 반지름
 function isBlocked(x, z) {
   const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
@@ -653,8 +660,9 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
   // 프라하 성(Meshy): 언덕 너머. 받침대는 잘라냈고 바위 언덕째 놓는다. 바위·마당을 밟고 걸어 올라갈 수 있다(castleGround).
   const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
-  castle.position.copy(fromUV(112, -34, KB.top - .6 + .5 * 26)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(26); scene.add(castle); castleObj = castle;
-  loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); castle.add(gl.scene); }, undefined, () => {});
+  const CS = 52; // 두 배로 키워 건물 사이 길로 걸어 다닐 수 있게. 앞쪽 끝(u≈100)은 그대로
+  castle.position.copy(fromUV(124, -34, KB.top - .6 + .5 * CS)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(CS); scene.add(castle); castleObj = castle;
+  loader.load('models/prague-castle.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.geometry.computeBoundsTree = computeBoundsTree; o.geometry.computeBoundsTree(); o.raycast = acceleratedRaycast; } }); castle.add(gl.scene); }, undefined, () => {});
   for (const [u, v] of [[94, -34], [100, -18], [100, -50]]) { const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
   { const rails = new THREE.Group(); rails.userData.noLift = rails.userData.noCol = true; scene.add(rails);
@@ -1038,12 +1046,12 @@ function frame() {
       mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
       const ox = P.x, oz = P.z;
       moveWithCollision(P, mv.x * d * 9, mv.z * d * 9);
-      // 성 언덕: 바위·지붕 위로 자유롭게 올라가되(장난감 월드), 언덕 끝 너머 허공으로는 못 나간다
-      if (toUV(P.x, P.z)[0] > 102 && castleGround(P.x, P.z) == null) { P.x = ox; P.z = oz; }
+      // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
+      if (!castleStepOk(P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(nx, oz)) P.z = oz; else if (castleStepOk(ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else walkT = 0;
-    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 160 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 230 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
     { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
     me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
     player.position.copy(P); net.send(false);
