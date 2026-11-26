@@ -22,6 +22,7 @@
   #warp button,#zoom button,#pick button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer;white-space:nowrap}
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
   #zoom button{width:44px;height:44px;padding:0;font-size:20px;border-radius:50%}
+  #snowbtn{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#e8f2ff;color:#1d2a5a;box-shadow:0 4px 18px rgba(160,200,255,.6);cursor:pointer}
   #touch{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-family:inherit;font-size:17px;border:0;border-radius:18px;padding:10px 16px;background:#ffd27a;color:#3a2a10;box-shadow:0 4px 18px rgba(255,200,90,.6);cursor:pointer}
   #env{position:fixed;bottom:max(18px,env(safe-area-inset-bottom));left:12px;color:#fff;font-size:13px;background:rgba(255,255,255,.15);padding:5px 9px;border-radius:12px;pointer-events:none;max-width:44vw}
   #env:empty{display:none}
@@ -52,6 +53,7 @@
 <div id="zoom"><button id="mode" aria-label="시간·날씨 모드">🌙</button><button id="view" aria-label="시점 바꾸기">🎥</button><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
 <div id="online"></div>
 <button id="touch" hidden>🙏 네포무크 상 만지기</button>
+<button id="snowbtn" hidden>❄️ 눈 던지기</button>
 <div id="pick"><h2>누구로 들어갈까요?</h2><div><button data-who="me">👧 나</button><button data-who="mom">👩 엄마</button><button data-who="dad">👨 아빠</button></div><p>각자 자기 캐릭터를 움직여요. 같은 월드에 들어온 가족이 어디 있는지 보여요.</p></div>
 
 <script type="importmap">
@@ -875,6 +877,95 @@ function snowman(scarf) {
     body.scale.set(1, 1 - (moving ? Math.max(0, -Math.cos(hop * 2)) * .08 : 0), 1); // 착지할 때 살짝 찌그러짐
   });
 }
+// ---------- 눈싸움 마당: 흰 다람쥐 셋(Meshy, 부위별: 몸·눈덩이·꼬리·귀·모자)이 돌아다니며 진짜로 눈덩이를 던진다 ----------
+// 가까이 가면 '❄️ 눈 던지기' 버튼으로 같이 놀 수 있고, 맞은 다람쥐는 던진 쪽에게 되갚는다.
+const snowFight = (() => {
+  const SA = Math.PI * 7 / 6, FC = new THREE.Vector3(Math.cos(SA) * 52, 0, Math.sin(SA) * 52), FR = 10; // 회전목마 바깥쪽 빈터(강·광장과 안 겹침)
+  for (const [dx, dz, r] of [[-4, 2, 1.6], [3, -3, 1.3], [5, 4, 1.1], [-2, -5, 1.2]]) { const m = mesh(new THREE.SphereGeometry(r, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0xf4f7ff, { roughness: 1 }), FC.x + dx, 0, FC.z + dz); m.scale.y = .6; scene.add(m); } // 눈 언덕
+  const snowM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }), puffG = new THREE.SphereGeometry(.09, 6, 4);
+  const balls = [], puffs = [], crit = [];
+  const puff = p => { for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(puffG, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.position.copy(p); scene.add(m); puffs.push({ m, v: new THREE.Vector3((Math.random() - .5) * 3, 1 + Math.random() * 2.5, (Math.random() - .5) * 3), life: .8 }); } };
+  const throwBall = (from, to, onLand) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), snowM); m.castShadow = true; scene.add(m); const dist = from.distanceTo(to); balls.push({ m, a: from.clone(), b: to.clone(), t: 0, dur: Math.max(.45, dist * .06), h: 1 + dist * .12, onLand }); };
+  const randSpot = () => { for (let i = 0; i < 20; i++) { const a = Math.random() * 6.283, r = Math.random() * FR, x = FC.x + Math.cos(a) * r, z = FC.z + Math.sin(a) * r; if (!isBlocked(x, z)) return new THREE.Vector3(x, 0, z); } return FC.clone(); };
+  let playerHit = 0;
+  function make(src, i) {
+    const root = new THREE.Group(); root.userData.noLift = root.userData.noCol = true; root.position.copy(randSpot()); scene.add(root);
+    const body = new THREE.Group(); root.add(body);
+    const m = src.clone(true), bb = new THREE.Box3().setFromObject(m), k = 2.1 / (bb.max.y - bb.min.y);
+    m.scale.setScalar(k); m.position.y = -bb.min.y * k; body.add(m); m.updateMatrixWorld(true);
+    m.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); pv.attach(o); return pv; };
+    const tail = pivot(part('model_part2'), new THREE.Vector3(.05, -.72, -.08)); // 꼬리 뿌리
+    const ears = [part('model_part3'), part('model_part4')].filter(Boolean);
+    const ball = part('model_part1');
+    return { root, body, tail, ears, ball, ready: true, state: 'walk', to: randSpot(), t: Math.random() * 3, cool: 2 + Math.random() * 3, hit: 0, foe: null, hop: Math.random() * 6, id: i };
+  }
+  loader.load('models/squirrel.glb', gl => {
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, metalness: 0, emissive: 0x30343c, emissiveIntensity: .5 }); // 꼭짓점 색 + 밤에도 하얗게
+    gl.scene.traverse(o => { if (o.isMesh) o.material = mat; });
+    for (let i = 0; i < 3; i++) crit.push(make(gl.scene, i));
+  }, undefined, () => {});
+  const handPos = c => { const p = new THREE.Vector3(); (c.ball || c.body).getWorldPosition(p); return p; };
+  function attack(c, target) { // target: 다른 다람쥐 또는 'me'
+    c.state = 'aim'; c.t = .45; c.foe = target;
+  }
+  function release(c) {
+    const tgt = c.foe === 'me' ? me?.root.position.clone().setY(me.root.position.y + 1.4) : c.foe?.root.position.clone().setY(c.foe.root.position.y + 1);
+    c.state = 'walk'; c.to = randSpot(); c.cool = 2.5 + Math.random() * 3.5;
+    if (!tgt) return;
+    const from = handPos(c); if (c.ball) c.ball.visible = false; c.ready = false; setTimeout(() => { c.ready = true; if (c.ball) c.ball.visible = true; }, 1600);
+    const foe = c.foe;
+    throwBall(from, tgt, p => {
+      puff(p);
+      if (foe === 'me') { if (me && me.root.position.distanceTo(p.clone().setY(me.root.position.y)) < 1.6) playerHit = .8; }
+      else if (foe && foe.root.position.distanceTo(p.clone().setY(foe.root.position.y)) < 1.5) { foe.hit = .8; foe.revenge = c; }
+    });
+  }
+  const btn = document.getElementById('snowbtn');
+  btn.onclick = () => {
+    if (!me || !crit.length) return;
+    const P = me.root.position; let best = null, bd = 1e9; for (const c of crit) { const dd = c.root.position.distanceTo(P); if (dd < bd) { bd = dd; best = c; } }
+    me.body.rotation.y = Math.atan2(best.root.position.x - P.x, best.root.position.z - P.z);
+    const from = P.clone().setY(P.y + 2.2), foe = best;
+    throwBall(from, foe.root.position.clone().setY(foe.root.position.y + 1), p => { puff(p); if (foe.root.position.distanceTo(p.clone().setY(foe.root.position.y)) < 1.5) { foe.hit = .8; foe.revenge = 'me'; } });
+  };
+  tickers.push(d => {
+    btn.hidden = !(me && Math.hypot(me.root.position.x - FC.x, me.root.position.z - FC.z) < FR + 6 && crit.length);
+    const now = performance.now() / 1000;
+    for (const c of crit) {
+      const P = c.root.position; let moving = false;
+      if (c.hit > 0) { c.hit -= d; c.body.rotation.z = Math.sin(c.hit * 40) * .35 * c.hit; c.body.rotation.x = 0; if (c.hit <= 0) { c.body.rotation.z = 0; if (c.revenge && c.ready) attack(c, c.revenge); c.revenge = null; } }
+      else if (c.state === 'aim') {
+        const tp = c.foe === 'me' ? me?.root.position : c.foe?.root.position;
+        if (tp) c.root.rotation.y = Math.atan2(tp.x - P.x, tp.z - P.z);
+        c.t -= d; c.body.rotation.x = -.35 * Math.sin(Math.min(1, (.45 - c.t) / .45) * Math.PI / 2); // 뒤로 젖혔다가
+        if (c.t <= 0) { c.body.rotation.x = .25; setTimeout(() => c.body.rotation.x = 0, 180); release(c); } // 휙
+      } else {
+        c.cool -= d;
+        if (c.cool <= 0 && c.ready) {
+          const meNear = me && Math.hypot(me.root.position.x - FC.x, me.root.position.z - FC.z) < FR + 6;
+          const others = crit.filter(o => o !== c);
+          attack(c, meNear && Math.random() < .45 ? 'me' : others[Math.floor(Math.random() * others.length)]);
+        } else {
+          const dx = c.to.x - P.x, dz = c.to.z - P.z, dl = Math.hypot(dx, dz);
+          if (dl < .4) { c.t -= d; if (c.t <= 0) { c.to = randSpot(); c.t = .5 + Math.random() * 2; } }
+          else { const st = Math.min(dl, d * 2.4), nx = P.x + dx / dl * st, nz = P.z + dz / dl * st; if (isBlocked(nx, nz)) c.to = randSpot(); else { P.x = nx; P.z = nz; moving = true; } c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, Math.atan2(dx, dz), .15); }
+        }
+      }
+      P.y = groundAt(P.x, P.z);
+      if (moving) c.hop += d * 11;
+      c.body.position.y = moving ? Math.abs(Math.sin(c.hop)) * .3 : 0;
+      c.tail.rotation.y = Math.sin(now * (moving ? 9 : 3) + c.id) * (moving ? .35 : .18); // 꼬리 살랑
+      c.ears.forEach((e, k) => e.rotation.z = Math.sin(now * 2.3 + k * 2 + c.id) * .05);
+    }
+    for (let i = balls.length - 1; i >= 0; i--) { const b = balls[i]; b.t += d / b.dur; const t = Math.min(1, b.t);
+      b.m.position.lerpVectors(b.a, b.b, t); b.m.position.y += Math.sin(t * Math.PI) * b.h;
+      if (t >= 1) { scene.remove(b.m); balls.splice(i, 1); b.onLand(b.m.position.clone()); } }
+    for (let i = puffs.length - 1; i >= 0; i--) { const p = puffs[i]; p.life -= d; p.m.position.addScaledVector(p.v, d); p.v.y -= d * 6; p.m.material.opacity = Math.max(0, p.life / .8); if (p.life <= 0) { scene.remove(p.m); puffs.splice(i, 1); } }
+    if (me) { if (playerHit > 0) { playerHit -= d; me.root.rotation.z = Math.sin(playerHit * 40) * .3 * playerHit; } else me.root.rotation.z = 0; }
+  });
+  return { FC };
+})();
 // 숲 (가장자리 눈 덮인 나무). Meshy 트리를 받으면 위 광장 트리 로더가 이 원뿔들을 같은 트리로 바꾼다
 const forest = [];
 for (let i = 0; i < 90; i++) {
