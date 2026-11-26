@@ -619,6 +619,14 @@ function striezelmarkt(c, out, side) {
       if (k) mesh(new THREE.SphereGeometry(.09, 8, 6), glow(0xff2a2a, 3), 0, 1.45, .82, r); // 빨간 코
       mesh(new THREE.BoxGeometry(.04, .04, 1.4), goldM, 0, .9, -.9, r); }
     for (let i = 0; i < 8; i++) mesh(new THREE.SphereGeometry(.07, 6, 4), glow([0xffd84a, 0xff5a6e, 0x6fb8ff][i % 3], 2.5), (i % 2 ? .7 : -.7), .95, -.8 + i * .22, body); // 썰매 전구
+    // Meshy 산타 썰매(models/sleigh.glb, 루돌프가 +x 쪽)를 받으면 코드 썰매 대신. 썰매 앞(+z)에 맞춰 돌림
+    loader.load('models/sleigh.glb', gl => {
+      const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; if (o.material) { o.material.emissive = new THREE.Color(0xffc080); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .3; } } });
+      const h = new THREE.Group(); h.rotation.y = -Math.PI / 2; h.add(m);
+      const b = new THREE.Box3().setFromObject(h), k = 6 / (b.max.z - b.min.z); h.scale.setScalar(k);
+      const b2 = new THREE.Box3().setFromObject(h); h.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, 1.7 - (b2.min.z + b2.max.z) / 2);
+      for (const c of body.children) c.visible = false; body.add(h);
+    }, undefined, () => {});
     const dir = B.clone().sub(A), yaw = Math.atan2(dir.x, dir.z);
     tickers.push(() => { const t = performance.now() / 9000, ph = t % 1, f = .5 - .5 * Math.cos(ph * 2 * Math.PI), back = ph > .5;
       sl.position.copy(A).lerp(B, f); sl.rotation.y = yaw + (back ? Math.PI : 0);
