@@ -769,7 +769,12 @@ for (const [key, z] of Object.entries(ZONES)) {
       }
       const star = mesh(new THREE.OctahedronGeometry(.6), glow(0xffd84a, 3), lo.x, lo.y + th / 2 + .4, lo.z, g);
       tickers.push(d => star.rotation.y += d * 1.6);
-      const tl = new THREE.PointLight(0xffd08a, 30, 22, 1.4); tl.position.set(lo.x, lo.y + th * .1, lo.z + R + 1.5); g.add(tl); // 성당 앞 트리 더 밝게
+      const tl = new THREE.PointLight(0xffd08a, 14, 12, 1.6); tl.position.set(lo.x, lo.y + th * .1, lo.z + R + 1.2); g.add(tl); // 트리만 비추게 좁게(넓으면 성당이 하얗게 날아감)
+      // 성당: 벽·첨탑 무늬가 밤에도 보이게 자기 색으로 은은하게 + 정면 위쪽에서 비추는 조명
+      m.traverse(o => { if (!o.isMesh || !o.material) return; for (let q = o; q; q = q.parent) if (q === tree) return;
+        const mt = o.material = o.material.clone(); mt.emissive = new THREE.Color(0xfff0dc); mt.emissiveIntensity = .08;
+        if (mt.map) mt.emissiveMap = mt.map; else if (mt.vertexColors) mt.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor.rgb;'); }; else mt.emissive.copy(mt.color); });
+      { const cl = new THREE.SpotLight(0xffe6c0, 30, 60, .5, .8, 1.2); cl.position.set(6, 20, 26); cl.target.position.set(0, 10, 0); g.add(cl, cl.target); }
       tree.traverse(o => { if (!o.isMesh || !o.material) return; const mt = o.material = o.material.clone(); mt.emissive = new THREE.Color(0xffffff); mt.emissiveIntensity = .35;
         if (mt.map) mt.emissiveMap = mt.map; else if (mt.vertexColors) mt.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor.rgb;'); }; else mt.emissive.copy(mt.color); });
     }
@@ -904,7 +909,8 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
     const box = new THREE.Box3().setFromObject(m), k = 23 / (box.max.y - box.min.y); m.scale.setScalar(k);
     const b2 = new THREE.Box3().setFromObject(m), cx = (b2.min.x + b2.max.x) / 2, cz = (b2.min.z + b2.max.z) / 2; m.position.set(-cx, -b2.min.y, -cz);
     for (const c of [...ot.children]) if (!c.isLight) c.visible = false;
-    ot.add(m); ol.position.set(0, 7, 5); scheduleCollision();
+    m.traverse(o => { const mt = o.material; if (o.isMesh && mt?.map) { mt.emissive = new THREE.Color(0xfff0dc); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; mt.metalness = 0; } }); // 밤에도 시계탑 무늬가 보이게
+    ot.add(m); ol.position.set(0, 9, 7); ol.intensity = 22; ol.distance = 22; ol.color.set(0xffe2b8); scheduleCollision();
   }, undefined, () => {});
 }
 const CARDS = { charles: { name: '🇨🇿 까를교 · 블타바 강', text: '1357년에 짓기 시작한 돌다리. 양쪽 난간에 조각상 30개! 성 요한 네포무크 상 아래 청동 부조를 만지면 프라하에 다시 온대요.' } };
@@ -1354,7 +1360,7 @@ function makeChar(who, label) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData.noCol = true; scene.add(root); body.scale.setScalar(CS);
   chibi(FAMILY[WHO[who].i], body);
   const url = `../next/assets/models/family_${who}.glb`;
-  (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => { gl.scene.traverse(o => { const mt = o.material; if (o.isMesh && mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.metalness = 0; } }); ok(gl.scene); }, undefined, no))).then(src => { // 밤에도 캐릭터 얼굴·옷이 환하게
+  (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => { gl.scene.traverse(o => { const mt = o.material; if (o.isMesh && mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .2; mt.metalness = 0; } }); ok(gl.scene); }, undefined, no))).then(src => { // 밤에도 캐릭터 얼굴·옷이 환하게
     const m = src.clone(), sz = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
     m.scale.setScalar(3 / sz.y); const bb = new THREE.Box3().setFromObject(m); m.position.y -= bb.min.y;
     m.traverse(o => { if (o.isMesh) o.castShadow = true; });
