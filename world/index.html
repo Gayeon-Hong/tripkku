@@ -198,7 +198,9 @@ function noWalk(x, z) {
 const colliders = []; // (예전 원형 충돌 — 지금은 아래 격자를 씀)
 const addCol = (x, z, r) => colliders.push({ x, z, r });
 // ---------- 충돌 격자: 실제 모양(상자·Meshy 삼각형)이 캐릭터 몸 높이(0.4~2.2)에 걸치는 칸을 막는다 ----------
-const CELL = .5, BAND = [.4, 2.2], blocked = new Set();
+// CS: 캐릭터 크기 배율. 사람·동물을 줄여서 건물·노점·놀이기구 사이가 상대적으로 1/CS 배 넓어지게(프라하 지형처럼 좌표에 묶인 곳은 그대로라 안 깨짐)
+const CS = .72;
+const CELL = .5, BAND = [.3, 1.65], blocked = new Set();
 const cellKey = (x, z) => x + ',' + z;
 function markRect(x0, z0, x1, z1) {
   for (let x = Math.floor(x0 / CELL); x <= Math.floor(x1 / CELL); x++) for (let z = Math.floor(z0 / CELL); z <= Math.floor(z1 / CELL); z++) blocked.add(cellKey(x, z));
@@ -324,7 +326,7 @@ const castleStepOk = (x0, z0, x, z) => {
   const g = castleGround(x, z); if (g == null) return toUV(x, z)[0] <= 102 + CASTLE.back; // 성 밖 언덕은 그냥 걷고, 언덕 끝 너머 허공은 막힘
   return !castleRoofAt(x, z) && g - KB.top < CASTLE_ROOF * CASTLE.s && rise(g);
 };
-const PR = .45; // 캐릭터 반지름
+const PR = .33; // 캐릭터 반지름(작아진 캐릭터에 맞춤)
 function isBlocked(x, z) {
   const cx = Math.floor(x / CELL), cz = Math.floor(z / CELL);
   for (let i = cx - 1; i <= cx + 1; i++) for (let j = cz - 1; j <= cz + 1; j++) {
@@ -964,7 +966,7 @@ function snowman(scarf) {
   const body = new THREE.Group(); bun.add(body);
   loader.load('models/bunny.glb', gl => {
     const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; const mt = o.material; if (mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.metalness = 0; } } });
-    const b = new THREE.Box3().setFromObject(m), k = 1.7 / (b.max.y - b.min.y); m.scale.setScalar(k);
+    const b = new THREE.Box3().setFromObject(m), k = 1.7 * CS / (b.max.y - b.min.y); m.scale.setScalar(k);
     const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2); body.add(m);
   }, undefined, () => {});
   let target = bun.position.clone(), rest = 0, hop = 0;
@@ -1016,7 +1018,7 @@ const snowFight = (() => {
   function make(src, i) {
     const root = new THREE.Group(); root.userData.noLift = root.userData.noCol = true; root.position.copy(randSpot()); scene.add(root);
     const body = new THREE.Group(); root.add(body);
-    const m = src.clone(true), bb = new THREE.Box3().setFromObject(m), k = 2.1 / (bb.max.y - bb.min.y);
+    const m = src.clone(true), bb = new THREE.Box3().setFromObject(m), k = 2.1 * CS / (bb.max.y - bb.min.y);
     m.scale.setScalar(k); m.position.y = -bb.min.y * k; body.add(m); m.updateMatrixWorld(true);
     m.traverse(o => { if (o.isMesh) o.castShadow = true; });
     const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); pv.attach(o); return pv; };
@@ -1036,7 +1038,7 @@ const snowFight = (() => {
     const m = src.clone(true);
     m.traverse(o => { if (o.isMesh) { o.castShadow = true; if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
       const mt = o.material = o.material.clone(); mt.metalness = 0; mt.roughness = .8; mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .45; } });
-    const bb = new THREE.Box3().setFromObject(m), k = 2 / (bb.max.y - bb.min.y);
+    const bb = new THREE.Box3().setFromObject(m), k = 2 * CS / (bb.max.y - bb.min.y);
     m.scale.setScalar(k); m.position.y = -bb.min.y * k; body.add(m); m.updateMatrixWorld(true);
     const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); if (o) pv.attach(o); return pv; };
     const ears = [pivot(part('model_part0'), new THREE.Vector3(-.3, .56, 0)), pivot(part('model_part2'), new THREE.Vector3(.3, .56, 0))];
@@ -1327,7 +1329,7 @@ const ROOM = (params.get('room') || 'family').slice(0, 64);
 const glbCache = {};
 // 가족 3D 모델(next/assets/models/family_*.glb)을 받는 동안은 손으로 만든 미니 캐릭터를 보여준다
 function makeChar(who, label) {
-  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData.noCol = true; scene.add(root);
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body); root.userData.noCol = true; scene.add(root); body.scale.setScalar(CS);
   chibi(FAMILY[WHO[who].i], body);
   const url = `../next/assets/models/family_${who}.glb`;
   (glbCache[url] ||= new Promise((ok, no) => loader.load(url, gl => { gl.scene.traverse(o => { const mt = o.material; if (o.isMesh && mt?.map) { mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .42; mt.metalness = 0; } }); ok(gl.scene); }, undefined, no))).then(src => { // 밤에도 캐릭터 얼굴·옷이 환하게
@@ -1344,7 +1346,7 @@ function nameTag(text) {
   x.fillStyle = 'rgba(20,28,74,.72)'; x.beginPath(); x.roundRect((256 - w) / 2, 8, w, 54, 27); x.fill();
   x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 128, 37);
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }));
-  sp.scale.set(2.2, .62, 1); sp.position.y = 3.6; sp.renderOrder = 9; return sp;
+  sp.scale.set(2.2, .62, 1); sp.position.y = 3.6 * CS + .25; sp.renderOrder = 9; return sp;
 }
 let me = null; // 내 캐릭터
 const player = new THREE.Group(); // 입장 전에도 카메라가 볼 자리
@@ -1414,7 +1416,8 @@ const keys = {};
 addEventListener('keydown', e => keys[e.code] = true);
 addEventListener('keyup', e => keys[e.code] = false);
 const skateV = new THREE.Vector3(); // 얼음 위 미끄러지는 속도
-let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 5.5 : 14, pinch = null;
+const WALK = 5.5; // 걷는 속도(예전 9: 폰에서 너무 빨랐다)
+let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 4.5 : 11, pinch = null;
 const camPan = new THREE.Vector3(), camTarget = new THREE.Vector3(); // 두 손가락으로 끌어서 옮긴 만큼 화면 중심이 내 캐릭터에서 벗어남(걸으면 다시 돌아옴)
 const touches = new Map();
 const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 280); // 멀리: 프라하 성 전체가 폰에서도 보이게
@@ -1440,17 +1443,18 @@ addEventListener('pointermove', e => {
   if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pinch && touches.size >= 2) { const [p, q] = [...touches.values()];
     setDist(pinch.dist * pinch.d / Math.max(20, Math.hypot(p.x - q.x, p.y - q.y)));
-    let da = Math.atan2(q.y - p.y, q.x - p.x) - pinch.a; da = Math.atan2(Math.sin(da), Math.cos(da)); camYaw = pinch.yaw + da; // 손가락 돌린 만큼 화면도
+    let da = Math.atan2(q.y - p.y, q.x - p.x) - pinch.a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (!pinch.rot && Math.abs(da) > .26) { pinch.rot = true; pinch.a += Math.sign(da) * .26; da -= Math.sign(da) * .26; } if (pinch.rot) camYaw = pinch.yaw + da; // 15° 넘게 비틀어야 화면이 돈다(확대·끌기 하다 저절로 안 돌게)
     // 두 손가락 가운데가 움직인 만큼 지도를 끌어 옮김(손가락 밑 땅이 손가락을 따라오게)
     const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2, dx = mx - pinch.mx, dy = my - pinch.my; pinch.mx = mx; pinch.my = my;
     const k = 1.04 * camDist / innerHeight, sy = Math.sin(camYaw), cy = Math.cos(camYaw), kf = k / Math.max(.35, Math.sin(camPitch));
     camPan.x += -cy * dx * k - sy * dy * kf; camPan.z += sy * dx * k - cy * dy * kf;
     if (camPan.length() > 400) camPan.setLength(400); return; }
   if (joy && e.pointerId === joy.id) {
-    jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 45) jv.setLength(45);
+    jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 55) jv.setLength(55);
     knob.style.transform = `translate(${jv.x}px,${jv.y}px)`;
   } else if (look && e.pointerId === look.id) {
-    camYaw -= (e.clientX - look.x) * .006; camPitch = THREE.MathUtils.clamp(camPitch + (e.clientY - look.y) * .004, .06, 1.5);
+    if (!look.go) { if (Math.hypot(e.clientX - look.x, e.clientY - look.y) < 10) return; look.go = true; look.x = e.clientX; look.y = e.clientY; return; } // 톡 하다 살짝 밀린 걸로는 안 돌게
+    camYaw -= (e.clientX - look.x) * .005; camPitch = THREE.MathUtils.clamp(camPitch + (e.clientY - look.y) * .0035, .06, 1.5);
     look.x = e.clientX; look.y = e.clientY;
   }
 });
@@ -1469,6 +1473,25 @@ addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr)
     if (touches.size > 1 || Math.abs(dy) < 40 || Math.abs(dy) < Math.abs(dx) * 1.5) return;
     setFold(dy < 0); }, true); }
 // 화면을 톡 누르면(끌지 않고) 그 자리로 걸어간다
+// 톡 이동 길찾기: 0.5칸 격자에서 A* 로 물건을 돌아가는 길을 찾고, 직선으로 보이는 구간은 합친다
+function findPath(sx, sz, gx, gz) {
+  const key = (i, j) => (i + 32768) * 65536 + (j + 32768), ci = x => Math.floor(x / CELL), ctr = i => (i + .5) * CELL;
+  const ok = (i, j, fi, fj) => { const x = ctr(i), z = ctr(j); if (isBlocked(x, z)) return false; const a = surfaceAt(ctr(fi), ctr(fj)), b = surfaceAt(x, z); return Math.abs(b - a) < .7 && (castleGround(x, z) == null && stairH(x, z) == null || castleStepOk(ctr(fi), ctr(fj), x, z)); };
+  let si = ci(sx), sj = ci(sz), gi = ci(gx), gj = ci(gz);
+  if (isBlocked(ctr(gi), ctr(gj))) { let best = null, bd = 1e9; for (let r = 1; r <= 6 && !best; r++) for (let i = gi - r; i <= gi + r; i++) for (let j = gj - r; j <= gj + r; j++) { if (isBlocked(ctr(i), ctr(j))) continue; const dd = (i - gi) ** 2 + (j - gj) ** 2; if (dd < bd) { bd = dd; best = [i, j]; } } if (!best) return null; [gi, gj] = best; }
+  const h = (i, j) => Math.hypot(i - gi, j - gj), open = [[h(si, sj), 0, si, sj]], g = new Map([[key(si, sj), 0]]), from = new Map(); let n = 0;
+  const push = it => { open.push(it); let k = open.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (open[p][0] <= open[k][0]) break; [open[p], open[k]] = [open[k], open[p]]; k = p; } };
+  const pop = () => { const top = open[0], last = open.pop(); if (open.length) { open[0] = last; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let m = k; if (l < open.length && open[l][0] < open[m][0]) m = l; if (r < open.length && open[r][0] < open[m][0]) m = r; if (m === k) break; [open[m], open[k]] = [open[k], open[m]]; k = m; } } return top; };
+  while (open.length && n++ < 30000) {
+    const [, gc, i, j] = pop(); if (i === gi && j === gj) { const pts = []; let k = key(i, j); while (k !== undefined) { pts.push([ctr(Math.floor(k / 65536) - 32768), ctr(k % 65536 - 32768)]); k = from.get(k); } pts.reverse();
+      const out = [pts[0]]; for (let a = 0; a < pts.length - 1;) { let b = pts.length - 1; for (; b > a + 1; b--) { const [x0, z0] = pts[a], [x1, z1] = pts[b], L = Math.hypot(x1 - x0, z1 - z0); let clear = true; for (let t = .25; t < L; t += .25) if (isBlocked(x0 + (x1 - x0) * t / L, z0 + (z1 - z0) * t / L)) { clear = false; break; } if (clear) break; } out.push(pts[b]); a = b; }
+      out[out.length - 1] = isBlocked(gx, gz) ? out[out.length - 1] : [gx, gz]; return out.slice(1); }
+    if (gc > (g.get(key(i, j)) ?? 1e9)) continue;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) { const ni = i + di, nj = j + dj, k = key(ni, nj), ng = gc + (di && dj ? 1.414 : 1);
+      if (ng >= (g.get(k) ?? 1e9) || !ok(ni, nj, i, j)) continue; g.set(k, ng); from.set(k, key(i, j)); push([ng + h(ni, nj), ng, ni, nj]); }
+  }
+  return null;
+}
 let tapStart = null, tapTo = null; const tapRay = new THREE.Raycaster(), tapPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tapHit = new THREE.Vector3();
 addEventListener('pointerup', e => {
   const s = tapStart; tapStart = null;
@@ -1480,17 +1503,17 @@ addEventListener('pointerup', e => {
   // 성·언덕·땅을 직접 맞혀서 높은 곳(성 계단·마당)도 톡으로 갈 수 있게, 못 맞히면 내 높이 평면
   tapRay.firstHitOnly = true; const sh = tapRay.intersectObjects([castleObj, KBG, ground].filter(Boolean), true)[0]; tapRay.firstHitOnly = false;
   if (sh) tapHit.copy(sh.point);
-  if (sh || tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); tapTo = { x: tapHit.x, z: tapHit.z, until: performance.now() + (dl / 9 * 1.6 + 1) * 1000 }; }
+  if (sh || tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); const P0 = me.root.position, pts = findPath(P0.x, P0.z, tapHit.x, tapHit.z) || [[tapHit.x, tapHit.z]]; let L = 0, q = [P0.x, P0.z]; for (const p of pts) { L += Math.hypot(p[0] - q[0], p[1] - q[1]); q = p; } tapTo = { pts, i: 0, x: pts[0][0], z: pts[0][1], until: performance.now() + (L / WALK * 1.6 + 1.5) * 1000 }; }
 });
 renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); setDist(camDist * Math.exp(e.deltaY * .0012)); }, { passive: false });
 // 🎥 시점: 뒤에서 → 눈높이(낮게, 풍경 보기) → 위에서 내려다보기 → 뒤에서. 화면을 끌면 어느 시점에서든 돌려 볼 수 있다
-const VIEWS = [[.42, 14], [.08, 6], [1.45, 45]]; let viewI = 0;
+const VIEWS = [[.42, 11], [.08, 4.5], [1.45, 40]]; let viewI = 0;
 document.getElementById('view').onclick = () => { viewI = (viewI + 1) % VIEWS.length; [camPitch] = VIEWS[viewI]; setDist(VIEWS[viewI][1]); };
 document.getElementById('zin').onclick = () => setDist(camDist / 1.4);
 document.getElementById('zout').onclick = () => setDist(camDist * 1.4);
-document.getElementById('zall').onclick = () => { camPan.set(0, 0, 0); if (camDist > 60) { setDist(14); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
+document.getElementById('zall').onclick = () => { camPan.set(0, 0, 0); if (camDist > 60) { setDist(11); camPitch = .42; } else { setDist(92); camPitch = 1.05; } }; // 🗺 한 번 더 누르면 원래대로
 function goZone(k) {
-  const z = ZONES[k]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(14); tapTo = null; camPan.set(0, 0, 0); net.send(true);
+  const z = ZONES[k]; (me ? me.root : player).position.copy(z.warp || z.pos.clone().multiplyScalar(.6)); camYaw = Math.atan2(-Math.cos(z.ang), -Math.sin(z.ang)); camPitch = .3; if (camDist > 30) setDist(11); tapTo = null; camPan.set(0, 0, 0); net.send(true);
 }
 document.querySelectorAll('#warp button').forEach(b => b.onclick = () => goZone(b.dataset.z));
 // 🚋 트램: 탈지 물어보고, 고른 도시로 데려다준다(화면이 어두워졌다 밝아지는 사이 이동)
@@ -1520,26 +1543,30 @@ const clock = new THREE.Clock(), camPos = new THREE.Vector3(), tmp = new THREE.V
 function frame() {
   const d = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
   // 이동 입력 (카메라 기준) — 내 캐릭터만
-  let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jv.x / 45;
-  let iz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + jv.y / 45;
+  // 스틱: 가운데 12px 은 무시하고, 살짝 밀면 천천히·끝까지 밀면 제 속도(곡선)
+  const jl = jv.length(), jm = jl < 12 ? 0 : Math.pow(Math.min(1, (jl - 12) / 43), 1.6), jx = jl ? jv.x / jl * jm : 0, jz = jl ? jv.y / jl * jm : 0;
+  let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jx;
+  let iz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + jz;
   const mv = new THREE.Vector3(ix, 0, iz);
-  if (mv.lengthSq() > .01 || !me) tapTo = null; // 직접 움직이면 톡 이동은 취소
+  if (mv.lengthSq() > .0004 || !me) tapTo = null; // 직접 움직이면 톡 이동은 취소
   else if (tapTo) { const dx = tapTo.x - me.root.position.x, dz = tapTo.z - me.root.position.z, dl = Math.hypot(dx, dz);
-    if (dl < .6 || performance.now() > tapTo.until) tapTo = null; else mv.set(dx / dl, 0, dz / dl).applyAxisAngle(new THREE.Vector3(0, 1, 0), -camYaw); } // 아래에서 camYaw만큼 다시 돌림
+    const last = !tapTo.pts || tapTo.i >= tapTo.pts.length - 1;
+    if (dl < (last ? .6 : .45) && !last) { tapTo.i++; tapTo.x = tapTo.pts[tapTo.i][0]; tapTo.z = tapTo.pts[tapTo.i][1]; }
+    if ((last && dl < .6) || performance.now() > tapTo.until) tapTo = null; else if (dl > .01) mv.set(dx / dl, 0, dz / dl).applyAxisAngle(new THREE.Vector3(0, 1, 0), -camYaw); } // 아래에서 camYaw만큼 다시 돌림
   if (me) {
     const P = me.root.position;
     const ice = onIce(P.x, P.z);
     if (ice) { // 얼음 위: 밀면 천천히 붙는 속도, 손을 떼도 쭉 미끄러진다
       if (mv.lengthSq() > .01) mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
-      skateV.lerp(mv.multiplyScalar(11), Math.min(1, d * (mv.lengthSq() > .01 ? 1.6 : .5)));
+      skateV.lerp(mv.multiplyScalar(7), Math.min(1, d * (mv.lengthSq() > .01 ? 1.6 : .5)));
       if (skateV.lengthSq() > .04) { moveWithCollision(P, skateV.x * d, skateV.z * d); me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(skateV.x, skateV.z), .08); }
       me.body.rotation.z = THREE.MathUtils.lerp(me.body.rotation.z, -skateV.clone().cross(new THREE.Vector3(Math.sin(me.body.rotation.y), 0, Math.cos(me.body.rotation.y))).y * .02, .1); // 도는 쪽으로 기울기
       walkT = 0;
-    } else if (mv.lengthSq() > .01) {
+    } else if (mv.lengthSq() > .0004) {
       skateV.set(0, 0, 0);
       mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
       const ox = P.x, oz = P.z;
-      moveWithCollision(P, mv.x * d * 9, mv.z * d * 9);
+      moveWithCollision(P, mv.x * d * WALK, mv.z * d * WALK);
       // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
       if (!castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
@@ -1547,7 +1574,7 @@ function frame() {
     } else { walkT = 0; skateV.set(0, 0, 0); }
     { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null || stairH(P.x, P.z) != null || (pu > 40 && pu <= 102 + CASTLE.back && Math.abs(pv) < 38) ? 400 : 64; /* 언덕은 성 바위 앞(u≈120)까지 — 예전엔 반지름 99에서 막혀 트램 너머로 못 갔다(언덕 끝은 castleStepOk 가 막음) */ if (P.length() > lim) P.setLength(lim); }
     { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
-    if (!ice) { me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08; } else me.body.position.y = 0;
+    if (!ice) { me.body.position.y = Math.abs(Math.sin(walkT)) * .18; me.body.rotation.z = Math.sin(walkT) * .08; } else me.body.position.y = 0;
     player.position.copy(P); net.send(false);
   }
   // 다른 가족: 받은 위치로 부드럽게 걸어간다
@@ -1557,7 +1584,7 @@ function frame() {
     else if (dl > .05) { c.root.position.addScaledVector(dv, Math.min(1, d * 8)); c.walk += d * 12; } else c.walk = 0;
     c.root.position.y = surfaceAt(c.root.position.x, c.root.position.z);
     c.body.rotation.y = THREE.MathUtils.lerp(c.body.rotation.y, o.to.ry, .2);
-    c.body.position.y = Math.abs(Math.sin(c.walk)) * .22; c.body.rotation.z = Math.sin(c.walk) * .07;
+    c.body.position.y = Math.abs(Math.sin(c.walk)) * .16; c.body.rotation.z = Math.sin(c.walk) * .07;
   }
   // 카메라 (멀리 볼수록 위에서, 안개도 멀리)
   const dist = camDist;
@@ -1565,7 +1592,7 @@ function frame() {
   camTarget.copy(player.position).add(camPan);
   camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(camTarget);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
-  camera.lookAt(tmp.copy(camTarget).setY(camTarget.y + 2.2));
+  camera.lookAt(tmp.copy(camTarget).setY(camTarget.y + 1.6));
   scene.fog.near = (45 + dist) * (env.fog ?? 1) * .8 + 4; scene.fog.far = (150 + dist * 2.2) * (env.fog ?? 1);
   moon.position.copy(camTarget).add(new THREE.Vector3(-30, 50, 20)); moon.target.position.copy(camTarget);
   // 눈
