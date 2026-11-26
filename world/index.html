@@ -529,8 +529,8 @@ function striezelmarkt(c, out, side) {
   for (const s of [-7.5, -12.5, 7.5, 12.5]) for (let f = -14, k = 0; f <= 2; f += 5, k++) {
     const p = at(s, f); stall(p.x, p.z, face(s), roofs[(k + (s > 0 ? 1 : 0)) % roofs.length]);
   }
-  // 슈비보겐 촛불 아치 (입구 + 양쪽 뒤)
-  for (const [s, f, r] of [[0, -19, 0], [-10, 7, .5], [10, 7, -.5]]) schwibbogen(at(s, f), Math.atan2(out.x, out.z) + Math.PI + r);
+  // 슈비보겐 촛불 아치 (입구 옆 — 가운데 길을 막지 않게 — + 양쪽 뒤)
+  for (const [s, f, r] of [[-17, -19, 0], [-10, 7, .5], [10, 7, -.5]]) schwibbogen(at(s, f), Math.atan2(out.x, out.z) + Math.PI + r);
   // 진저브레드맨
   for (const [s, f, k] of [[-2.6, -15.5, .3], [3.2, -9, -.4], [2.5, -15.5, .1], [-3, -.5, -.2]]) gingerbread(at(s, f), k);
   // 오너먼트 걸이 + 나무 장난감 기차
@@ -743,6 +743,15 @@ const CARDS = { charles: { name: '🇨🇿 까를교 · 블타바 강', text: '1
 // 중앙 허브: 큰 트리 + 이정표
 // 트리는 까를교 계단 입구를 막지 않게 프라하 반대쪽(드레스덴·베를린 길 사이)으로 비켜 둔다
 const HUB = fromUV(-8, 0), hubStar = xmasTree(HUB.x, HUB.z, 1.6); tickers.push(d => hubStar.rotation.y += d);
+// 광장 트리: 프라하 Meshy 모델에 든 트리('tree')를 떼어 와 원뿔 트리 대신 쓴다(별·전구는 그대로)
+loader.load('models/prague.glb', gl => {
+  const t = gl.scene.getObjectByName('tree'); if (!t) return;
+  gl.scene.updateMatrixWorld(true); t.matrixWorld.decompose(t.position, t.quaternion, t.scale); t.removeFromParent();
+  const w = new THREE.Group(); w.add(t); let b = new THREE.Box3().setFromObject(w); w.scale.setScalar(8.4 / (b.max.y - b.min.y));
+  b = new THREE.Box3().setFromObject(w); w.position.set(HUB.x - (b.min.x + b.max.x) / 2, -b.min.y, HUB.z - (b.min.z + b.max.z) / 2);
+  t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+  hubStar.parent.children.forEach(c => { if (c !== hubStar) c.visible = false; }); scene.add(w);
+}, undefined, () => {});
 {
   const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(HUB.x, 6, HUB.z); scene.add(pl);
 }
