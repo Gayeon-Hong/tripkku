@@ -1438,7 +1438,7 @@ const keys = {};
 addEventListener('keydown', e => keys[e.code] = true);
 addEventListener('keyup', e => keys[e.code] = false);
 const skateV = new THREE.Vector3(); // 얼음 위 미끄러지는 속도
-const WALK = 5.5; // 걷는 속도(예전 9: 폰에서 너무 빨랐다)
+const WALK = 7.5; // 걷는 속도(9 는 폰에서 너무 빠르고 5.5 는 너무 느렸다)
 let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 4.5 : 11, pinch = null;
 const camPan = new THREE.Vector3(), camTarget = new THREE.Vector3(); // 두 손가락으로 끌어서 옮긴 만큼 화면 중심이 내 캐릭터에서 벗어남(걸으면 다시 돌아옴)
 const touches = new Map();
@@ -1600,6 +1600,8 @@ function frame() {
       mv.clampLength(0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), camYaw);
       const ox = P.x, oz = P.z;
       moveWithCollision(P, mv.x * d * WALK, mv.z * d * WALK);
+      // 시점이 나를 따라 천천히 뒤로 돈다(손가락으로 돌리는 중엔 안 함). 옆으로 걸을수록 더 많이 따라옴
+      if (!look?.go && !pinch) { const want = Math.atan2(-mv.x, -mv.z); let da = want - camYaw; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < 2.7) camYaw += da * Math.min(1, d * 1.1 * mv.length()); }
       // 성: 길·마당으로만. 벽·지붕·허공 쪽이면 막히고, 비스듬히 부딪히면 벽을 따라 미끄러진다
       if (!castleStepOk(ox, oz, P.x, P.z)) { const nx = P.x, nz = P.z; if (castleStepOk(ox, oz, nx, oz)) P.z = oz; else if (castleStepOk(ox, oz, ox, nz)) P.x = ox; else { P.x = ox; P.z = oz; } }
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
