@@ -224,3 +224,4 @@
 - **커리부어스트 노점**(Meshy, `world/models/currywurst.glb`, 115MB → 1.1MB): `stall(..., kind)` / `stallModel(g, kind)` 로 모델 선택. 베를린 광장 앞줄(문 쪽 2개)은 커리부어스트, 뒷줄은 글뤼바인. 가족 3D 셋 다 Meshy 색 모델로(아빠 `Cozy Winter Smile`).
 - **드레스덴 관람차**(Meshy, `world/models/ferris.glb`, 247MB → 2MB): 한 덩어리 모델이라 지금은 멈춘 채로 코드 관람차 대신 놓음(높이 18, 은은하게 빛남). 사용자가 ①다리+받침 ②바퀴(곤돌라 없이) ③곤돌라 1개를 따로 만들어 보내면 바퀴 회전 + 곤돌라는 항상 똑바로(코드 관람차의 `cars` 방식)로 바꿀 예정.
 - **드레스덴 크리스마스 피라미드**(Meshy, `world/models/pyramid.glb`, 144MB → 1.9MB, 받침 없음): 코드 피라미드 대신 높이 14로, 진짜 피라미드처럼 가운데 축으로 통째로 천천히 회전(0.3 rad/s). 은은하게 빛나게(emissiveMap 0.3).
+- **빨간 지붕 노점**(Meshy, `world/models/redstall.glb`, 273MB → 1.7MB): 드레스덴 노점 골목 16개 중 12개(나머지 커리부어스트 2·글뤼바인 2, `striezelmarkt` 의 `KIND` 표). 프라하·베를린 광장에도 뒷줄 1개씩. Meshy 색 그림이 잘게 쪼개져 있어 7만 삼각형 아래로는 안 줄어듦 → `stallModel` 이 `THREE.LOD` 로 40 넘게 멀면 원래 상자 노점을 보여 줌(노점이 많아도 폰이 버티게). 커리부어스트도 3만 꼭짓점으로 줄임.
