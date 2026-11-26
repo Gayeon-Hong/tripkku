@@ -17,8 +17,11 @@
   #help{position:fixed;top:48px;left:50%;transform:translateX(-50%);color:#cfe0ff;font-size:13px;opacity:.85;pointer-events:none;text-align:center;width:max-content;max-width:calc(100vw - 24px);line-height:1.35}
   #help .m{display:none}
   #title .d{display:inline}
-  #stick{position:fixed;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none}
-  #stick i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.7)}
+  /* 폰: 오른쪽 아래에 늘 떠 있는 반투명 조이스틱으로만 캐릭터가 움직인다. 나머지 화면은 시점(한 손가락 돌리기, 두 손가락 확대·끌기) */
+  #stick{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 4px);width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.13);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none;opacity:.8}
+  #stick i{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.62);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #stick b{position:absolute;color:rgba(255,255,255,.7);font-size:13px;font-weight:400}
+  @media (pointer:coarse){#stick{display:block}#zoom{bottom:calc(max(18px,env(safe-area-inset-bottom)) + 140px)}}
   #warp{position:fixed;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:max-content;max-width:calc(100vw - 16px)}
   #warp button,#zoom button,#pick button{font-family:inherit;font-size:14px;border:0;border-radius:14px;padding:6px 10px;background:rgba(255,255,255,.85);color:#2a2f55;cursor:pointer;white-space:nowrap}
   #zoom{position:fixed;right:12px;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
@@ -52,7 +55,7 @@
 <body>
 <a id="back" href="../index.html">← 트립꾸</a>
 <div id="title">❄️ <span class="d">트립꾸 겨울 여행 </span>월드</div>
-<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 톡 누르면 걸어감 · 왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대·돌리기·끌어서 지도 옮기기 · 위쪽을 위로 밀면 메뉴 접기</span><span class="m">톡 = 걸어가기 · 두 손가락 확대·돌리기·끌기 · 위로 밀면 메뉴 접기</span></div>
+<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 오른쪽 아래 스틱으로 이동 · 화면 끌면 시점 · 두 손가락 확대·끌기 · 두 번 톡 = 설명</span><span class="m">오른쪽 아래 스틱 = 이동 · 화면 끌기 = 시점 · 두 번 톡 = 설명</span></div>
 <div id="warp">
   <button data-z="dresden">🇩🇪 드레스덴</button>
   <button data-z="prague">🇨🇿 프라하</button>
@@ -60,7 +63,7 @@
 </div>
 <button id="grip" aria-label="위쪽 메뉴 펼치기">⌄</button>
 <div id="card"><b></b><p></p></div>
-<div id="stick"><i></i></div>
+<div id="stick"><b style="left:54px;top:4px">▲</b><b style="left:54px;bottom:4px">▼</b><b style="left:6px;top:50px">◀</b><b style="right:6px;top:50px">▶</b><i></i></div>
 <div id="env"></div>
 <div id="zoom"><button id="mode" aria-label="시간·날씨 모드">🌙</button><button id="view" aria-label="시점 바꾸기">🎥</button><button id="zin" aria-label="가까이">＋</button><button id="zout" aria-label="멀리">－</button><button id="zall" aria-label="전체 보기">🗺</button></div>
 <div id="online"></div>
@@ -1449,23 +1452,22 @@ let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 4.5 :
 const camPan = new THREE.Vector3(), camTarget = new THREE.Vector3(); // 두 손가락으로 끌어서 옮긴 만큼 화면 중심이 내 캐릭터에서 벗어남(걸으면 다시 돌아옴)
 const touches = new Map();
 const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 280); // 멀리: 프라하 성 전체가 폰에서도 보이게
-const stick = document.getElementById('stick'), knob = stick.firstElementChild;
+const stick = document.getElementById('stick'), knob = stick.querySelector('i');
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
   tapStart = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
   // 두 손가락 = 벌리면 확대/축소, 비틀면 화면 돌리기, 같이 끌면 지도 전체를 위아래·양옆으로 옮겨 보기.
   // 왼쪽(이동 스틱)에 먼저 닿았어도 곧바로(0.4초 안, 거의 안 움직였을 때) 두 번째 손가락이 오면 두 손가락 조작으로 본다
-  const quickJoy = joy && touches.has(joy.id) && performance.now() - joy.t < 400 && jv.length() < 12;
-  if (e.pointerType !== 'mouse' && (joy == null || quickJoy)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (e.pointerType !== 'mouse' && touches.size >= 2 && (!joy || quickJoy)) {
-    if (joy) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
+  // 오른쪽 아래 조이스틱 안(조금 넉넉히)을 누르면 이동, 그 밖은 전부 시점 조작
+  if (e.pointerType !== 'mouse' && !joy) { const r = stick.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    if (r.width && Math.hypot(e.clientX - cx, e.clientY - cy) < r.width / 2 + 24) { joy = { id: e.pointerId, x: cx, y: cy, t: performance.now() }; tapStart = null;
+      jv.set(e.clientX - cx, e.clientY - cy); if (jv.length() > 55) jv.setLength(55); knob.style.transform = `translate(${jv.x}px,${jv.y}px)`; return; } }
+  if (e.pointerType !== 'mouse') touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType !== 'mouse' && touches.size >= 2) {
     const [p, q] = [...touches.values()]; tapTo = null; tapStart = null; // 두 손가락 뗄 때 톡 이동으로 안 잡히게
     pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist, a: Math.atan2(q.y - p.y, q.x - p.x), mx: (p.x + q.x) / 2, my: (p.y + q.y) / 2, yaw: camYaw }; look = null; return;
   }
-  if (e.pointerType !== 'mouse' && e.clientX < innerWidth / 2 && !joy) {
-    joy = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
-    Object.assign(stick.style, { display: 'block', left: e.clientX - 55 + 'px', top: e.clientY - 55 + 'px' });
-  } else look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  look = { id: e.pointerId, x: e.clientX, y: e.clientY };
 });
 addEventListener('pointermove', e => {
   if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1488,7 +1490,7 @@ addEventListener('pointermove', e => {
 });
 const endPtr = e => {
   touches.delete(e.pointerId); if (touches.size < 2) pinch = null;
-  if (joy && e.pointerId === joy.id) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
+  if (joy && e.pointerId === joy.id) { joy = null; jv.set(0, 0); knob.style.transform = ''; }
   if (look && e.pointerId === look.id) look = null;
 };
 addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
@@ -1535,6 +1537,7 @@ addEventListener('pointerup', e => {
   const th = tapRay.intersectObjects(tramStops.map(s => s.g), true)[0]; // 트램을 톡 → 탈지 물어봄
   if (th) { const st = tramStops.find(s => { for (let o = th.object; o; o = o.parent) if (o === s.g) return true; }); if (st && Math.hypot(st.g.position.x - me.root.position.x, st.g.position.z - me.root.position.z) < 12) { askRide(st.key); return; } } // 트램 가까이 있을 때만 '탈까요?' — 멀리서 트램 너머를 톡 하면 그냥 걸어가게(예전엔 트램에 가려 성 쪽으로 못 갔다)
   // 성·언덕·땅을 직접 맞혀서 높은 곳(성 계단·마당)도 톡으로 갈 수 있게, 못 맞히면 내 높이 평면
+  if (e.pointerType !== 'mouse') return; // 폰: 이동은 오른쪽 아래 조이스틱으로만
   tapRay.firstHitOnly = true; const sh = tapRay.intersectObjects([castleObj, KBG, ground].filter(Boolean), true)[0]; tapRay.firstHitOnly = false;
   if (sh) tapHit.copy(sh.point);
   if (sh || tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); const P0 = me.root.position, pts = findPath(P0.x, P0.z, tapHit.x, tapHit.z) || [[tapHit.x, tapHit.z]]; let L = 0, q = [P0.x, P0.z]; for (const p of pts) { L += Math.hypot(p[0] - q[0], p[1] - q[1]); q = p; } tapTo = { pts, i: 0, x: pts[0][0], z: pts[0][1], until: performance.now() + (L / WALK * 1.6 + 1.5) * 1000 }; }
