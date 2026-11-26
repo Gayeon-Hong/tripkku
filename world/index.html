@@ -784,6 +784,33 @@ loader.load('models/prague.glb', gl => {
 {
   const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(HUB.x, 6, HUB.z); scene.add(pl);
 }
+// 눈사람들: 광장 길을 뒤뚱뒤뚱 오가고, 가운데 광장은 빙 돌며 산책한다
+function snowman(scarf) {
+  const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; scene.add(g);
+  const snowM = M(0xf6f8ff, { roughness: .9 }), dark = M(0x1d1d24);
+  mesh(new THREE.SphereGeometry(.75, 16, 12), snowM, 0, .7, 0, g); mesh(new THREE.SphereGeometry(.52, 16, 12), snowM, 0, 1.75, 0, g);
+  for (const x of [-.17, .17]) mesh(new THREE.SphereGeometry(.06, 8, 6), dark, x, 1.85, .46, g);
+  mesh(new THREE.ConeGeometry(.08, .45, 8), M(0xf08a2b), 0, 1.75, .7, g).rotation.x = Math.PI / 2; // 당근 코
+  mesh(new THREE.TorusGeometry(.42, .1, 8, 20), M(scarf), 0, 1.4, 0, g).rotation.x = Math.PI / 2; // 목도리
+  mesh(new THREE.CylinderGeometry(.42, .42, .06, 16), dark, 0, 2.2, 0, g); mesh(new THREE.CylinderGeometry(.3, .3, .5, 16), dark, 0, 2.45, 0, g); // 모자
+  for (const y of [.55, .85, 1.1]) mesh(new THREE.SphereGeometry(.06, 8, 6), dark, 0, y, .74, g); // 단추
+  return g;
+}
+{
+  const scarves = [0xd94b4b, 0x2f6d4f, 0x3d5bb0, 0xe0b84a, 0xb04ad9], walkers = [];
+  [ZONES.dresden, ZONES.berlin].forEach((z, zi) => [-1.6, 1.6].forEach((off, k) => walkers.push({ z, off, ph: zi * 2 + k * 3.1, sp: .045 + k * .015 }))); // 길 위 왕복
+  for (let k = 0; k < 2; k++) walkers.push({ ring: 8 + k * 2.5, ph: k * 3, sp: k ? -.05 : .04 }); // 광장 산책
+  walkers.forEach((w, i) => { w.g = snowman(scarves[i % scarves.length]); w.prev = new THREE.Vector3(); });
+  const side = new THREE.Vector3();
+  tickers.push(d => { const t = performance.now() / 1000; for (const w of walkers) {
+    const g = w.g; w.prev.copy(g.position);
+    if (w.ring) { const a = w.ph + t * w.sp; g.position.set(HUB.x + Math.cos(a) * w.ring, 0, HUB.z + Math.sin(a) * w.ring); }
+    else { const f = .2 + .3 * (1 - Math.cos(w.ph + t * w.sp * 2 * Math.PI / 3)); side.set(-w.z.pos.z, 0, w.z.pos.x).setLength(w.off); g.position.copy(w.z.pos).multiplyScalar(f).add(side); }
+    g.position.y = groundAt(g.position.x, g.position.z) + Math.abs(Math.sin(t * 7 + w.ph)) * .08;
+    const dx = g.position.x - w.prev.x, dz = g.position.z - w.prev.z; if (dx * dx + dz * dz > 1e-8) g.rotation.y = Math.atan2(dx, dz);
+    g.rotation.z = Math.sin(t * 7 + w.ph) * .12; // 뒤뚱
+  } });
+}
 // 숲 (가장자리 눈 덮인 나무). Meshy 트리를 받으면 위 광장 트리 로더가 이 원뿔들을 같은 트리로 바꾼다
 const forest = [];
 for (let i = 0; i < 90; i++) {
