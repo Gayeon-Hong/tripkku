@@ -574,6 +574,14 @@ function striezelmarkt(c, out, side) {
     const car = mesh(new THREE.BoxGeometry(1, 1, 1), glow([0xff6b8a, 0x8fe3ff, 0xffd27a][k % 3], 1.2), Math.cos(a) * 7, Math.sin(a) * 7 - .7, 0, wheel); cars.push(car);
   }
   tickers.push(d => { wheel.rotation.z += d * .15; cars.forEach(cr => cr.rotation.z = -wheel.rotation.z); });
+  // Meshy 관람차(models/ferris.glb): 받으면 코드 관람차 대신. 지금 모델은 한 덩어리라 멈춘 채로(바퀴·곤돌라를 따로 받으면 돌릴 예정).
+  loader.load('models/ferris.glb', gl => {
+    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.glb = true; if (o.material) { o.material.emissive = new THREE.Color(0xffc080); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .3; } } });
+    const b = new THREE.Box3().setFromObject(m), k = 18 / (b.max.y - b.min.y); m.scale.setScalar(k);
+    const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2);
+    const holder = new THREE.Group(); holder.rotation.y = Math.PI / 2; holder.add(m);
+    for (const c of fw.children) c.visible = false; fw.add(holder); scheduleCollision();
+  }, undefined, () => {});
   addCol(fw.position.x, fw.position.z, 3);
   // 글뤼바인 노점: 관람차 반대편, 마켓 쪽을 보게
   for (const f of [-11, -3]) { const p = at(18, f); stall(p.x, p.z, Math.atan2(-side.x, -side.z), 0x8a2a2a); }

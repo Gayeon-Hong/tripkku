@@ -222,3 +222,4 @@
 - **트램**(Meshy, `world/models/tram.glb`, 84MB → 0.76MB, 돌바닥 받침 잘라냄): `tramModel(group, 길이)` 로 드레스덴 마켓 뒤 트램과 새 프라하 트램(언덕 위 광장 뒤 선로 u=95, v ±22 왕복)에 씀. 받기 전엔 코드로 만든 상자 트램.
 - **글뤼바인 노점**(Meshy, `world/models/stall.glb`, 46MB → 0.5MB, 받침 잘라냄): `stall()` 이 `stallModel(g)` 로 상자 노점 대신 씀(프라하·베를린 광장 각 4개, 폭 4.2, 카운터가 광장 쪽). 조명 대신 자기 색으로 살짝 빛나게(emissiveMap). 드레스덴은 마켓 모델 그대로.
 - **커리부어스트 노점**(Meshy, `world/models/currywurst.glb`, 115MB → 1.1MB): `stall(..., kind)` / `stallModel(g, kind)` 로 모델 선택. 베를린 광장 앞줄(문 쪽 2개)은 커리부어스트, 뒷줄은 글뤼바인. 가족 3D 셋 다 Meshy 색 모델로(아빠 `Cozy Winter Smile`).
+- **드레스덴 관람차**(Meshy, `world/models/ferris.glb`, 247MB → 2MB): 한 덩어리 모델이라 지금은 멈춘 채로 코드 관람차 대신 놓음(높이 18, 은은하게 빛남). 사용자가 ①다리+받침 ②바퀴(곤돌라 없이) ③곤돌라 1개를 따로 만들어 보내면 바퀴 회전 + 곤돌라는 항상 똑바로(코드 관람차의 `cars` 방식)로 바꿀 예정.
