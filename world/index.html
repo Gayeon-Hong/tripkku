@@ -229,9 +229,24 @@ function buildCastleGrid() {
       for (let y = Math.max(0, b - R); y <= Math.min(nv - 1, b + R); y++) for (let x = Math.max(0, a - R); x <= Math.min(nu - 1, a + R); x++) { const h = raw[y * nu + x]; if (h < roof) { sum += h; n++; } }
       sm[b * nu + a] = sum / n;
     }
-    castleH = { st, u0, v0, nu, nv, raw, sm, roof };
+    castleH = { st, u0, v0, nu, nv, raw, sm, roof }; buildCastleStair();
   };
   rows();
+}
+function buildCastleStair() {
+  const v = CASTLE.v, w = 2.6, gAt = u => { const p = fromUV(u, v); return groundAt(p.x, p.z); };
+  let u1 = 96, y1 = null; // 성 바위가 처음 걸을 수 있는 곳에서 3칸 안쪽이 계단 꼭대기
+  for (; u1 < 150; u1 += .5) { const p = fromUV(u1, v); if (castleGround(p.x, p.z) != null && !castleRoofAt(p.x, p.z)) { u1 += 3; const q = fromUV(u1, v); y1 = castleGround(q.x, q.z); break; } }
+  if (y1 == null) return;
+  const u0 = Math.max(KB.plat + 6, u1 - (y1 - gAt(u1 - 10)) / .45), y0 = gAt(u0); // 기울기 0.45 정도
+  stair = { u0, u1, v, w, y0, y1 };
+  const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; KBG.add(g);
+  const stone = M(0x9a9184, { roughness: .95 }), edge = M(0xe9eef8, { roughness: 1 }), n = Math.ceil((u1 - u0) / 1.1), du = (u1 - u0) / n;
+  for (let i = 0; i < n; i++) { // 계단 한 칸: 땅에서 디딤판까지 꽉 찬 돌 + 디딤판 끝 눈
+    const top = y0 + (y1 - y0) * (i + 1) / n;
+    mesh(new THREE.BoxGeometry(du + .02, top, 2 * w), stone, u0 + du * (i + .5), top / 2, v, g);
+    mesh(new THREE.BoxGeometry(du * .35, .08, 2 * w), edge, u0 + du * (i + .85), top + .04, v, g);
+  }
 }
 // 성 바닥 높이(고른 값). 지붕·건물 칸이면 그 높이 그대로, 성 밖이면 null
 function castleGround(x, z) {
@@ -243,14 +258,19 @@ function castleGround(x, z) {
   const di = fi - i, dj = fj - j; return (c[0] * (1 - di) + c[1] * di) * (1 - dj) + (c[2] * (1 - di) + c[3] * di) * dj;
 }
 const castleRoofAt = (x, z) => { if (!castleH) return false; const { st, u0, v0, nu, raw, roof } = castleH, [u, v] = toUV(x, z); return !(raw[Math.round((v - v0) / st) * nu + Math.round((u - u0) / st)] < roof); };
-const surfaceAt = (x, z) => { const c = castleGround(x, z), g = groundAt(x, z); return c == null ? g : Math.max(c, g); };
-// 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 u≈100에 맞춘다
-const CASTLE = { s: 104 }; CASTLE.u = 100 + .46 * CASTLE.s; CASTLE.v = -34;
+// 언덕 → 성 바위 계단(성 높이 지도를 다 잰 뒤 buildCastleStair가 자리·높이를 정한다). 계단 위는 비탈처럼 매끈하게 걷는다
+let stair = null;
+const stairH = (x, z) => { if (!stair) return null; const [u, v] = toUV(x, z); return u < stair.u0 || u > stair.u1 || Math.abs(v - stair.v) > stair.w ? null : stair.y0 + (stair.y1 - stair.y0) * (u - stair.u0) / (stair.u1 - stair.u0); };
+const surfaceAt = (x, z) => { const c = castleGround(x, z), s = stairH(x, z); let g = groundAt(x, z); if (c != null) g = Math.max(g, c); if (s != null) g = Math.max(g, s); return g; };
+// 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 트램 선로(u 95) 뒤 u≈108
+const CASTLE = { s: 104 }; CASTLE.u = 108 + .46 * CASTLE.s; CASTLE.v = -34;
 // 성 안은 바위·마당·성벽 사이 길로만 걷는다: 마당보다 높은 건 건물·성벽·지붕이라 막히고, 한 걸음에 턱을 뛰어오르지도 못한다
 const CASTLE_ROOF = .385, CASTLE_STEP = .15, CASTLE_SLOPE = 1.1, CASTLE_GATES = [[.327, .423, .423, .635], [-.038, .135, -.923, -.75]]; // 북쪽 마당→대성당 둘레, 남쪽 바깥→대성당 둘레 (모델 기준 a0,a1,b0,b1)
 const castleStepOk = (x0, z0, x, z) => {
-  if (toUV(x, z)[0] <= 102) return true; const g = castleGround(x, z);
-  return g != null && !castleRoofAt(x, z) && g - KB.top < CASTLE_ROOF * CASTLE.s && g - surfaceAt(x0, z0) < CASTLE_STEP + CASTLE_SLOPE * Math.hypot(x - x0, z - z0);
+  const rise = h => h - surfaceAt(x0, z0) < CASTLE_STEP + CASTLE_SLOPE * Math.hypot(x - x0, z - z0), sh = stairH(x, z);
+  if (sh != null) return rise(sh);
+  const g = castleGround(x, z); if (g == null) return toUV(x, z)[0] <= 102; // 성 밖 언덕은 그냥 걷고, 언덕 끝 너머 허공은 막힘
+  return !castleRoofAt(x, z) && g - KB.top < CASTLE_ROOF * CASTLE.s && rise(g);
 };
 const PR = .45; // 캐릭터 반지름
 function isBlocked(x, z) {
@@ -1055,7 +1075,7 @@ function frame() {
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else walkT = 0;
-    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null ? 400 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null || stairH(P.x, P.z) != null ? 400 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
     { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
     me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08;
     player.position.copy(P); net.send(false);
