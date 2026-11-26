@@ -699,8 +699,33 @@ for (const [key, z] of Object.entries(ZONES)) {
   const l2 = z.pos.clone().addScaledVector(side, 11).addScaledVector(out, -2); l2.y = 4.5;
   lightString(l1, l2, 1.2, 30);
   const pl = new THREE.PointLight(0xffb86b, 14, 24); pl.position.copy(z.pos).setY(5); scene.add(pl);
+  if (key === 'berlin') iceRink(z.pos.clone().addScaledVector(side, -25).addScaledVector(out, -3), out, side);
 }
 
+// 아이스링크: 반짝이는 타원 얼음판 + 하얀 펜스 + 전구 기둥, 스케이트 타는 사람 3명이 빙글빙글
+function iceRink(c, out, side) {
+  const RX = 10, RZ = 6.5, g = new THREE.Group(); g.position.copy(c); g.rotation.y = Math.atan2(side.x, side.z); scene.add(g); // 안: x = 긴 쪽
+  const ice = mesh(new THREE.CircleGeometry(1, 48), M(0xcfe8ff, { roughness: .08, metalness: .2, emissive: 0x2a4a7a, emissiveIntensity: .35 }), 0, .06, 0, g);
+  ice.rotation.x = -Math.PI / 2; ice.scale.set(RX, RZ, 1); ice.castShadow = false;
+  const fence = mesh(new THREE.CylinderGeometry(1, 1, .9, 48, 1, true), M(0xf4f7ff, { side: THREE.DoubleSide }), 0, .45, 0, g); fence.scale.set(RX + .2, 1, RZ + .2);
+  const rail = mesh(new THREE.TorusGeometry(1, .02, 6, 64), M(0xd94b4b), 0, .92, 0, g); rail.rotation.x = Math.PI / 2; rail.scale.set(RX + .2, RZ + .2, 1);
+  const pts = [];
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, x = Math.cos(a) * (RX + .6), z = Math.sin(a) * (RZ + .6); mesh(new THREE.CylinderGeometry(.08, .08, 3.4), M(0x3a2a20), x, 1.7, z, g); pts.push(new THREE.Vector3(x, 3.4, z)); }
+  g.updateMatrixWorld(true); pts.forEach((p, i) => lightString(p.clone().applyMatrix4(g.matrixWorld), pts[(i + 1) % pts.length].clone().applyMatrix4(g.matrixWorld), .35, 8));
+  const sk = [[0xd94b4b, 0xffffff, 1], [0x3d5bb0, 0xe0b84a, -1], [0x2f6d4f, 0xd94b4b, 1]].map(([coat, hat, dir], i) => {
+    const p = new THREE.Group(); g.add(p); const b = new THREE.Group(); p.add(b);
+    mesh(new THREE.CylinderGeometry(.28, .38, .9, 12), M(coat), 0, 1.05, 0, b); mesh(new THREE.SphereGeometry(.26, 12, 10), M(0xf3cdb0), 0, 1.75, 0, b);
+    mesh(new THREE.SphereGeometry(.27, 12, 8, 0, 6.3, 0, 1.5), M(hat), 0, 1.82, 0, b); mesh(new THREE.SphereGeometry(.09, 8, 6), M(0xffffff), 0, 2.1, 0, b); // 털모자 + 방울
+    for (const x of [-.13, .13]) { mesh(new THREE.CylinderGeometry(.09, .09, .6), M(0x2a2f55), x, .35, 0, b); mesh(new THREE.BoxGeometry(.14, .06, .4), M(0xdde3ee, { metalness: .8, roughness: .2 }), x, .03, .05, b); } // 다리 + 스케이트 날
+    for (const x of [-1, 1]) mesh(new THREE.CylinderGeometry(.07, .07, .7), M(coat), x * .42, 1.15, 0, b).rotation.z = x * 1.2; // 팔 벌리기
+    return { p, b, dir, r: .55 + i * .14, ph: i * 2.1 };
+  });
+  tickers.push(() => { const t = performance.now() / 1000; for (const s of sk) {
+    const a = s.ph + t * .45 * s.dir; s.p.position.set(Math.cos(a) * RX * s.r, .06, Math.sin(a) * RZ * s.r);
+    s.p.rotation.y = Math.atan2(-Math.sin(a) * RX * s.dir, Math.cos(a) * RZ * s.dir); s.b.rotation.z = -.18 * s.dir; s.b.rotation.x = Math.sin(t * 3 + s.ph) * .08; // 안쪽으로 기울어 미끄러지듯
+  } });
+  const pl = new THREE.PointLight(0xbfe0ff, 10, 22); pl.position.copy(c).setY(6); scene.add(pl);
+}
 // ---------- 블타바 강 + 까를교 + 계단 + 언덕 + 천문시계 + 카누 ----------
 let castleObj = null; // 프라하 성 모델(밟고 올라갈 수 있음)
 const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.userData.noLift = KBG.userData.noCol = true; scene.add(KBG); // 안: x = u, z = v
