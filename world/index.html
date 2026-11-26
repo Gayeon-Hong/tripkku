@@ -878,16 +878,22 @@ function snowman(scarf) {
   });
 }
 // ---------- 눈싸움 마당: 흰 다람쥐 셋(Meshy, 부위별: 몸·눈덩이·꼬리·귀·모자)이 돌아다니며 진짜로 눈덩이를 던진다 ----------
-// 가까이 가면 '❄️ 눈 던지기' 버튼으로 같이 놀 수 있고, 맞은 다람쥐는 던진 쪽에게 되갚는다.
+// 같은 월드에 들어온 가족끼리 함께 보인다: 방에서 id 가 가장 작은 사람(호스트)이 다람쥐를 움직이고 위치·던지기·맞음을 방송.
+// 던지는 사람은 누구든 던지기를 방송하고, 다람쥐가 맞았는지는 호스트가, 사람이 맞았는지는 맞은 본인이 정해서 방송한다.
 const snowFight = (() => {
   const SA = Math.PI * 7 / 6, FC = new THREE.Vector3(Math.cos(SA) * 52, 0, Math.sin(SA) * 52), FR = 10; // 회전목마 바깥쪽 빈터(강·광장과 안 겹침)
   for (const [dx, dz, r] of [[-4, 2, 1.6], [3, -3, 1.3], [5, 4, 1.1], [-2, -5, 1.2]]) { const m = mesh(new THREE.SphereGeometry(r, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0xf4f7ff, { roughness: 1 }), FC.x + dx, 0, FC.z + dz); m.scale.y = .6; scene.add(m); } // 눈 언덕
-  const snowM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }), puffG = new THREE.SphereGeometry(.09, 6, 4);
+  const snowM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }), puffG = new THREE.SphereGeometry(.09, 6, 4), ballG = new THREE.SphereGeometry(.22, 10, 8);
   const balls = [], puffs = [], crit = [];
+  let playerHit = 0, stT = 0;
+  const V = a => new THREE.Vector3(a[0], a[1], a[2]), arr = v => [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)];
+  const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  const myKey = () => 'p:' + net.id;
+  const isHost = () => [net.id, ...others.keys()].sort()[0] === net.id;
+  const posOf = key => { if (!key) return null; if (key[0] === 'c') return crit[+key.slice(1)]?.root.position; const pid = key.slice(2); return pid === net.id ? me?.root.position : others.get(pid)?.char.root.position; };
+  const nearField = p => p && Math.hypot(p.x - FC.x, p.z - FC.z) < FR + 6;
   const puff = p => { for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(puffG, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.position.copy(p); scene.add(m); puffs.push({ m, v: new THREE.Vector3((Math.random() - .5) * 3, 1 + Math.random() * 2.5, (Math.random() - .5) * 3), life: .8 }); } };
-  const throwBall = (from, to, onLand) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), snowM); m.castShadow = true; scene.add(m); const dist = from.distanceTo(to); balls.push({ m, a: from.clone(), b: to.clone(), t: 0, dur: Math.max(.45, dist * .06), h: 1 + dist * .12, onLand }); };
   const randSpot = () => { for (let i = 0; i < 20; i++) { const a = Math.random() * 6.283, r = Math.random() * FR, x = FC.x + Math.cos(a) * r, z = FC.z + Math.sin(a) * r; if (!isBlocked(x, z)) return new THREE.Vector3(x, 0, z); } return FC.clone(); };
-  let playerHit = 0;
   function make(src, i) {
     const root = new THREE.Group(); root.userData.noLift = root.userData.noCol = true; root.position.copy(randSpot()); scene.add(root);
     const body = new THREE.Group(); root.add(body);
@@ -896,9 +902,7 @@ const snowFight = (() => {
     m.traverse(o => { if (o.isMesh) o.castShadow = true; });
     const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); pv.attach(o); return pv; };
     const tail = pivot(part('model_part2'), new THREE.Vector3(.05, -.72, -.08)); // 꼬리 뿌리
-    const ears = [part('model_part3'), part('model_part4')].filter(Boolean);
-    const ball = part('model_part1');
-    return { root, body, tail, ears, ball, ready: true, state: 'walk', to: randSpot(), t: Math.random() * 3, cool: 2 + Math.random() * 3, hit: 0, foe: null, hop: Math.random() * 6, id: i };
+    return { root, body, tail, ears: [part('model_part3'), part('model_part4')].filter(Boolean), ball: part('model_part1'), ready: true, state: 'walk', to: randSpot(), t: Math.random() * 3, cool: 2 + Math.random() * 3, hit: 0, foe: null, hop: Math.random() * 6, id: i, net: null };
   }
   loader.load('models/squirrel.glb', gl => {
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, metalness: 0, emissive: 0x30343c, emissiveIntensity: .5 }); // 꼭짓점 색 + 밤에도 하얗게
@@ -906,46 +910,60 @@ const snowFight = (() => {
     for (let i = 0; i < 3; i++) crit.push(make(gl.scene, i));
   }, undefined, () => {});
   const handPos = c => { const p = new THREE.Vector3(); (c.ball || c.body).getWorldPosition(p); return p; };
-  function attack(c, target) { // target: 다른 다람쥐 또는 'me'
-    c.state = 'aim'; c.t = .45; c.foe = target;
+  // 던지기(모두 같은 장면): by·foe 는 'c0'(다람쥐) 또는 'p:<id>'(사람)
+  function doThrow(e) {
+    const from = V(e.f), to = V(e.t);
+    if (e.by[0] === 'c') { const c = crit[+e.by.slice(1)]; if (c) { c.root.rotation.y = Math.atan2(to.x - c.root.position.x, to.z - c.root.position.z); if (c.ball) { c.ball.visible = false; setTimeout(() => { if (c.ball) c.ball.visible = true; }, 1600); } c.body.rotation.x = .25; setTimeout(() => c.body.rotation.x = 0, 180); } }
+    else { const pid = e.by.slice(2), ch = pid === net.id ? me : others.get(pid)?.char; if (ch) ch.body.rotation.y = Math.atan2(to.x - ch.root.position.x, to.z - ch.root.position.z); }
+    const m = new THREE.Mesh(ballG, snowM); m.castShadow = true; scene.add(m);
+    const dist = from.distanceTo(to); balls.push({ m, a: from, b: to, t: 0, dur: Math.max(.45, dist * .06), h: 1 + dist * .12, e });
   }
-  function release(c) {
-    const tgt = c.foe === 'me' ? me?.root.position.clone().setY(me.root.position.y + 1.4) : c.foe?.root.position.clone().setY(c.foe.root.position.y + 1);
-    c.state = 'walk'; c.to = randSpot(); c.cool = 2.5 + Math.random() * 3.5;
-    if (!tgt) return;
-    const from = handPos(c); if (c.ball) c.ball.visible = false; c.ready = false; setTimeout(() => { c.ready = true; if (c.ball) c.ball.visible = true; }, 1600);
-    const foe = c.foe;
-    throwBall(from, tgt, p => {
-      puff(p);
-      if (foe === 'me') { if (me && me.root.position.distanceTo(p.clone().setY(me.root.position.y)) < 1.6) playerHit = .8; }
-      else if (foe && foe.root.position.distanceTo(p.clone().setY(foe.root.position.y)) < 1.5) { foe.hit = .8; foe.revenge = c; }
-    });
+  function land(e, p) {
+    puff(p);
+    if (e.foe[0] === 'c') { // 다람쥐가 맞았는지는 호스트가 정한다
+      const i = +e.foe.slice(1), c = crit[i];
+      if (isHost() && c && flat(c.root.position, p) < 1.5) { hitCrit(i, e.by); net.emit('sf', { k: 'hit', c: i, by: e.by }); }
+    } else if (e.foe === myKey() && me && flat(me.root.position, p) < 1.6) { playerHit = .8; net.emit('sf', { k: 'phit', id: net.id }); } // 내가 맞았으면 내가 알린다
+  }
+  function hitCrit(i, by) { const c = crit[i]; if (!c) return; c.hit = .8; c.revenge = by; }
+  function throwFrom(by, foe) {
+    const fp = by[0] === 'c' ? handPos(crit[+by.slice(1)]) : posOf(by)?.clone().setY(posOf(by).y + 2.2), tp = posOf(foe);
+    if (!fp || !tp) return;
+    const e = { k: 'th', by, foe, f: arr(fp), t: arr(tp.clone().setY(tp.y + (foe[0] === 'c' ? 1 : 1.4))) };
+    doThrow(e); net.emit('sf', e);
+  }
+  function recv(e) {
+    if (!e) return;
+    if (e.k === 'th') doThrow(e);
+    else if (e.k === 'hit') hitCrit(e.c, e.by);
+    else if (e.k === 'phit') { const o = others.get(e.id); if (o) o.char.hit = .8; }
+    else if (e.k === 'st' && !isHost()) e.c.forEach((s, i) => { if (crit[i]) crit[i].net = s; });
   }
   const btn = document.getElementById('snowbtn');
   btn.onclick = () => {
-    if (!me || !crit.length) return;
-    const P = me.root.position; let best = null, bd = 1e9; for (const c of crit) { const dd = c.root.position.distanceTo(P); if (dd < bd) { bd = dd; best = c; } }
-    me.body.rotation.y = Math.atan2(best.root.position.x - P.x, best.root.position.z - P.z);
-    const from = P.clone().setY(P.y + 2.2), foe = best;
-    throwBall(from, foe.root.position.clone().setY(foe.root.position.y + 1), p => { puff(p); if (foe.root.position.distanceTo(p.clone().setY(foe.root.position.y)) < 1.5) { foe.hit = .8; foe.revenge = 'me'; } });
+    if (!me) return;
+    const P = me.root.position, cands = [...crit.map((c, i) => ['c' + i, c.root.position]), ...[...others].filter(([, o]) => flat(o.char.root.position, P) < 16).map(([pid, o]) => ['p:' + pid, o.char.root.position])];
+    if (!cands.length) return;
+    cands.sort((a, b) => flat(a[1], P) - flat(b[1], P)); throwFrom(myKey(), cands[0][0]);
   };
   tickers.push(d => {
-    btn.hidden = !(me && Math.hypot(me.root.position.x - FC.x, me.root.position.z - FC.z) < FR + 6 && crit.length);
-    const now = performance.now() / 1000;
+    btn.hidden = !(me && nearField(me.root.position) && (crit.length || others.size));
+    const now = performance.now() / 1000, host = isHost();
     for (const c of crit) {
       const P = c.root.position; let moving = false;
-      if (c.hit > 0) { c.hit -= d; c.body.rotation.z = Math.sin(c.hit * 40) * .35 * c.hit; c.body.rotation.x = 0; if (c.hit <= 0) { c.body.rotation.z = 0; if (c.revenge && c.ready) attack(c, c.revenge); c.revenge = null; } }
-      else if (c.state === 'aim') {
-        const tp = c.foe === 'me' ? me?.root.position : c.foe?.root.position;
-        if (tp) c.root.rotation.y = Math.atan2(tp.x - P.x, tp.z - P.z);
+      if (c.hit > 0) { c.hit -= d; c.body.rotation.z = Math.sin(c.hit * 40) * .35 * c.hit; if (c.hit <= 0) { c.body.rotation.z = 0; if (host && c.revenge && c.ready !== false) { c.state = 'aim'; c.t = .45; c.foe = c.revenge; } c.revenge = null; } }
+      if (!host) { // 호스트가 보낸 위치로 부드럽게
+        if (c.net) { const dx = c.net[0] - P.x, dz = c.net[1] - P.z, dl = Math.hypot(dx, dz); if (dl > 6) { P.x = c.net[0]; P.z = c.net[1]; } else if (dl > .05) { P.x += dx * Math.min(1, d * 8); P.z += dz * Math.min(1, d * 8); moving = true; } c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, c.net[2], .2); }
+      } else if (c.hit <= 0 && c.state === 'aim') {
+        const tp = posOf(c.foe); if (tp) c.root.rotation.y = Math.atan2(tp.x - P.x, tp.z - P.z);
         c.t -= d; c.body.rotation.x = -.35 * Math.sin(Math.min(1, (.45 - c.t) / .45) * Math.PI / 2); // 뒤로 젖혔다가
-        if (c.t <= 0) { c.body.rotation.x = .25; setTimeout(() => c.body.rotation.x = 0, 180); release(c); } // 휙
-      } else {
+        if (c.t <= 0) { c.state = 'walk'; c.to = randSpot(); c.cool = 2.5 + Math.random() * 3.5; c.body.rotation.x = 0; if (tp) throwFrom('c' + c.id, c.foe); }
+      } else if (c.hit <= 0) {
         c.cool -= d;
-        if (c.cool <= 0 && c.ready) {
-          const meNear = me && Math.hypot(me.root.position.x - FC.x, me.root.position.z - FC.z) < FR + 6;
-          const others = crit.filter(o => o !== c);
-          attack(c, meNear && Math.random() < .45 ? 'me' : others[Math.floor(Math.random() * others.length)]);
+        if (c.cool <= 0) {
+          const people = [myKey(), ...[...others.keys()].map(k => 'p:' + k)].filter(k => nearField(posOf(k)));
+          const foes = crit.filter(o => o !== c).map(o => 'c' + o.id);
+          c.state = 'aim'; c.t = .45; c.foe = people.length && Math.random() < .45 ? people[Math.floor(Math.random() * people.length)] : foes[Math.floor(Math.random() * foes.length)];
         } else {
           const dx = c.to.x - P.x, dz = c.to.z - P.z, dl = Math.hypot(dx, dz);
           if (dl < .4) { c.t -= d; if (c.t <= 0) { c.to = randSpot(); c.t = .5 + Math.random() * 2; } }
@@ -958,13 +976,15 @@ const snowFight = (() => {
       c.tail.rotation.y = Math.sin(now * (moving ? 9 : 3) + c.id) * (moving ? .35 : .18); // 꼬리 살랑
       c.ears.forEach((e, k) => e.rotation.z = Math.sin(now * 2.3 + k * 2 + c.id) * .05);
     }
+    if (host && crit.length && others.size) { stT -= d; if (stT <= 0) { stT = .16; net.emit('sf', { k: 'st', c: crit.map(c => [+c.root.position.x.toFixed(2), +c.root.position.z.toFixed(2), +c.root.rotation.y.toFixed(2)]) }); } }
     for (let i = balls.length - 1; i >= 0; i--) { const b = balls[i]; b.t += d / b.dur; const t = Math.min(1, b.t);
       b.m.position.lerpVectors(b.a, b.b, t); b.m.position.y += Math.sin(t * Math.PI) * b.h;
-      if (t >= 1) { scene.remove(b.m); balls.splice(i, 1); b.onLand(b.m.position.clone()); } }
+      if (t >= 1) { scene.remove(b.m); balls.splice(i, 1); land(b.e, b.m.position.clone()); } }
     for (let i = puffs.length - 1; i >= 0; i--) { const p = puffs[i]; p.life -= d; p.m.position.addScaledVector(p.v, d); p.v.y -= d * 6; p.m.material.opacity = Math.max(0, p.life / .8); if (p.life <= 0) { scene.remove(p.m); puffs.splice(i, 1); } }
     if (me) { if (playerHit > 0) { playerHit -= d; me.root.rotation.z = Math.sin(playerHit * 40) * .3 * playerHit; } else me.root.rotation.z = 0; }
+    for (const o of others.values()) { const c = o.char; if (c.hit > 0) { c.hit -= d; c.root.rotation.z = Math.sin(c.hit * 40) * .3 * c.hit; } else c.root.rotation.z = 0; }
   });
-  return { FC };
+  return { FC, recv };
 })();
 // 숲 (가장자리 눈 덮인 나무). Meshy 트리를 받으면 위 광장 트리 로더가 이 원뿔들을 같은 트리로 바꾼다
 const forest = [];
@@ -1205,6 +1225,7 @@ const net = (() => {
       ch.on('broadcast', { event: 'p' }, ({ payload }) => upsert(payload));
       ch.on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.id));
       ch.on('broadcast', { event: 'touch' }, () => window.__plaque && sparkle(window.__plaque.position));
+      ch.on('broadcast', { event: 'sf' }, ({ payload }) => snowFight.recv(payload)); // 눈싸움
       ch.on('presence', { event: 'leave' }, ({ key }) => drop(key));
       ch.subscribe(async st => { if (st === 'SUBSCRIBED') { ready = true; await ch.track({ who: me?.who }); send(true); } });
       addEventListener('pagehide', () => ch?.send({ type: 'broadcast', event: 'bye', payload: { id } }));
@@ -1219,7 +1240,7 @@ const net = (() => {
     last = key; lastAt = now; ch.send({ type: 'broadcast', event: 'p', payload: msg });
   }
   setInterval(() => { const now = performance.now(); for (const [k, o] of others) if (now - (o.seen || 0) > 12000) drop(k); }, 3000);
-  return { join, send, touch: () => ready && ch.send({ type: 'broadcast', event: 'touch', payload: { id } }) };
+  return { id, join, send, touch: () => ready && ch.send({ type: 'broadcast', event: 'touch', payload: { id } }), emit: (event, payload) => ready && ch.send({ type: 'broadcast', event, payload }) };
 })();
 { const saved = params.get('who') || (() => { try { return localStorage.getItem('tk-world-who'); } catch { return null; } })();
   if (saved && WHO[saved] && params.get('who')) enter(saved); // 앱의 입장 버튼은 내 캐릭터를 정해서 보낸다
