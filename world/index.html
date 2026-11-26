@@ -47,7 +47,7 @@
 <body>
 <a id="back" href="../index.html">← 트립꾸</a>
 <div id="title">❄️ <span class="d">트립꾸 겨울 여행 </span>월드</div>
-<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 왼쪽 손가락 이동 · 오른쪽 시점 · 두 손가락 확대</span><span class="m">왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대</span></div>
+<div id="help"><span class="d">PC: WASD/방향키 · 드래그로 시점 · 휠로 확대/축소 &nbsp;|&nbsp; 폰: 톡 누르면 걸어감 · 왼쪽 이동 · 오른쪽 시점 · 두 손가락 확대·돌리기</span><span class="m">톡 = 걸어가기 · 두 손가락 확대·돌리기</span></div>
 <div id="warp">
   <button data-z="dresden">🇩🇪 드레스덴</button>
   <button data-z="prague">🇨🇿 프라하</button>
@@ -92,7 +92,7 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x141c4a);
 scene.fog = new THREE.Fog(0x1a2456, 45, 150);
-const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 700);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -1327,23 +1327,32 @@ addEventListener('keyup', e => keys[e.code] = false);
 const skateV = new THREE.Vector3(); // 얼음 위 미끄러지는 속도
 let camYaw = 0, camPitch = .42, joy = null, look = null, camDist = CLOSE ? 5.5 : 14, pinch = null;
 const touches = new Map();
-const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 95);
+const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 160); // 멀리: 프라하 성 전체가 폰에서도 보이게
 const stick = document.getElementById('stick'), knob = stick.firstElementChild;
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
   tapStart = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
-  if (e.pointerType !== 'mouse' && joy == null) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (e.pointerType !== 'mouse' && touches.size >= 2 && !joy) { // 두 손가락 = 확대/축소
-    const [p, q] = [...touches.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist }; look = null; return;
+  // 두 손가락 = 벌리면 확대/축소, 비틀면 화면 돌리기, 같이 위아래로 밀면 기울이기.
+  // 왼쪽(이동 스틱)에 먼저 닿았어도 곧바로(0.4초 안, 거의 안 움직였을 때) 두 번째 손가락이 오면 두 손가락 조작으로 본다
+  const quickJoy = joy && touches.has(joy.id) && performance.now() - joy.t < 400 && jv.length() < 12;
+  if (e.pointerType !== 'mouse' && (joy == null || quickJoy)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.pointerType !== 'mouse' && touches.size >= 2 && (!joy || quickJoy)) {
+    if (joy) { joy = null; jv.set(0, 0); stick.style.display = 'none'; knob.style.transform = ''; }
+    const [p, q] = [...touches.values()]; tapTo = null; tapStart = null; // 두 손가락 뗄 때 톡 이동으로 안 잡히게
+    pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist, a: Math.atan2(q.y - p.y, q.x - p.x), py: p.y, qy: q.y, yaw: camYaw, pitch: camPitch }; look = null; return;
   }
   if (e.pointerType !== 'mouse' && e.clientX < innerWidth / 2 && !joy) {
-    joy = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    joy = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
     Object.assign(stick.style, { display: 'block', left: e.clientX - 55 + 'px', top: e.clientY - 55 + 'px' });
   } else look = { id: e.pointerId, x: e.clientX, y: e.clientY };
 });
 addEventListener('pointermove', e => {
   if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pinch && touches.size >= 2) { const [p, q] = [...touches.values()]; setDist(pinch.dist * pinch.d / Math.max(20, Math.hypot(p.x - q.x, p.y - q.y))); return; }
+  if (pinch && touches.size >= 2) { const [p, q] = [...touches.values()];
+    setDist(pinch.dist * pinch.d / Math.max(20, Math.hypot(p.x - q.x, p.y - q.y)));
+    let da = Math.atan2(q.y - p.y, q.x - p.x) - pinch.a; da = Math.atan2(Math.sin(da), Math.cos(da)); camYaw = pinch.yaw + da; // 손가락 돌린 만큼 화면도
+    const dp = p.y - pinch.py, dq = q.y - pinch.qy, dy = Math.sign(dp) === Math.sign(dq) ? Math.sign(dp) * Math.min(Math.abs(dp), Math.abs(dq)) : 0; // 두 손가락이 같이 움직인 만큼만 기울임
+    camPitch = THREE.MathUtils.clamp(pinch.pitch + dy * .005, .06, 1.5); return; }
   if (joy && e.pointerId === joy.id) {
     jv.set(e.clientX - joy.x, e.clientY - joy.y); if (jv.length() > 45) jv.setLength(45);
     knob.style.transform = `translate(${jv.x}px,${jv.y}px)`;
@@ -1367,7 +1376,10 @@ addEventListener('pointerup', e => {
   tapPlane.constant = -me.root.position.y;
   const th = tapRay.intersectObjects(tramStops.map(s => s.g), true)[0]; // 트램을 톡 → 탈지 물어봄
   if (th && th.distance < 60) { const st = tramStops.find(s => { for (let o = th.object; o; o = o.parent) if (o === s.g) return true; }); if (st) { askRide(st.key); return; } }
-  if (tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); tapTo = { x: tapHit.x, z: tapHit.z, until: performance.now() + (dl / 9 * 1.6 + 1) * 1000 }; }
+  // 성·언덕·땅을 직접 맞혀서 높은 곳(성 계단·마당)도 톡으로 갈 수 있게, 못 맞히면 내 높이 평면
+  tapRay.firstHitOnly = true; const sh = tapRay.intersectObjects([castleObj, KBG, ground].filter(Boolean), true)[0]; tapRay.firstHitOnly = false;
+  if (sh) tapHit.copy(sh.point);
+  if (sh || tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); tapTo = { x: tapHit.x, z: tapHit.z, until: performance.now() + (dl / 9 * 1.6 + 1) * 1000 }; }
 });
 renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); setDist(camDist * Math.exp(e.deltaY * .0012)); }, { passive: false });
 // 🎥 시점: 뒤에서 → 눈높이(낮게, 풍경 보기) → 위에서 내려다보기 → 뒤에서. 화면을 끌면 어느 시점에서든 돌려 볼 수 있다
