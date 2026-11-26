@@ -335,7 +335,7 @@ function stall(x, z, rotY, roof = 0xb8323a, kind = 'stall') {
 }
 // Meshy 글뤼바인 노점(models/stall.glb): 받으면 상자 노점 대신. 카운터가 광장(앞) 쪽.
 const stallSrc = {};
-function stallModel(g, kind = 'stall') { // kind: stall(글뤼바인) | currywurst | redstall(빨간 지붕)
+function stallModel(g, kind = 'stall') { // kind: stall(글뤼바인) | currywurst | redstall(빨간 지붕) | trdelnik(굴뚝빵)
   (stallSrc[kind] ||= new Promise((ok, no) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`models/${kind}.glb`, gl => {
     // 밤에도 따뜻하게 보이게 자기 색으로 살짝 빛나게(조명을 더 켜지 않음)
     gl.scene.traverse(o => { if (o.isMesh && o.material) { o.material.emissive = new THREE.Color(0xffb070); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .35; } });
@@ -531,7 +531,7 @@ function striezelmarkt(c, out, side) {
   // 노점 골목: 가운데 길은 비우고 양옆으로 2줄씩. 색이 칠해진 Meshy 노점(stall.glb), 지붕 색은 번갈아
   const roofs = [0xb8323a, 0x2f6d4f, 0x8a2a2a, 0x3d5bb0];
   // 드레스덴은 빨간 지붕 노점(redstall.glb)이 기본, 두 개씩 커리부어스트·글뤼바인
-  const KIND = { '7.5,-4': 'currywurst', '-12.5,1': 'currywurst', '-7.5,-9': 'stall', '12.5,-14': 'stall' };
+  const KIND = { '7.5,-4': 'currywurst', '-12.5,1': 'currywurst', '-7.5,-9': 'stall', '12.5,-14': 'stall', '-7.5,-14': 'trdelnik', '12.5,1': 'trdelnik' }; // 굴뚝빵 2개
   for (const s of [-7.5, -12.5, 7.5, 12.5]) for (let f = -14, k = 0; f <= 2; f += 5, k++) {
     const p = at(s, f); stall(p.x, p.z, face(s), roofs[(k + (s > 0 ? 1 : 0)) % roofs.length], KIND[s + ',' + f] || 'redstall');
   }
@@ -683,7 +683,7 @@ for (const [key, z] of Object.entries(ZONES)) {
   for (const s of [-1, 1]) for (const f0 of [-6, 1]) {
     const f = key === 'prague' && s === 1 ? f0 - 11 : f0; // 프라하: 이쪽은 천문시계 탑과 겹쳐서 광장 앞쪽으로
     const p = z.pos.clone().addScaledVector(side, 11 * s).addScaledVector(out, f);
-    stall(p.x, p.z, Math.atan2(-side.x * s, -side.z * s), [0xb8323a, 0x2f6d4f, 0x2c4f99][Object.keys(ZONES).indexOf(key)], key === 'berlin' && f === 1 ? 'currywurst' : f === -6 && s === (key === 'berlin' ? -1 : 1) ? 'redstall' : 'stall'); // 베를린 앞줄은 커리부어스트, 뒷줄 하나는 빨간 지붕 노점
+    stall(p.x, p.z, Math.atan2(-side.x * s, -side.z * s), [0xb8323a, 0x2f6d4f, 0x2c4f99][Object.keys(ZONES).indexOf(key)], key === 'berlin' && f === 1 ? 'currywurst' : f === -6 && s === (key === 'berlin' ? -1 : 1) ? 'redstall' : (key === 'prague' && !(f === 1 && s === -1)) || (key === 'berlin' && s === 1) ? 'trdelnik' : 'stall'); // 베를린 앞줄 커리부어스트, 뒷줄 하나 빨간 지붕, 프라하는 굴뚝빵(뜨르들로) 위주
   }
   const tp = z.pos.clone().addScaledVector(out, 5).addScaledVector(side, -6); tickers.push(((st) => d => st.rotation.y += d)(xmasTree(tp.x, tp.z, .9)));
   // 광장 가로질러 전구줄
