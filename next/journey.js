@@ -778,8 +778,11 @@ function renderNextTrip(){const box=document.getElementById('nextTrip'),me=api()
  const prop=el('img',{src:BLANK,alt:'',class:'nx-prop'}),acts=['wave','photo','cheer','wave'];
  const bodies=people.map((av,i)=>{const im=el('img',{src:BLANK,alt:'',class:'nx-body'+(av.size==='baby'?' baby':av.size==='kid'?' kid':'')});picOf('body',[av,av.costume==='on'?kind:'',acts[i%4],i%2?'wink':'happy']).then(u=>{im.src=u;}).catch(()=>{});return im;});
  const go=el('button',{type:'button',class:'nx-go','aria-label':t.title+' 일정 보기'},[document.createTextNode('일정 보기')]);go.addEventListener('click',()=>openTripById(t.id));
+ // 겨울 월드 입장: 여행 안 worldLink와 같은 조건(가족 3D 캐릭터가 있거나 관리자 본인 여행). 토스판엔 월드가 없다
+ const wok=!(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss')&&(Object.values(av0).some(v=>v?.family)||(!!api().isAdmin?.()&&t.owner_id===me)),fw=av0[me]?.family||'';
+ const wb=wok?el('a',{class:'nx-go nx-world',href:'../world/?room='+encodeURIComponent(t.id)+(fw?'&who='+fw:'')},[document.createTextNode('❄️ 겨울 월드')]):null;
  const say=on?'오늘도 신나게!':d<=3?'짐 다 쌌어?':d<=14?'두근두근!':'얼른 가고 싶다!';
- box.replaceChildren(el('div',{class:'nx-card'},[prop,el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:on?'여행 중 · '+nth+'일 차':'D-'+d+' · 다가오는 여행'}),el('strong',{class:'nx-title',text:t.title}),el('span',{class:'nx-route',text:String(t.destination||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean).slice(0,5).join(' → ')})]),el('div',{class:'nx-party'},[...bodies,...(people.length<=2?[el('span',{class:'nx-say',text:say})]:[])]),go]));
+ box.replaceChildren(el('div',{class:'nx-card'},[prop,el('div',{class:'nx-text'},[el('span',{class:'nx-badge',text:on?'여행 중 · '+nth+'일 차':'D-'+d+' · 다가오는 여행'}),el('strong',{class:'nx-title',text:t.title}),el('span',{class:'nx-route',text:String(t.destination||'').split(/[,·]/).map(x=>x.trim()).filter(Boolean).slice(0,5).join(' → ')})]),el('div',{class:'nx-party'},[...bodies,...(people.length<=2?[el('span',{class:'nx-say',text:say})]:[])]),...(wb?[wb]:[]),go]));
  picOf('prop',[propKey,360]).then(u=>{prop.src=u;}).catch(()=>prop.remove());}
 const tripBtn=id=>[...document.querySelectorAll('#tripList [data-open-trip]')].find(b=>b.dataset.openTrip===id);
 const openTripById=id=>tripBtn(id)?.click();

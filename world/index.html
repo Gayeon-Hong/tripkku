@@ -10,7 +10,8 @@
   canvas{display:block}
   #title{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:clamp(15px,4.6vw,22px);text-shadow:0 2px 0 #24306b,0 0 12px #8fb4ff;white-space:nowrap;pointer-events:none;max-width:calc(100vw - 190px);overflow:hidden;text-overflow:ellipsis}
   #card{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;transition:.35s;background:rgba(255,255,255,.93);color:#2a2f55;border-radius:22px;padding:14px 18px;max-width:min(360px,calc(100vw - 32px));box-shadow:0 8px 30px rgba(0,0,0,.35);pointer-events:none}
-  #card.on{opacity:1;transform:translate(-50%,0)}
+  #card{pointer-events:none;cursor:pointer}
+  #card.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
   #card b{font-size:20px;display:block;margin-bottom:4px}
   #card p{margin:0;font-size:15px;line-height:1.45;font-family:system-ui,sans-serif}
   #help{position:fixed;top:48px;left:50%;transform:translateX(-50%);color:#cfe0ff;font-size:13px;opacity:.85;pointer-events:none;text-align:center;width:max-content;max-width:calc(100vw - 24px);line-height:1.35}
@@ -236,18 +237,24 @@ function buildCastleGrid() {
   rows();
 }
 function buildCastleStair() {
-  const v = CASTLE.v, w = 2.6, gAt = u => { const p = fromUV(u, v); return groundAt(p.x, p.z); };
+  const v = CASTLE.v, w = 2.6, gAt = (u, vv = v) => { const p = fromUV(u, vv); return groundAt(p.x, p.z); };
   let u1 = 96, y1 = null; // 성 바위가 처음 걸을 수 있는 곳에서 3칸 안쪽이 계단 꼭대기
   for (; u1 < 150; u1 += .5) { const p = fromUV(u1, v); if (castleGround(p.x, p.z) != null && !castleRoofAt(p.x, p.z)) { u1 += 3; const q = fromUV(u1, v); y1 = castleGround(q.x, q.z); break; } }
   if (y1 == null) return;
   const u0 = Math.max(KB.plat + 6, u1 - (y1 - gAt(u1 - 10)) / .45), y0 = gAt(u0); // 기울기 0.45 정도
-  stair = { u0, u1, v, w, y0, y1 };
+  // 두 갈래: ① 언덕 옆 눈밭에서 곧게 ② 언덕 가운데 눈길 끝에서 비스듬히 올라와 ①의 중간에 합류
+  const uJ = u0 + (u1 - u0) * .45, yJ = y0 + (y1 - y0) * .45, sv = -3.5, sy = gAt(KB.plat + 6, sv), L = Math.max(Math.abs(v + w - sv) + 1, (yJ - sy) / .45);
+  const su = uJ - Math.sqrt(Math.max(0, L * L - (v + w - sv) ** 2));
+  stair = [{ a: [u0, v], b: [u1, v], y0, y1, w }, { a: [su, sv], b: [uJ, v + w * .5], y0: sy, y1: yJ, w: 2.2 }];
   const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; KBG.add(g);
-  const stone = M(0x9a9184, { roughness: .95 }), edge = M(0xe9eef8, { roughness: 1 }), n = Math.ceil((u1 - u0) / 1.1), du = (u1 - u0) / n;
-  for (let i = 0; i < n; i++) { // 계단 한 칸: 땅에서 디딤판까지 꽉 찬 돌 + 디딤판 끝 눈
-    const top = y0 + (y1 - y0) * (i + 1) / n;
-    mesh(new THREE.BoxGeometry(du + .02, top, 2 * w), stone, u0 + du * (i + .5), top / 2, v, g);
-    mesh(new THREE.BoxGeometry(du * .35, .08, 2 * w), edge, u0 + du * (i + .85), top + .04, v, g);
+  const stone = M(0x9a9184, { roughness: .95 }), edge = M(0xe9eef8, { roughness: 1 });
+  for (const sg of stair) { // 계단 한 칸: 땅에서 디딤판까지 꽉 찬 돌 + 디딤판 끝 눈
+    const du = sg.b[0] - sg.a[0], dv = sg.b[1] - sg.a[1], len = Math.hypot(du, dv), n = Math.ceil(len / 1.1), rot = Math.atan2(-dv, du);
+    for (let i = 0; i < n; i++) {
+      const top = sg.y0 + (sg.y1 - sg.y0) * (i + 1) / n, f = (i + .5) / n, fe = (i + .85) / n;
+      mesh(new THREE.BoxGeometry(len / n + .02, top, 2 * sg.w), stone, sg.a[0] + du * f, top / 2, sg.a[1] + dv * f, g).rotation.y = rot;
+      mesh(new THREE.BoxGeometry(len / n * .35, .08, 2 * sg.w), edge, sg.a[0] + du * fe, top + .04, sg.a[1] + dv * fe, g).rotation.y = rot;
+    }
   }
 }
 // 성 바닥 높이(고른 값). 지붕·건물 칸이면 그 높이 그대로, 성 밖이면 null
@@ -262,7 +269,15 @@ function castleGround(x, z) {
 const castleRoofAt = (x, z) => { if (!castleH) return false; const { st, u0, v0, nu, raw, roof } = castleH, [u, v] = toUV(x, z); return !(raw[Math.round((v - v0) / st) * nu + Math.round((u - u0) / st)] < roof); };
 // 언덕 → 성 바위 계단(성 높이 지도를 다 잰 뒤 buildCastleStair가 자리·높이를 정한다). 계단 위는 비탈처럼 매끈하게 걷는다
 let stair = null;
-const stairH = (x, z) => { if (!stair) return null; const [u, v] = toUV(x, z); return u < stair.u0 || u > stair.u1 || Math.abs(v - stair.v) > stair.w ? null : stair.y0 + (stair.y1 - stair.y0) * (u - stair.u0) / (stair.u1 - stair.u0); };
+const stairH = (x, z) => { // 계단 갈래들 중 이 점이 올라선 곳의 높이(가장 높은 것)
+  if (!stair) return null; const [u, v] = toUV(x, z); let h = null;
+  for (const sg of stair) {
+    const du = sg.b[0] - sg.a[0], dv = sg.b[1] - sg.a[1], L2 = du * du + dv * dv, t = ((u - sg.a[0]) * du + (v - sg.a[1]) * dv) / L2;
+    if (t < 0 || t > 1 || Math.abs((u - sg.a[0]) * dv - (v - sg.a[1]) * du) / Math.sqrt(L2) > sg.w) continue;
+    const y = sg.y0 + (sg.y1 - sg.y0) * t; if (h == null || y > h) h = y;
+  }
+  return h;
+};
 const surfaceAt = (x, z) => { const c = castleGround(x, z), s = stairH(x, z); let g = groundAt(x, z); if (c != null) g = Math.max(g, c); if (s != null) g = Math.max(g, s); return g; };
 // 성 크기·자리(s = 배율, u·v = 중심). 앞쪽 바위 끝은 트램 선로(u 95) 뒤 u≈108
 const CASTLE = { s: 104 }; CASTLE.u = 108 + .46 * CASTLE.s; CASTLE.v = -34;
@@ -1282,6 +1297,7 @@ const setDist = v => camDist = THREE.MathUtils.clamp(v, 3.5, 95);
 const stick = document.getElementById('stick'), knob = stick.firstElementChild;
 const jv = new THREE.Vector2();
 renderer.domElement.addEventListener('pointerdown', e => {
+  tapStart = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
   if (e.pointerType !== 'mouse' && joy == null) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (e.pointerType !== 'mouse' && touches.size >= 2 && !joy) { // 두 손가락 = 확대/축소
     const [p, q] = [...touches.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), dist: camDist }; look = null; return;
@@ -1308,6 +1324,15 @@ const endPtr = e => {
   if (look && e.pointerId === look.id) look = null;
 };
 addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+// 화면을 톡 누르면(끌지 않고) 그 자리로 걸어간다
+let tapStart = null, tapTo = null; const tapRay = new THREE.Raycaster(), tapPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tapHit = new THREE.Vector3();
+addEventListener('pointerup', e => {
+  const s = tapStart; tapStart = null;
+  if (!me || !s || s.id !== e.pointerId || touches.size > 1 || performance.now() - s.t > 350 || Math.hypot(e.clientX - s.x, e.clientY - s.y) > 12) return;
+  tapRay.setFromCamera({ x: e.clientX / innerWidth * 2 - 1, y: -(e.clientY / innerHeight) * 2 + 1 }, camera);
+  tapPlane.constant = -me.root.position.y;
+  if (tapRay.ray.intersectPlane(tapPlane, tapHit)) { const dl = Math.hypot(tapHit.x - me.root.position.x, tapHit.z - me.root.position.z); tapTo = { x: tapHit.x, z: tapHit.z, until: performance.now() + (dl / 9 * 1.6 + 1) * 1000 }; }
+});
 renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); setDist(camDist * Math.exp(e.deltaY * .0012)); }, { passive: false });
 // 🎥 시점: 뒤에서 → 눈높이(낮게, 풍경 보기) → 위에서 내려다보기 → 뒤에서. 화면을 끌면 어느 시점에서든 돌려 볼 수 있다
 const VIEWS = [[.42, 14], [.08, 6], [1.45, 45]]; let viewI = 0;
@@ -1321,6 +1346,7 @@ document.querySelectorAll('#warp button').forEach(b => b.onclick = () => {
 
 // ---------- 루프 ----------
 const card = document.getElementById('card'), cardB = card.querySelector('b'), cardP = card.querySelector('p');
+card.addEventListener('click', () => card.classList.remove('on')); // 누르면 닫힘(다른 곳에 가까이 가면 다시 뜸)
 let shown = null, walkT = 0, touchMsg = 0, reach = 0;
 const sparks = [], touchBtn = document.getElementById('touch');
 function sparkle(at) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.08), new THREE.MeshBasicMaterial({ color: [0xffe08a, 0xffffff, 0xffc35a][i % 3], transparent: true, toneMapped: false })); m.position.copy(at); scene.add(m); sparks.push({ m, life: 1.4, v: new THREE.Vector3((Math.random() - .5) * 2.4, 1 + Math.random() * 2, (Math.random() - .5) * 2.4) }); } }
@@ -1332,6 +1358,9 @@ function frame() {
   let ix = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0) + jv.x / 45;
   let iz = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0) + jv.y / 45;
   const mv = new THREE.Vector3(ix, 0, iz);
+  if (mv.lengthSq() > .01 || !me) tapTo = null; // 직접 움직이면 톡 이동은 취소
+  else if (tapTo) { const dx = tapTo.x - me.root.position.x, dz = tapTo.z - me.root.position.z, dl = Math.hypot(dx, dz);
+    if (dl < .6 || performance.now() > tapTo.until) tapTo = null; else mv.set(dx / dl, 0, dz / dl).applyAxisAngle(new THREE.Vector3(0, 1, 0), -camYaw); } // 아래에서 camYaw만큼 다시 돌림
   if (me) {
     const P = me.root.position;
     const ice = onIce(P.x, P.z);

@@ -274,6 +274,7 @@ dialog{border:0;border-radius:28px}dialog::backdrop{background:rgba(22,24,39,.55
 .nx-say{position:absolute;left:calc(100% + 22px);bottom:118px;white-space:nowrap;background:#fff;color:#1b1e2e;border-radius:16px 16px 16px 4px;padding:7px 12px;font-size:13px;font-weight:800;box-shadow:0 6px 16px rgba(0,0,0,.14)}
 .nx-go{position:absolute;right:16px;bottom:18px;min-height:46px;border:0;border-radius:999px;background:var(--accent);color:#1b1e2e;font-weight:900;font-size:14px;padding:0 18px;box-shadow:0 6px 16px rgba(255,122,89,.4)}
 .nx-go::after{content:" ›";font-size:17px}
+.nx-world{bottom:72px;background:#2c3a7a;color:#fff;text-decoration:none;display:inline-flex;align-items:center;box-shadow:0 6px 16px rgba(44,58,122,.4)}
 .nx-empty .nx-text{right:20px}
 .h2-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 18px}
 .h2-tile{background:var(--card);border-radius:22px;padding:14px;display:grid;gap:8px;align-content:start;min-width:0}
