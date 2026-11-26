@@ -746,7 +746,15 @@ const HUB = fromUV(-8, 0), hubStar = xmasTree(HUB.x, HUB.z, 1.6); tickers.push(d
 // 광장 트리: 프라하 Meshy 모델에 든 트리('tree')를 떼어 와 원뿔 트리 대신 쓴다(별·전구는 그대로)
 loader.load('models/prague.glb', gl => {
   const t = gl.scene.getObjectByName('tree'); if (!t) return;
-  gl.scene.updateMatrixWorld(true); t.matrixWorld.decompose(t.position, t.quaternion, t.scale); t.removeFromParent();
+  gl.scene.updateMatrixWorld(true);
+  if (t.isMesh) { // 숲의 원뿔 나무도 같은 Meshy 트리를 작게 줄여 한 번에 그린다(InstancedMesh)
+    const geo = t.geometry.clone().applyMatrix4(t.matrixWorld); geo.computeBoundingBox(); const bb = geo.boundingBox, k = 1 / (bb.max.y - bb.min.y);
+    geo.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k);
+    const im = new THREE.InstancedMesh(geo, t.material, forest.length), mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), sc = new THREE.Vector3();
+    forest.forEach((g, i) => { g.visible = false; im.setMatrixAt(i, mtx.compose(g.position, q.setFromAxisAngle(up, i * 2.4), sc.setScalar(4 * g.scale.x))); });
+    im.userData.noLift = true; scene.add(im);
+  }
+  t.matrixWorld.decompose(t.position, t.quaternion, t.scale); t.removeFromParent();
   const w = new THREE.Group(); w.add(t); let b = new THREE.Box3().setFromObject(w); w.scale.setScalar(8.4 / (b.max.y - b.min.y));
   b = new THREE.Box3().setFromObject(w); w.position.set(HUB.x - (b.min.x + b.max.x) / 2, -b.min.y, HUB.z - (b.min.z + b.max.z) / 2);
   t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
@@ -755,11 +763,12 @@ loader.load('models/prague.glb', gl => {
 {
   const pl = new THREE.PointLight(0xffd8a0, 14, 20); pl.position.set(HUB.x, 6, HUB.z); scene.add(pl);
 }
-// 숲 (가장자리 눈 덮인 나무)
+// 숲 (가장자리 눈 덮인 나무). Meshy 트리를 받으면 위 광장 트리 로더가 이 원뿔들을 같은 트리로 바꾼다
+const forest = [];
 for (let i = 0; i < 90; i++) {
   const a = Math.random() * 6.28, r = 68 + Math.random() * 22, x = Math.cos(a) * r, z = Math.sin(a) * r, s = .8 + Math.random() * 1.2;
   { const [u, v] = toUV(x, z); if (u > 6 && Math.abs(v) < 46) continue; }
-  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g);
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); scene.add(g); forest.push(g);
   mesh(new THREE.ConeGeometry(2, 5, 8), M(0x1c4a3a), 0, 3, 0, g);
   mesh(new THREE.ConeGeometry(1.2, 1.6, 8), M(0xf4f7ff), 0, 5, 0, g);
 }
