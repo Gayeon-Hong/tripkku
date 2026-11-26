@@ -635,10 +635,11 @@ function striezelmarkt(c, out, side) {
   // 글뤼바인 노점: 관람차 반대편, 마켓 쪽을 보게
   for (const f of [-11, -3]) { const p = at(18, f); stall(p.x, p.z, Math.atan2(-side.x, -side.z), 0x8a2a2a); }
   // 줄 타고 마켓 위를 오가는 산타 썰매 + 루돌프 2마리
-  // 줄: 빛나는 기둥 → 프라우엔 교회 벽까지
-  { const A = at(-10, -24, 17), B = at(0, 12.5, 17), pole = M(0x3a2a20), red = M(0xc8252f, { roughness: .5 }), goldM = M(0xe0b84a, { metalness: .7, roughness: .3 }), white = M(0xffffff, { roughness: .9 }), deer = M(0x8a5a35);
-    for (const P of [A]) { const p = mesh(new THREE.CylinderGeometry(.18, .25, 18.5, 8), pole, P.x, 9.25, P.z); p.userData.noLift = true; mesh(new THREE.SphereGeometry(.3, 10, 8), glow(0xffd84a, 2.5), P.x, 18.6, P.z).userData.noLift = true; }
-    const cable = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, A.distanceTo(B), 6), M(0x22222a)); cable.position.copy(A).lerp(B, .5); cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); cable.userData.noLift = true; scene.add(cable);
+  // 줄: 빛나는 기둥 → 프라우엔 교회 벽(돔 아래)에 박힘
+  { const A = at(-10, -24, 17), B = at(0, 15.8, 13.2), pole = M(0x3a2a20), red = M(0xc8252f, { roughness: .5 }), goldM = M(0xe0b84a, { metalness: .7, roughness: .3 }), white = M(0xffffff, { roughness: .9 }), deer = M(0x8a5a35);
+    for (const P of [A]) { const p = mesh(new THREE.CylinderGeometry(.18, .25, 18.5, 8), pole, P.x, 9.25, P.z, scene); p.userData.noLift = true; mesh(new THREE.SphereGeometry(.3, 10, 8), glow(0xffd84a, 2.5), P.x, 18.6, P.z, scene).userData.noLift = true; }
+    // 줄은 밤하늘에서도 보이게 은색으로 살짝 빛나게
+    const cable = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, A.distanceTo(B), 6), glow(0xcfd6ea, .5)); cable.position.copy(A).lerp(B, .5); cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); cable.userData.noLift = true; scene.add(cable);
     const sl = new THREE.Group(); sl.userData.noLift = sl.userData.noCol = true; scene.add(sl);
     const body = new THREE.Group(); body.position.y = -3.2; sl.add(body); // 도르래에 매달린 썰매(앞 = +z)
     mesh(new THREE.CylinderGeometry(.03, .03, 3.2, 6), M(0x22222a), 0, -1.6, 0, sl); mesh(new THREE.TorusGeometry(.25, .07, 8, 16), goldM, 0, 0, 0, sl).rotation.y = Math.PI / 2;
@@ -664,7 +665,7 @@ function striezelmarkt(c, out, side) {
     }, undefined, () => {});
     const dir = B.clone().sub(A), yaw = Math.atan2(dir.x, dir.z);
     tickers.push(() => { const t = performance.now() / 9000, ph = t % 1, f = .5 - .5 * Math.cos(ph * 2 * Math.PI), back = ph > .5;
-      sl.position.copy(A).lerp(B, f); sl.rotation.y = yaw + (back ? Math.PI : 0);
+      sl.position.copy(A).lerp(B, f * .88); // 벽 앞에서 돌아서게 sl.rotation.y = yaw + (back ? Math.PI : 0);
       body.rotation.x = Math.sin(ph * 4 * Math.PI) * .12; body.rotation.z = Math.sin(performance.now() / 400) * .05; }); } // 끝에서 멈칫 돌아서 흔들흔들
   // 노란 트램 (광장 뒤를 왔다갔다)
   const tram = new THREE.Group(); tram.userData.noCol = true; scene.add(tram);
