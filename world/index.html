@@ -769,7 +769,9 @@ for (const [key, z] of Object.entries(ZONES)) {
       }
       const star = mesh(new THREE.OctahedronGeometry(.6), glow(0xffd84a, 3), lo.x, lo.y + th / 2 + .4, lo.z, g);
       tickers.push(d => star.rotation.y += d * 1.6);
-      const tl = new THREE.PointLight(0xffd08a, 8, 14); tl.position.set(lo.x, lo.y + th * .1, lo.z + R); g.add(tl);
+      const tl = new THREE.PointLight(0xffd08a, 30, 22, 1.4); tl.position.set(lo.x, lo.y + th * .1, lo.z + R + 1.5); g.add(tl); // 성당 앞 트리 더 밝게
+      tree.traverse(o => { if (!o.isMesh || !o.material) return; const mt = o.material = o.material.clone(); mt.emissive = new THREE.Color(0xffffff); mt.emissiveIntensity = .35;
+        if (mt.map) mt.emissiveMap = mt.map; else if (mt.vertexColors) mt.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor.rgb;'); }; else mt.emissive.copy(mt.color); });
     }
   }, undefined, () => {});
   // 크리스마스 마켓 노점 + 트리
@@ -880,8 +882,8 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   for (let k = 0; k < 5; k++) mesh(new THREE.SphereGeometry(.05, 8, 6), glow(0xffe9a0, 3), -.3 + k * .15, .36, .05, plaque); // 별 다섯 개
   const pl = new THREE.PointLight(0xffd98a, 6, 5); pl.position.set(0, .4, .6); plaque.add(pl);
   window.__plaque = plaque;
-  // 천문시계 탑: 틴 성당 앞
-  const ot = new THREE.Group(); scene.add(ot); ot.position.copy(fromUV(75, 7.5)); ot.lookAt(fromUV(0, 7.5));
+  // 천문시계 탑: 틴 성당 오른쪽으로 비켜서(예전 u75·v7.5 는 성당 앞 트리를 가렸다) 광장을 본다
+  const ot = new THREE.Group(); scene.add(ot); ot.position.copy(fromUV(77, 20)); ot.lookAt(fromUV(62, 4));
   const gold = M(0xe0b84a, { metalness: .8, roughness: .3 }), roofM = M(0x2e3340, { roughness: .6 });
   mesh(new THREE.BoxGeometry(4.4, 17, 4.4), M(0xcab89a), 0, 8.5, 0, ot);
   mesh(new THREE.ConeGeometry(3.3, 4, 4), roofM, 0, 19, 0, ot).rotation.y = Math.PI / 4;
@@ -1499,7 +1501,7 @@ addEventListener('pointerup', e => {
   tapRay.setFromCamera({ x: e.clientX / innerWidth * 2 - 1, y: -(e.clientY / innerHeight) * 2 + 1 }, camera);
   tapPlane.constant = -me.root.position.y;
   const th = tapRay.intersectObjects(tramStops.map(s => s.g), true)[0]; // 트램을 톡 → 탈지 물어봄
-  if (th && th.distance < 60) { const st = tramStops.find(s => { for (let o = th.object; o; o = o.parent) if (o === s.g) return true; }); if (st) { askRide(st.key); return; } }
+  if (th) { const st = tramStops.find(s => { for (let o = th.object; o; o = o.parent) if (o === s.g) return true; }); if (st && Math.hypot(st.g.position.x - me.root.position.x, st.g.position.z - me.root.position.z) < 12) { askRide(st.key); return; } } // 트램 가까이 있을 때만 '탈까요?' — 멀리서 트램 너머를 톡 하면 그냥 걸어가게(예전엔 트램에 가려 성 쪽으로 못 갔다)
   // 성·언덕·땅을 직접 맞혀서 높은 곳(성 계단·마당)도 톡으로 갈 수 있게, 못 맞히면 내 높이 평면
   tapRay.firstHitOnly = true; const sh = tapRay.intersectObjects([castleObj, KBG, ground].filter(Boolean), true)[0]; tapRay.firstHitOnly = false;
   if (sh) tapHit.copy(sh.point);
@@ -1534,7 +1536,12 @@ tramBtn.onclick = () => tramNear && askRide(tramNear.key);
 
 // ---------- 루프 ----------
 const card = document.getElementById('card'), cardB = card.querySelector('b'), cardP = card.querySelector('p');
-card.addEventListener('click', () => card.classList.remove('on')); // 누르면 닫힘(다른 곳에 가까이 가면 다시 뜸)
+card.addEventListener('click', () => { card.classList.remove('on'); cardReq = false; }); // 누르면 닫힘
+// 설명 카드는 화면을 두 번 톡(더블클릭) 했을 때만: 지금 있는 곳(도시·까를교) 설명을 띄운다
+let cardReq = false, lastTap = null;
+renderer.domElement.addEventListener('dblclick', () => { cardReq = true; shown = undefined; });
+addEventListener('pointerup', e => { if (e.pointerType === 'mouse') return; const n = performance.now();
+  if (lastTap && n - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) { cardReq = true; shown = undefined; lastTap = null; } else lastTap = { t: n, x: e.clientX, y: e.clientY }; });
 let shown = null, walkT = 0, touchMsg = 0, reach = 0;
 const sparks = [], touchBtn = document.getElementById('touch');
 function sparkle(at) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.08), new THREE.MeshBasicMaterial({ color: [0xffe08a, 0xffffff, 0xffc35a][i % 3], transparent: true, toneMapped: false })); m.position.copy(at); scene.add(m); sparks.push({ m, life: 1.4, v: new THREE.Vector3((Math.random() - .5) * 2.4, 1 + Math.random() * 2, (Math.random() - .5) * 2.4) }); } }
@@ -1609,6 +1616,8 @@ function frame() {
   for (const [k, z] of Object.entries(ZONES)) if (Math.hypot(player.position.x - z.pos.x, player.position.z - z.pos.z) < 20) near = k;
   { const [pu, pv] = toUV(player.position.x, player.position.z); if (onDeck(pu, pv) && pu > KB.ramp1) near = 'charles'; }
   if (touchMsg && t < touchMsg) near = 'touched';
+  if (!near) cardReq = false; // 그곳을 떠나면 닫힘
+  if (near !== 'touched' && !cardReq) near = null; // 두 번 톡 했을 때만 보여 줌(소원 빈 알림은 바로)
   if (near !== shown) {
     shown = near; card.classList.toggle('on', !!near);
     const info = near === 'touched' ? { name: '✨ 소원 빌었어요!', text: '네포무크 상을 만졌어요. 언젠가 프라하에 꼭 다시 오게 된대요.' } : ZONES[near] || CARDS[near];
