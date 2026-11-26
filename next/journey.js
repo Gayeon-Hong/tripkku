@@ -764,7 +764,9 @@ function nextTrip(){const shown=new Set([...document.querySelectorAll('#tripList
 function homeWorld(g,t,fw){if(!g)return;let a=document.getElementById('homeWorld');
  if(typeof window!=='undefined'&&window.TRIPKKU_PLATFORM==='toss'){a?.remove();return;}
  if(!a){a=el('a',{id:'homeWorld','aria-label':'겨울 월드로 가기',title:'겨울 월드'},[document.createTextNode('❄️')]);
-  a.style.cssText='display:inline-block;margin-left:6px;font-size:26px;line-height:1;text-decoration:none;background:none;vertical-align:-2px;cursor:pointer';g.style.display='inline';g.after(a);}
+  // 인사말 글자와 내 캐릭터(오른쪽) 사이 빈칸을 꽉 채우는 큰 눈송이
+  a.style.cssText='flex:1 1 0;align-self:stretch;display:flex;align-items:center;justify-content:center;min-width:36px;font-size:clamp(34px,9vw,60px);line-height:1;text-decoration:none;background:none;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(120,170,255,.45))';
+  const box=g.parentElement;box.style.flex='0 1 auto';box.after(a);}
  a.hidden=!t;if(t)a.href='../world/?room='+encodeURIComponent(t.id)+(fw?'&who='+fw:'');}
 function renderNextTrip(){const box=document.getElementById('nextTrip'),me=api().getMyId?.();if(!box||!me)return;const t=nextTrip(),today=todayStr();
  const g=document.getElementById('homeGreeting'),name=(g?.textContent.match(/^(.+?)님,/)||[])[1];
