@@ -624,13 +624,30 @@ function striezelmarkt(c, out, side) {
     const car = mesh(new THREE.BoxGeometry(1, 1, 1), glow([0xff6b8a, 0x8fe3ff, 0xffd27a][k % 3], 1.2), Math.cos(a) * 7, Math.sin(a) * 7 - .7, 0, wheel); cars.push(car);
   }
   tickers.push(d => { wheel.rotation.z += d * .15; cars.forEach(cr => cr.rotation.z = -wheel.rotation.z); });
-  // Meshy 관람차(models/ferris.glb): 받으면 코드 관람차 대신. 지금 모델은 한 덩어리라 멈춘 채로(바퀴·곤돌라를 따로 받으면 돌릴 예정).
-  loader.load('models/ferris.glb', gl => {
-    const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.userData.glb = true; if (o.material) { o.material.emissive = new THREE.Color(0xffc080); o.material.emissiveMap = o.material.map; o.material.emissiveIntensity = .3; } } });
+  // Meshy 관람차(조각 모델 models/ferris-parts.glb): 바퀴 테(part18)·바퀴살(part19)은 돌고, 곤돌라 11개는 똑바로 매달린 채 같이 돈다.
+  // 다리·받침·매표소는 그대로. 바퀴 중심은 모델 좌표 (−0.002, 0.202).
+  loader.load('models/ferris-parts.glb', gl => {
+    const m = gl.scene, mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75, metalness: 0, emissive: 0x3a2a18, emissiveIntensity: .6 });
+    m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.userData.glb = true; } });
+    const holder = new THREE.Group(); holder.rotation.y = Math.PI / 2; holder.add(m);
     const b = new THREE.Box3().setFromObject(m), k = 18 / (b.max.y - b.min.y); m.scale.setScalar(k);
     const b2 = new THREE.Box3().setFromObject(m); m.position.set(-(b2.min.x + b2.max.x) / 2, -b2.min.y, -(b2.min.z + b2.max.z) / 2);
-    const holder = new THREE.Group(); holder.rotation.y = Math.PI / 2; holder.add(m);
-    for (const c of fw.children) c.visible = false; fw.add(holder); scheduleCollision();
+    for (const c of fw.children) c.visible = false; fw.add(holder); holder.updateMatrixWorld(true);
+    const P = n => m.getObjectByName('model_part' + n), H = new THREE.Vector3(-.0023, .2022, 0);
+    const wheelG = new THREE.Object3D(); wheelG.position.copy(H); m.add(wheelG); wheelG.updateMatrixWorld(true);
+    for (const n of [18, 19]) { const o = P(n); if (o) wheelG.attach(o); }
+    const cabins = [];
+    for (const n of [0, 2, 3, 6, 8, 9, 10, 11, 12, 13, 14]) {
+      const o = P(n); if (!o) continue;
+      const g = new THREE.Object3D(); m.add(g); g.updateMatrixWorld(true); g.attach(o);
+      if (n === 0 && P(1)) g.attach(P(1)); // 곤돌라 0 의 고리
+      const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3()); m.worldToLocal(c);
+      cabins.push({ g, rx: c.x - H.x, ry: c.y - H.y });
+    }
+    let th = 0;
+    tickers.push(d => { th += d * .12; wheelG.rotation.z = th; const cs = Math.cos(th), sn = Math.sin(th);
+      for (const c of cabins) c.g.position.set(c.rx * cs - c.ry * sn - c.rx, c.rx * sn + c.ry * cs - c.ry, 0); });
+    scheduleCollision();
   }, undefined, () => {});
   addCol(fw.position.x, fw.position.z, 3);
   // 글뤼바인 노점: 관람차 반대편, 마켓 쪽을 보게
