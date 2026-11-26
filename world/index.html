@@ -547,6 +547,8 @@ function striezelmarkt(c, out, side) {
   }
   tickers.push(d => { wheel.rotation.z += d * .15; cars.forEach(cr => cr.rotation.z = -wheel.rotation.z); });
   addCol(fw.position.x, fw.position.z, 3);
+  // 글뤼바인 노점: 관람차 반대편, 마켓 쪽을 보게
+  for (const f of [-11, -3]) { const p = at(18, f); stall(p.x, p.z, Math.atan2(-side.x, -side.z), 0x8a2a2a); }
   // 노란 트램 (광장 뒤를 왔다갔다)
   const tram = new THREE.Group(); tram.userData.noCol = true; scene.add(tram);
   mesh(new THREE.BoxGeometry(12, 2.6, 2.4), M(0xf2c230, { roughness: .5 }), 0, 1.6, 0, tram);
@@ -603,7 +605,8 @@ for (const [key, z] of Object.entries(ZONES)) {
   // 크리스마스 마켓 노점 + 트리
   const side = new THREE.Vector3(-out.z, 0, out.x);
   if (key === 'dresden') { striezelmarkt(z.pos, out, side); continue; }
-  for (const s of [-1, 1]) for (const f of [-6, 1]) {
+  for (const s of [-1, 1]) for (const f0 of [-6, 1]) {
+    const f = key === 'prague' && s === 1 ? f0 - 11 : f0; // 프라하: 이쪽은 천문시계 탑과 겹쳐서 광장 앞쪽으로
     const p = z.pos.clone().addScaledVector(side, 11 * s).addScaledVector(out, f);
     stall(p.x, p.z, Math.atan2(-side.x * s, -side.z * s), [0xb8323a, 0x2f6d4f, 0x2c4f99][Object.keys(ZONES).indexOf(key)]);
   }
