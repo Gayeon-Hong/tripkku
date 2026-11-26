@@ -267,3 +267,8 @@
 - next/journey.js `homeWorld()`: 홈 인사말 h1(#homeGreeting, "○일 뒤 출발!") 바로 뒤에 배경 없는 ❄️ 링크(#homeWorld). 다가오는 여행이 있으면 항상 보임(가족·관리자 조건 없앰), 없으면 숨김, 토스판은 제거. 링크 = ../world/?room=<tripId>&who=<내 family>.
 - 여행 카드 안 '❄️ 겨울 월드' 버튼은 없앰(중복). 여행 화면 안 #worldBtn(worldLink)은 그대로.
 - journey.js?v=20261126_wx2
+
+### 2026-11-26 관람차 밝게 · 트램 너머 언덕 · 눈 범위
+- 관람차: emissive 0xffe2b8 ×0.55 를 onBeforeCompile 로 `emissive * vColor.rgb`(자기 색으로 빛남; vColor 는 알파 있는 vec4 라 .rgb 필수 — 안 붙이면 셰이더 깨져 모델이 안 보임) + 앞뒤 PointLight 2개.
+- 프레임 반지름 제한: 언덕(pu 40~102+back, |pv|<38)도 400 → 예전엔 반지름 99 에서 막혀 트램(u95) 너머로 못 갔음. 성 길 빼고 BFS 로 (105,0)·(115,−10)·계단 밑 도달 확인.
+- 눈: 내 주변 120×40×120 상자만 내려서 축소하면 한 도시에만 오는 것처럼 보였음 → snow.scale = max(1, camDist/40), 눈송이 크기 ×√배율. 🕒 실제 날씨 모드는 도시별 실제 날씨라 안 오는 도시도 있음(정상).

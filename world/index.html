@@ -648,7 +648,8 @@ function striezelmarkt(c, out, side) {
   // Meshy 관람차(조각 모델 models/ferris-parts.glb): 바퀴 테(part18)·바퀴살(part19)은 돌고, 곤돌라 11개는 똑바로 매달린 채 같이 돈다.
   // 다리·받침·매표소는 그대로. 바퀴 중심은 모델 좌표 (−0.002, 0.202).
   loader.load('models/ferris-parts.glb', gl => {
-    const m = gl.scene, mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75, metalness: 0, emissive: 0x3a2a18, emissiveIntensity: .6 });
+    const m = gl.scene, mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .75, metalness: 0, emissive: 0xffe2b8, emissiveIntensity: .55 });
+    mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor.rgb;'); }; // 자기 색(나무·빨간 곤돌라)으로 은은하게 빛나게
     m.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = true; o.userData.glb = true; } });
     const holder = new THREE.Group(); holder.rotation.y = Math.PI / 2; holder.add(m);
     const b = new THREE.Box3().setFromObject(m), k = 18 / (b.max.y - b.min.y); m.scale.setScalar(k);
@@ -668,6 +669,8 @@ function striezelmarkt(c, out, side) {
     let th = 0;
     tickers.push(d => { th += d * .12; wheelG.rotation.z = th; const cs = Math.cos(th), sn = Math.sin(th);
       for (const c of cabins) c.g.position.set(c.rx * cs - c.ry * sn - c.rx, c.rx * sn + c.ry * cs - c.ry, 0); });
+    // 바퀴 앞뒤에서 비추는 따뜻한 조명 2개
+    for (const sz of [1, -1]) { const l = new THREE.PointLight(0xffc77a, 45, 30, 1.4); l.position.set(0, 10, 7 * sz); holder.add(l); }
     scheduleCollision();
   }, undefined, () => {});
   addCol(fw.position.x, fw.position.z, 3);
@@ -1297,8 +1300,8 @@ function applyEnv(d) {
   starMat.opacity = Math.max(0, 1 - day * 1.4 - (grey ? .7 : 0));
   // 눈 / 비 / 안개
   snow.visible = kind === 'snow' || kind === 'rain';
-  if (kind === 'rain') { snow.material.color.set(0xa9c2ff); snow.material.size = .12; snow.material.opacity = .55; env.fall = 7; }
-  else { snow.material.color.set(0xffffff); snow.material.size = .22; snow.material.opacity = .9; env.fall = 1; }
+  if (kind === 'rain') { snow.material.color.set(0xa9c2ff); env.flake = .12; snow.material.opacity = .55; env.fall = 7; }
+  else { snow.material.color.set(0xffffff); env.flake = .22; snow.material.opacity = .9; env.fall = 1; }
   env.fog = kind === 'fog' ? .35 : kind === 'cloudy' || kind === 'rain' ? .75 : 1; env.day = day;
   document.getElementById('env').textContent = weatherLine();
 }
@@ -1542,7 +1545,7 @@ function frame() {
       me.body.rotation.y = THREE.MathUtils.lerp(me.body.rotation.y, Math.atan2(mv.x, mv.z), .2);
       walkT += d * 12;
     } else { walkT = 0; skateV.set(0, 0, 0); }
-    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null || stairH(P.x, P.z) != null ? 400 : pu > 40 && Math.abs(pv) < 38 ? 99 : 64; if (P.length() > lim) P.setLength(lim); }
+    { const [pu, pv] = toUV(P.x, P.z), lim = castleGround(P.x, P.z) != null || stairH(P.x, P.z) != null || (pu > 40 && pu <= 102 + CASTLE.back && Math.abs(pv) < 38) ? 400 : 64; /* 언덕은 성 바위 앞(u≈120)까지 — 예전엔 반지름 99에서 막혀 트램 너머로 못 갔다(언덕 끝은 castleStepOk 가 막음) */ if (P.length() > lim) P.setLength(lim); }
     { const gy = surfaceAt(P.x, P.z); P.y = gy > P.y + .3 ? THREE.MathUtils.lerp(P.y, gy, Math.min(1, d * 10)) : gy; } // 높은 턱은 폴짝 올라가듯
     if (!ice) { me.body.position.y = Math.abs(Math.sin(walkT)) * .25; me.body.rotation.z = Math.sin(walkT) * .08; } else me.body.position.y = 0;
     player.position.copy(P); net.send(false);
@@ -1571,6 +1574,7 @@ function frame() {
     snowPos[i * 3 + 1] = y; snowPos[i * 3] += Math.sin(t + i) * d * .3;
   }
   snowGeo.attributes.position.needsUpdate = true; snow.position.set(camTarget.x, player.position.y, camTarget.z);
+  { const sK = Math.max(1, camDist / 40); snow.scale.setScalar(sK); snow.material.size = (env.flake || .22) * Math.sqrt(sK); } // 멀리 볼수록 눈 내리는 범위도 넓게(예전엔 내 주변 120칸만 내려서 축소하면 한 도시에만 오는 것처럼 보였다)
   applyEnv(d);
   tickers.forEach(f => f(d));
   // 근처 도시 카드
