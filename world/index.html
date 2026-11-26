@@ -965,6 +965,15 @@ function snowman(scarf) {
 const snowFight = (() => {
   const SA = Math.PI * 7 / 6, FC = new THREE.Vector3(Math.cos(SA) * 52, 0, Math.sin(SA) * 52), FR = 10; // 회전목마 바깥쪽 빈터(강·광장과 안 겹침)
   for (const [dx, dz, r] of [[-4, 2, 1.6], [3, -3, 1.3], [5, 4, 1.1], [-2, -5, 1.2]]) { const m = mesh(new THREE.SphereGeometry(r, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0xf4f7ff, { roughness: 1 }), FC.x + dx, 0, FC.z + dz); m.scale.y = .6; scene.add(m); } // 눈 언덕
+  // 스케이트장: 눈싸움 마당 옆 얼음판. 순록이 눈싸움하다가 가끔 여기서 빙글빙글 스케이트를 탄다.
+  const RA = SA - .36, RC = new THREE.Vector3(Math.cos(RA) * 52, 0, Math.sin(RA) * 52), RR = 5.5;
+  { const y = groundAt(RC.x, RC.z) + .04;
+    const ice = new THREE.Mesh(new THREE.CircleGeometry(RR, 48), new THREE.MeshStandardMaterial({ color: 0xbfe6ff, roughness: .08, metalness: .25, emissive: 0x2a4a66, emissiveIntensity: .35 }));
+    ice.rotation.x = -Math.PI / 2; ice.position.set(RC.x, y, RC.z); ice.receiveShadow = true; ice.userData.noCol = ice.userData.noLift = true; scene.add(ice);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(RR + .1, .12, 8, 64), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .6 }));
+    rim.rotation.x = -Math.PI / 2; rim.position.set(RC.x, y + .05, RC.z); rim.userData.noCol = rim.userData.noLift = true; scene.add(rim);
+    const rl = new THREE.PointLight(0xcfe8ff, 6, 14); rl.position.set(RC.x, y + 5, RC.z); scene.add(rl); }
+  const onRink = p => p && Math.hypot(p.x - RC.x, p.z - RC.z) < RR - .3;
   const snowM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .8 }), puffG = new THREE.SphereGeometry(.09, 6, 4), ballG = new THREE.SphereGeometry(.22, 10, 8);
   const balls = [], puffs = [], crit = [];
   let playerHit = 0, stT = 0;
@@ -973,7 +982,7 @@ const snowFight = (() => {
   const myKey = () => 'p:' + net.id;
   const isHost = () => [net.id, ...others.keys()].sort()[0] === net.id;
   const posOf = key => { if (!key) return null; if (key[0] === 'c') return crit[+key.slice(1)]?.root.position; const pid = key.slice(2); return pid === net.id ? me?.root.position : others.get(pid)?.char.root.position; };
-  const nearField = p => p && Math.hypot(p.x - FC.x, p.z - FC.z) < FR + 6;
+  const nearField = p => p && (Math.hypot(p.x - FC.x, p.z - FC.z) < FR + 6 || Math.hypot(p.x - RC.x, p.z - RC.z) < RR + 4);
   const puff = p => { for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(puffG, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.position.copy(p); scene.add(m); puffs.push({ m, v: new THREE.Vector3((Math.random() - .5) * 3, 1 + Math.random() * 2.5, (Math.random() - .5) * 3), life: .8 }); } };
   const randSpot = () => { for (let i = 0; i < 20; i++) { const a = Math.random() * 6.283, r = Math.random() * FR, x = FC.x + Math.cos(a) * r, z = FC.z + Math.sin(a) * r; if (!isBlocked(x, z)) return new THREE.Vector3(x, 0, z); } return FC.clone(); };
   function make(src, i) {
@@ -990,8 +999,23 @@ const snowFight = (() => {
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, metalness: 0, emissive: 0x30343c, emissiveIntensity: .5 }); // 꼭짓점 색 + 밤에도 하얗게
     gl.scene.traverse(o => { if (o.isMesh) o.material = mat; });
     for (let i = 0; i < 3; i++) crit.push(make(gl.scene, i));
+    loader.load('models/reindeer.glb', g2 => { for (let i = 0; i < 2; i++) crit.push(makeDeer(g2.scene, crit.length)); }, undefined, () => {});
   }, undefined, () => {});
-  const handPos = c => { const p = new THREE.Vector3(); (c.ball || c.body).getWorldPosition(p); return p; };
+  // 순록 모자 쓴 하얀 곰(Meshy, 부위: 0·2 뿔, 1 몸, 3 머리, 4 망토). 눈싸움도 하고 스케이트도 탄다.
+  function makeDeer(src, i) {
+    const root = new THREE.Group(); root.userData.noLift = root.userData.noCol = true; root.position.copy(randSpot()); scene.add(root);
+    const body = new THREE.Group(); root.add(body);
+    const m = src.clone(true);
+    m.traverse(o => { if (o.isMesh) { o.castShadow = true; if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
+      const mt = o.material = o.material.clone(); mt.metalness = 0; mt.roughness = .8; mt.emissive = new THREE.Color(0xffffff); mt.emissiveMap = mt.map; mt.emissiveIntensity = .3; } });
+    const bb = new THREE.Box3().setFromObject(m), k = 2 / (bb.max.y - bb.min.y);
+    m.scale.setScalar(k); m.position.y = -bb.min.y * k; body.add(m); m.updateMatrixWorld(true);
+    const part = n => m.getObjectByName(n), pivot = (o, p) => { const pv = new THREE.Object3D(); pv.position.copy(p); m.add(pv); pv.updateMatrixWorld(true); if (o) pv.attach(o); return pv; };
+    const ears = [pivot(part('model_part0'), new THREE.Vector3(-.3, .56, 0)), pivot(part('model_part2'), new THREE.Vector3(.3, .56, 0))];
+    return { root, body, tail: new THREE.Object3D(), ears, ball: null, deer: true, mode: 'fight', modeT: 8 + Math.random() * 10, sa: Math.random() * 6.283, sr: 3, spinT: 0,
+      ready: true, state: 'walk', to: randSpot(), t: Math.random() * 3, cool: 2 + Math.random() * 3, hit: 0, foe: null, hop: Math.random() * 6, id: i, net: null };
+  }
+  const handPos = c => { const p = new THREE.Vector3(); (c.ball || c.body).getWorldPosition(p); if (!c.ball) p.y += 1.3; return p; };
   // 던지기(모두 같은 장면): by·foe 는 'c0'(다람쥐) 또는 'p:<id>'(사람)
   function doThrow(e) {
     const from = V(e.f), to = V(e.t);
@@ -1036,6 +1060,23 @@ const snowFight = (() => {
       if (c.hit > 0) { c.hit -= d; c.body.rotation.z = Math.sin(c.hit * 40) * .35 * c.hit; if (c.hit <= 0) { c.body.rotation.z = 0; if (host && c.revenge && c.ready !== false) { c.state = 'aim'; c.t = .45; c.foe = c.revenge; } c.revenge = null; } }
       if (!host) { // 호스트가 보낸 위치로 부드럽게
         if (c.net) { const dx = c.net[0] - P.x, dz = c.net[1] - P.z, dl = Math.hypot(dx, dz); if (dl > 6) { P.x = c.net[0]; P.z = c.net[1]; } else if (dl > .05) { P.x += dx * Math.min(1, d * 8); P.z += dz * Math.min(1, d * 8); moving = true; } c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, c.net[2], .2); }
+      } else if (c.deer && c.hit <= 0 && c.state !== 'aim' && (c.modeT -= d, c.mode === 'skate' || c.modeT <= 0)) {
+        if (c.mode === 'fight') { c.mode = 'skate'; c.modeT = 12 + Math.random() * 10; c.sa = Math.atan2(P.z - RC.z, P.x - RC.x); c.sr = 2 + Math.random() * 2.5; }
+        else if (c.modeT <= 0) { c.mode = 'fight'; c.modeT = 14 + Math.random() * 12; c.to = randSpot(); c.cool = 1 + Math.random() * 2; c.body.rotation.z = 0; }
+        if (c.mode === 'skate') {
+          if (!onRink(P)) { // 얼음판까지 걸어가기
+            const dx = RC.x - P.x, dz = RC.z - P.z, dl = Math.hypot(dx, dz), st = Math.min(dl, d * 2.6);
+            P.x += dx / dl * st; P.z += dz / dl * st; moving = true; c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, Math.atan2(dx, dz), .15);
+            c.sa = Math.atan2(P.z - RC.z, P.x - RC.x); c.sr = Math.min(RR - .8, Math.max(1.5, dl));
+          } else { // 미끄러지듯 원을 그리며 타기, 가끔 제자리 한 바퀴
+            c.sa += d * 2.4 / c.sr; c.sr += (Math.sin(now * .5 + c.id * 2) * 1.2 + 3 - c.sr) * d * .5;
+            const tx = RC.x + Math.cos(c.sa) * c.sr, tz = RC.z + Math.sin(c.sa) * c.sr;
+            P.x += (tx - P.x) * Math.min(1, d * 4); P.z += (tz - P.z) * Math.min(1, d * 4);
+            const head = Math.atan2(-Math.sin(c.sa), Math.cos(c.sa));
+            if (c.spinT > 0) { c.spinT -= d; c.root.rotation.y += d * 10; } else { c.root.rotation.y = THREE.MathUtils.lerp(c.root.rotation.y, head, .2); if (Math.random() < d * .12) c.spinT = .63; }
+            c.body.rotation.z = THREE.MathUtils.lerp(c.body.rotation.z, c.spinT > 0 ? 0 : -.22, .1); // 안쪽으로 기울기
+          }
+        }
       } else if (c.hit <= 0 && c.state === 'aim') {
         const tp = posOf(c.foe); if (tp) c.root.rotation.y = Math.atan2(tp.x - P.x, tp.z - P.z);
         c.t -= d; c.body.rotation.x = -.35 * Math.sin(Math.min(1, (.45 - c.t) / .45) * Math.PI / 2); // 뒤로 젖혔다가
@@ -1053,12 +1094,15 @@ const snowFight = (() => {
         }
       }
       P.y = groundAt(P.x, P.z);
-      if (moving) c.hop += d * 11;
-      c.body.position.y = moving ? Math.abs(Math.sin(c.hop)) * .3 : 0;
+      const skating = onRink(P) && (c.deer && (host ? c.mode === 'skate' : true));
+      if (!host && c.deer && c.net && c.net[3] !== undefined) c.body.rotation.z = THREE.MathUtils.lerp(c.body.rotation.z, c.net[3], .2);
+      else if (c.deer && !skating && c.hit <= 0) c.body.rotation.z *= .85;
+      if (moving && !skating) c.hop += d * 11;
+      c.body.position.y = moving && !skating ? Math.abs(Math.sin(c.hop)) * .3 : 0;
       c.tail.rotation.y = Math.sin(now * (moving ? 9 : 3) + c.id) * (moving ? .35 : .18); // 꼬리 살랑
       c.ears.forEach((e, k) => e.rotation.z = Math.sin(now * 2.3 + k * 2 + c.id) * .05);
     }
-    if (host && crit.length && others.size) { stT -= d; if (stT <= 0) { stT = .16; net.emit('sf', { k: 'st', c: crit.map(c => [+c.root.position.x.toFixed(2), +c.root.position.z.toFixed(2), +c.root.rotation.y.toFixed(2)]) }); } }
+    if (host && crit.length && others.size) { stT -= d; if (stT <= 0) { stT = .16; net.emit('sf', { k: 'st', c: crit.map(c => [+c.root.position.x.toFixed(2), +c.root.position.z.toFixed(2), +c.root.rotation.y.toFixed(2), ...(c.deer ? [+c.body.rotation.z.toFixed(2)] : [])]) }); } }
     for (let i = balls.length - 1; i >= 0; i--) { const b = balls[i]; b.t += d / b.dur; const t = Math.min(1, b.t);
       b.m.position.lerpVectors(b.a, b.b, t); b.m.position.y += Math.sin(t * Math.PI) * b.h;
       if (t >= 1) { scene.remove(b.m); balls.splice(i, 1); land(b.e, b.m.position.clone()); } }
