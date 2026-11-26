@@ -829,7 +829,11 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   // 까를교 (Meshy). 받침대는 잘라냈고 물 높이를 강물에 맞춘다.
   const br = new THREE.Group(); br.userData.noLift = br.userData.noCol = true;
   br.position.copy(fromUV(KB.mid, 0, KB.w + .59 * KB.S)); br.rotation.y = Math.atan2(OUT.z, -OUT.x); br.scale.setScalar(KB.S); scene.add(br);
-  loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); br.add(gl.scene); }, undefined, () => {});
+  loader.load('models/charles.glb', gl => { gl.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true;
+    const mt = o.material; if (mt) { mt.metalness = 0; mt.roughness = .85; mt.emissive = new THREE.Color(0xffd6a0); mt.emissiveMap = mt.map; mt.emissiveIntensity = .55; mt.needsUpdate = true; } } }); // 밤에도 돌다리 색이 보이게 은은하게 빛남
+    br.add(gl.scene); }, undefined, () => {});
+  // 다리 위 조명: 난간 따라 따뜻한 빛 (강물 가까이 두면 물에 네모난 빛 덩어리가 비쳐서 위에만)
+  for (const u of [16, 26, 36]) { const w = fromUV(u, 0, KB.deck + 4); const l = new THREE.PointLight(0xffc98a, 30, 22, 1.6); l.position.copy(w); scene.add(l); }
   // 프라하 성(Meshy): 언덕 너머. 받침대는 잘라냈고 바위 언덕째 놓는다. 바위·마당을 밟고 걸어 올라갈 수 있다(castleGround).
   const castle = new THREE.Group(); castle.userData.noLift = castle.userData.noCol = true;
   castle.position.copy(fromUV(CASTLE.u, CASTLE.v, KB.top - .6 + .5 * CASTLE.s)); castle.rotation.y = Math.atan2(-OUT.x, -OUT.z); castle.scale.setScalar(CASTLE.s); scene.add(castle); castleObj = castle;
