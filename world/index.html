@@ -864,11 +864,17 @@ const KBG = new THREE.Group(); KBG.rotation.y = Math.atan2(-OUT.z, OUT.x); KBG.u
   for (let [u, v] of [[94, -34], [100, -18], [100, -50]]) { u += CASTLE.back; const l = new THREE.PointLight(0xffd59a, 60, 60, 1.2); l.position.copy(fromUV(u, v, KB.top + 8)); l.userData.noLift = true; scene.add(l); } // 성을 밝히는 조명
   // 프라하 트램: 언덕 위 광장 뒤 선로를 오간다
   { const rails = new THREE.Group(); rails.userData.noLift = rails.userData.noCol = true; scene.add(rails);
-    for (const dv of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 58), M(0x4a4d55, { metalness: .6 }), 0, 0, 0, rails); r.position.copy(fromUV(95 + dv, 0, KB.top + .04)); r.rotation.y = Math.atan2(SIDE.x, SIDE.z); r.castShadow = false; }
+    const rl = []; for (const dv of [-.7, .7]) { const r = mesh(new THREE.BoxGeometry(.18, .08, 58), M(0x4a4d55, { metalness: .6 }), 0, 0, 0, rails); r.position.copy(fromUV(95 + dv, 0, KB.top + .04)); r.rotation.y = Math.atan2(SIDE.x, SIDE.z); r.castShadow = false; rl.push([r, dv]); }
     const tr = new THREE.Group(); tr.userData.noLift = tr.userData.noCol = true; scene.add(tr);
     mesh(new THREE.BoxGeometry(12, 3, 2.6), M(0xd8323a, { roughness: .5 }), 0, 1.8, 0, tr); mesh(new THREE.BoxGeometry(11.4, .9, 2.65), glow(0xfff0c8, 1.1), 0, 2.3, 0, tr); // 받기 전 임시 모양
     tr.rotation.y = Math.atan2(-SIDE.z, SIDE.x); tramModel(tr, 12); tramStops.push({ key: 'prague', g: tr });
-    tickers.push(() => { const v = Math.sin(performance.now() / 7000) * 22; tr.position.copy(fromUV(95, v)); tr.position.y = groundAt(tr.position.x, tr.position.z); }); }
+    // 다니는 구간: 성으로 올라가는 비스듬한 계단(stair[1])이 선로(u95)를 가로지르면 그 앞까지만 다닌다(예전엔 트램이 계단을 뚫고 지나갔다)
+    let lo = -22, hi = 22, fixed = false;
+    tickers.push(() => {
+      if (!fixed && stair) { fixed = true; for (const sg of stair) { const [ua, va] = sg.a, [ub, vb] = sg.b; if ((ua - 95) * (ub - 95) > 0 || ua === ub) continue; const vc = va + (vb - va) * (95 - ua) / (ub - ua), pad = 6 + sg.w + 1.5;
+          if (vc < 0) lo = Math.max(lo, vc + pad); else hi = Math.min(hi, vc - pad); }
+        const c = (lo + hi) / 2, len = hi - lo + 14; for (const [r, dv] of rl) { r.position.copy(fromUV(95 + dv, c, KB.top + .04)); r.scale.z = len / 58; } }
+      const v = (lo + hi) / 2 + Math.sin(performance.now() / 7000) * (hi - lo) / 2; tr.position.copy(fromUV(95, v)); tr.position.y = groundAt(tr.position.x, tr.position.z); }); }
   // 카누: 강을 따라 천천히 오간다(다리 밑으로도)
   const canoe = (u, speed, hue) => {
     const g = new THREE.Group(); g.userData.noLift = g.userData.noCol = true; scene.add(g);
@@ -1578,6 +1584,7 @@ renderer.domElement.addEventListener('dblclick', () => { cardReq = true; shown =
 addEventListener('pointerup', e => { if (e.pointerType === 'mouse') return; const n = performance.now();
   if (lastTap && n - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) { cardReq = true; shown = undefined; lastTap = null; } else lastTap = { t: n, x: e.clientX, y: e.clientY }; });
 let stuckT = 0; // 밀어도 못 움직인 시간(갇힘 방지)
+let brDir = 1; const brLast = new THREE.Vector3(); // 까를교 위에서 가는 방향
 let shown = null, walkT = 0, touchMsg = 0, reach = 0;
 const sparks = [], touchBtn = document.getElementById('touch');
 function sparkle(at) { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.08), new THREE.MeshBasicMaterial({ color: [0xffe08a, 0xffffff, 0xffc35a][i % 3], transparent: true, toneMapped: false })); m.position.copy(at); scene.add(m); sparks.push({ m, life: 1.4, v: new THREE.Vector3((Math.random() - .5) * 2.4, 1 + Math.random() * 2, (Math.random() - .5) * 2.4) }); } }
@@ -1634,10 +1641,16 @@ function frame() {
     c.body.position.y = Math.abs(Math.sin(c.walk)) * .16; c.body.rotation.z = Math.sin(c.walk) * .07;
   }
   // 카메라 (멀리 볼수록 위에서, 안개도 멀리)
-  const dist = camDist;
+  // 까를교 위: 시점을 다리 방향(내가 가는 쪽) 뒤로 맞추고 조금 가까이·위에서 봐서, 난간·조각상에 안 가리고 앞이 보이게
+  let dist = camDist, pitch = camPitch;
+  { const [bu, bv] = toUV(player.position.x, player.position.z), onBr = !!me && bu > KB.ramp0 && bu < KB.tw1 + 3 && Math.abs(bv) < 3.4;
+    if (onBr) { const du = (player.position.x - brLast.x) * OUT.x + (player.position.z - brLast.z) * OUT.z; if (Math.abs(du) > .01) brDir = Math.sign(du);
+      if (!look?.go && !pinch) { const want = Math.atan2(-brDir * OUT.x, -brDir * OUT.z); let da = want - camYaw; da = Math.atan2(Math.sin(da), Math.cos(da)); camYaw += da * Math.min(1, d * 2.5); }
+      dist = Math.min(camDist, 8); pitch = Math.max(camPitch, .3); }
+    brLast.copy(player.position); }
   if (jv.length() > 20 || keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight) camPan.multiplyScalar(Math.max(0, 1 - d * 3)); // 스틱·키보드로 걸을 때만 화면이 다시 나를 따라옴(톡 이동·한 번 터치로는 옮겨 둔 화면 유지, 🗺 로 되돌리기)
   camTarget.copy(player.position).add(camPan);
-  camPos.set(Math.sin(camYaw) * Math.cos(camPitch) * dist, Math.sin(camPitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(camPitch) * dist).add(camTarget);
+  camPos.set(Math.sin(camYaw) * Math.cos(pitch) * dist, Math.sin(pitch) * dist + 1.5, Math.cos(camYaw) * Math.cos(pitch) * dist).add(camTarget);
   camera.position.lerp(camPos, t < .5 ? 1 : .12);
   camera.lookAt(tmp.copy(camTarget).setY(camTarget.y + 1.6));
   scene.fog.near = (45 + dist) * (env.fog ?? 1) * .8 + 4; scene.fog.far = (150 + dist * 2.2) * (env.fog ?? 1);
